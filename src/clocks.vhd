@@ -46,16 +46,20 @@ signal i_clk2_out    : std_logic_vector(0 downto 0);
 
 begin
 
-gen_clkin : for i in 0 to p_in_clk.clk'length - 1 generate
-m_ibufg : IBUFG port map(I  => p_in_clk.clk(i), O => g_clkin(i));
-end generate;--gen_clkin
 
--- Generate asynchronous reset
 p_out_rst <= not (AND_reduce(i_pll_locked));
 
 bufg_clk0: BUFG port map(I => i_clk0_out(1), O => p_out_gclk(0)); --200MHz
 
 
+gen_clkin : for i in 0 to p_in_clk.clk'length - 1 generate
+m_ibufg : IBUFG port map(I  => p_in_clk.clk(i), O => g_clkin(i));
+end generate;--gen_clkin
+
+
+--#######################################
+--20Mhz
+--#######################################
 -- Reference clock MMCM (CLKFBOUT range 600.00 MHz to 1440.00 MHz)
 -- CLKvco   = (CLKIN1/DIVCLK_DIVIDE) * CLKFBOUT_MULT_F
 -- CLKFBOUT = (CLKIN1/DIVCLK_DIVIDE) * CLKFBOUT_MULT_F
@@ -121,6 +125,9 @@ LOCKED    => i_pll_locked(0)
 g_clk_fb(0) <= i_clk_fb(0);
 
 
+--#######################################
+--54Mhz
+--#######################################
 -- Reference clock MMCM (CLKFBOUT range 600.00 MHz to 1440.00 MHz)
 -- CLKvco   = (CLKIN1/DIVCLK_DIVIDE) * CLKFBOUT_MULT_F
 -- CLKFBOUT = (CLKIN1/DIVCLK_DIVIDE) * CLKFBOUT_MULT_F
@@ -186,6 +193,9 @@ LOCKED    => i_pll_locked(1)
 g_clk_fb(1) <= i_clk_fb(1);
 
 
+--#######################################
+--62Mhz
+--#######################################
 -- Reference clock MMCM (CLKFBOUT range 600.00 MHz to 1440.00 MHz)
 -- CLKvco   = (CLKIN1/DIVCLK_DIVIDE) * CLKFBOUT_MULT_F
 -- CLKFBOUT = (CLKIN1/DIVCLK_DIVIDE) * CLKFBOUT_MULT_F
