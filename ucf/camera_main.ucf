@@ -1,0 +1,20 @@
+###############################################################################
+# Define Device, Package And Speed Grade
+###############################################################################
+CONFIG PART = XC7K410T-BFG676-2;
+
+#NET "pin_out_TP<0>"   LOC = "R18" | IOSTANDARD = LVCMOS15;
+#NET "pin_out_TP<1>"   LOC = "P18" | IOSTANDARD = LVCMOS15;
+#NET "pin_out_TP<2>"   LOC = "U16" | IOSTANDARD = LVCMOS15;
+#
+#
+################################################################################
+##
+################################################################################
+##Oscillator (default 400MHz) for DDR3 MINIDIMM
+#NET "pin_in_refclk_clk_p<0>" LOC = "AB11" | IOSTANDARD = LVDS;
+#NET "pin_in_refclk_clk_n<0>" LOC = "AC11" | IOSTANDARD = LVDS;
+#NET "pin_out_refclk_oe<0>"   LOC = "C12"  | IOSTANDARD = LVCMOS25;
+#NET "pin_out_refclk_sda<0>"  LOC = "C9"  | IOSTANDARD = LVCMOS25;
+#NET "pin_out_refclk_scl<0>"  LOC = "B9"  | IOSTANDARD = LVCMOS25;
+
