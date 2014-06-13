@@ -33,7 +33,7 @@ p_in_clk   : in    TRefClkPinIN
 );
 end;
 
-architecture synth of clocks is
+architecture behavior of clocks is
 
 signal g_clkin       : std_logic_vector(2 downto 0);
 
@@ -49,7 +49,8 @@ begin
 
 p_out_rst <= not (AND_reduce(i_pll_locked));
 
-bufg_clk0: BUFG port map(I => i_clk0_out(1), O => p_out_gclk(0)); --200MHz
+bufg_clk0: BUFG port map(I => i_clk0_out(0), O => p_out_gclk(0)); --200MHz
+bufg_clk1: BUFG port map(I => i_clk2_out(0), O => p_out_gclk(1)); --3100MHz
 
 
 gen_clkin : for i in 0 to p_in_clk.clk'length - 1 generate
@@ -200,22 +201,22 @@ g_clk_fb(1) <= i_clk_fb(1);
 -- CLKvco   = (CLKIN1/DIVCLK_DIVIDE) * CLKFBOUT_MULT_F
 -- CLKFBOUT = (CLKIN1/DIVCLK_DIVIDE) * CLKFBOUT_MULT_F
 -- CLKOUTn  = (CLKIN1/DIVCLK_DIVIDE) * CLKFBOUT_MULT_F/CLKOUTn_DIVIDE
--- CLKFvco =  (62 MHz/1) * 14.000      = 868 MHz
--- CLKOUT0  = (62 MHz/1) * 14.000/1    = 868 MHz
--- CLKOUT1  = (62 MHz/1) * 14.000/1    = 868 MHz
--- CLKOUT2  = (62 MHz/1) * 14.000/1    = 868 MHz
--- CLKOUT3  = (62 MHz/1) * 14.000/1    = 868 MHz
+-- CLKFvco =  (62 MHz/1) * 10.000      = 620 MHz
+-- CLKOUT0  = (62 MHz/1) * 10.000/2    = 310 MHz
+-- CLKOUT1  = (62 MHz/1) * 10.000/2    = 310 MHz
+-- CLKOUT2  = (62 MHz/1) * 10.000/2    = 310 MHz
+-- CLKOUT3  = (62 MHz/1) * 10.000/2    = 310 MHz
 
 m_mmcm_ref_clk2 : MMCME2_BASE
 generic map(
 BANDWIDTH          => "OPTIMIZED", -- string := "OPTIMIZED"
 CLKIN1_PERIOD      => 16.129,      -- real := 0.0
 DIVCLK_DIVIDE      => 1,           -- integer := 1 (1 to 128)
-CLKFBOUT_MULT_F    => 14.000,      -- real := 1.0  (5.0 to 64.0)
-CLKOUT0_DIVIDE_F   => 1.000,       -- real := 1.0  (1.0 to 128.0)
-CLKOUT1_DIVIDE     => 1,           -- integer := 1
-CLKOUT2_DIVIDE     => 1,           -- integer := 1
-CLKOUT3_DIVIDE     => 1,           -- integer := 1
+CLKFBOUT_MULT_F    => 10.000,      -- real := 1.0  (5.0 to 64.0)
+CLKOUT0_DIVIDE_F   => 2.000,       -- real := 1.0  (1.0 to 128.0)
+CLKOUT1_DIVIDE     => 2,           -- integer := 1
+CLKOUT2_DIVIDE     => 2,           -- integer := 1
+CLKOUT3_DIVIDE     => 2,           -- integer := 1
 CLKOUT4_DIVIDE     => 1,           -- integer := 1
 CLKOUT5_DIVIDE     => 1,           -- integer := 1
 CLKOUT6_DIVIDE     => 1,           -- integer := 1
