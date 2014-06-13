@@ -1,4 +1,4 @@
-rem Ищем каталог core_gen и копируем из нее все файлы (*.ngc,*.mif ) в каталог проекта ISE(..\ise\prj)
+rem РС‰РµРј РєР°С‚Р°Р»РѕРі core_gen Рё РєРѕРїРёСЂСѓРµРј РёР· РЅРµРµ РІСЃРµ С„Р°Р№Р»С‹ (*.ngc,*.mif ) РІ РєР°С‚Р°Р»РѕРі РїСЂРѕРµРєС‚Р° ISE(..\ise\prj)
 
 cd d:\Work\Yansar\camera\ise\core_gen\
 for /R  %%f in ( *.ngc *.mif) do xcopy "%%f" ..\ise\prj /y
