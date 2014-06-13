@@ -22,13 +22,14 @@ use unisim.vcomponents.all;
 library work;
 use work.reduce_Pack.all;
 use work.ccd_vita25K_pkg.all;
+use work.prj_cfg.all;
 
 entity ccd_vita25K is
 port(
 p_in_ccd   : in   TCCD_PortIN;
 p_out_ccd  : out  TCCD_PortOUT;
 
-p_out_vd     : out std_logic_vector(160 - 1 downto 0);
+p_out_vd     : out std_logic_vector((C_PCFG_CCD_LVDS_COUNT * 10) - 1 downto 0);
 p_out_vd_clk : out std_logic;
 
 p_in_refclk : in   std_logic;
@@ -71,15 +72,15 @@ IO_RESET            : in    std_logic    -- Reset signal for IO circuit
 );
 end component;
 
-signal i_delay_tap_in   : std_logic_vector((5 * 16) - 1 downto 0);
-signal i_delay_tap_out  : std_logic_vector((5 * 16) - 1 downto 0);
-signal i_delay_data_ce  : std_logic_vector(16 - 1 downto 0);
-signal i_delay_data_inc : std_logic_vector(16 - 1 downto 0);
+signal i_delay_tap_in   : std_logic_vector((5 * C_PCFG_CCD_LVDS_COUNT) - 1 downto 0);
+signal i_delay_tap_out  : std_logic_vector((5 * C_PCFG_CCD_LVDS_COUNT) - 1 downto 0);
+signal i_delay_data_ce  : std_logic_vector(C_PCFG_CCD_LVDS_COUNT - 1 downto 0);
+signal i_delay_data_inc : std_logic_vector(C_PCFG_CCD_LVDS_COUNT - 1 downto 0);
 signal i_idelayctrl_rdy : std_logic;
 
 signal i_bitslip        : std_logic;
-signal i_ccd_vd         : std_logic_vector(160 - 1 downto 0);
-signal i_ccd_vd_out     : std_logic_vector(160 - 1 downto 0);
+signal i_ccd_vd         : std_logic_vector((C_PCFG_CCD_LVDS_COUNT * 10) - 1 downto 0);
+signal i_ccd_vd_out     : std_logic_vector((C_PCFG_CCD_LVDS_COUNT * 10) - 1 downto 0);
 signal i_ccd_vd_clk     : std_logic;
 signal g_ccd_vd_clk     : std_logic;
 
@@ -102,8 +103,8 @@ I  => p_in_ccdclk
 
 m_lvds_in : deser_lvds_ccd
 generic map (
-sys_w  => 16, -- width of the data for the system
-dev_w  => 160 -- width of the data for the device
+sys_w  => C_PCFG_CCD_LVDS_COUNT, -- width of the data for the system
+dev_w  => (C_PCFG_CCD_LVDS_COUNT * 10) -- width of the data for the device
 )
 port map (
 -- From the system into the device

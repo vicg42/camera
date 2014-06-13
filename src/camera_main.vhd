@@ -20,19 +20,20 @@ use work.reduce_Pack.all;
 use work.vicg_common_pkg.all;
 use work.clocks_pkg.all;
 use work.ccd_vita25K_pkg.all;
+use work.prj_cfg.all;
 
 entity camera_main is
 port(
 --------------------------------------------------
 --Технологический порт
 --------------------------------------------------
-pin_out_TP          : out   std_logic_vector(15 downto 0);
+pin_out_TP          : out   std_logic_vector(C_PCFG_CCD_LVDS_COUNT - 1 downto 0);
 
 --------------------------------------------------
 --CCD
 --------------------------------------------------
-pin_in_ccd            : in   TCCD_PortIN;
-pin_out_ccd           : out  TCCD_PortOUT;
+pin_in_ccd          : in   TCCD_PortIN;
+pin_out_ccd         : out  TCCD_PortOUT;
 
 --------------------------------------------------
 --Reference clock
@@ -57,7 +58,7 @@ port(
 p_in_ccd   : in   TCCD_PortIN;
 p_out_ccd  : out  TCCD_PortOUT;
 
-p_out_vd     : out std_logic_vector(160 - 1 downto 0);
+p_out_vd     : out std_logic_vector((C_PCFG_CCD_LVDS_COUNT * 10) - 1 downto 0);
 p_out_vd_clk : out std_logic;
 
 p_in_refclk : in   std_logic;
@@ -68,7 +69,7 @@ end component;
 
 signal i_rst                            : std_logic;
 signal g_usrclk                         : std_logic_vector(7 downto 0);
-signal i_vd                             : std_logic_vector(160 - 1 downto 0);
+signal i_vd                             : std_logic_vector((C_PCFG_CCD_LVDS_COUNT * 10) - 1 downto 0);
 signal i_vd_clk                         : std_logic;
 
 signal tst_cnt : std_logic_vector(2 downto 0);
@@ -118,7 +119,7 @@ p_in_rst    => i_rst
 --  end if;
 --end process;
 
-gen_tp : for i in 0 to (16 - 1) generate
+gen_tp : for i in 0 to (C_PCFG_CCD_LVDS_COUNT - 1) generate
 pin_out_TP(i) <= OR_reduce(i_vd((10 * (i + 1)) - 1 downto (10 * i)));
 end generate;
 
