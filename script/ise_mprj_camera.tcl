@@ -23,7 +23,10 @@ set _projects [ list \
   [ list \
     $_usrdef_xilinx_family $_usrdef_device $_usrdef_pkg $_usrdef_speed xrc5t1 [ list \
       [ list "../../../common/hw/lib/vicg/vicg_common_pkg.vhd" $_VHDPkg ] \
+      [ list "../../../common/hw/lib/vicg/reduce_Pack.vhd" $_VHDPkg ] \
       [ list "../../src/camera_main.vhd" $_VHDMod ] \
+      [ list "../../src/clocks.vhd" $_VHDMod ] \
+      [ list "../../src/clocks_pkg.vhd" $_VHDPkg ] \
       [ list "../../ucf/camera_main.ucf" "camera_main" ] \
     ] \
   ] \
