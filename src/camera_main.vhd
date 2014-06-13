@@ -20,16 +20,16 @@ use work.vicg_common_pkg.all;
 
 entity camera_main is
 port(
---------------------------------------------------
---Технологический порт
---------------------------------------------------
-pin_out_TP          : out   std_logic_vector(2 downto 0);
-
---------------------------------------------------
---Reference clock
---------------------------------------------------
-pin_out_refclk      : out   TRefClkPinOUT;
-pin_in_refclk       : in    TRefClkPinIN
+----------------------------------------------------
+----Технологический порт
+----------------------------------------------------
+--pin_out_TP          : out   std_logic_vector(2 downto 0);
+--
+----------------------------------------------------
+----Reference clock
+----------------------------------------------------
+--pin_out_refclk      : out   TRefClkPinOUT;
+--pin_in_refclk       : in    TRefClkPinIN
 );
 end entity;
 
