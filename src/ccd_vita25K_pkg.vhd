@@ -18,15 +18,11 @@ use work.prj_cfg.all;
 package ccd_vita25K_pkg is
 
 type TCCD_PortIN is record
-vd_p : std_logic_vector(C_PCFG_CCD_LVDS_COUNT - 1 downto 0);
-vd_n : std_logic_vector(C_PCFG_CCD_LVDS_COUNT - 1 downto 0);
-
-sync_p : std_logic;
-sync_n : std_logic;
+data_p : std_logic_vector(C_PCFG_CCD_LVDS_COUNT - 1 downto 0);
+data_n : std_logic_vector(C_PCFG_CCD_LVDS_COUNT - 1 downto 0);
 
 clk_p : std_logic;
 clk_n : std_logic;
-
 end record;
 
 type TCCD_PortOUT is record
@@ -35,7 +31,6 @@ clk_n : std_logic;
 
 rst_n : std_logic;
 trig  : std_logic;
-
 end record;
 
 end ccd_vita25K_pkg;

@@ -27,7 +27,9 @@ port(
 --------------------------------------------------
 --Технологический порт
 --------------------------------------------------
-pin_out_TP          : out   std_logic_vector(C_PCFG_CCD_LVDS_COUNT - 1 downto 0);
+pin_out_TP          : out   std_logic_vector((C_PCFG_CCD_DATA_LINE_COUNT
+                                                * C_PCFG_CCD_BIT_PER_PIXEL) - 1 downto 0);
+pin_out_syn         : out   std_logic;
 
 --------------------------------------------------
 --CCD
@@ -58,8 +60,12 @@ port(
 p_in_ccd   : in   TCCD_PortIN;
 p_out_ccd  : out  TCCD_PortOUT;
 
-p_out_vd     : out std_logic_vector((C_PCFG_CCD_LVDS_COUNT * 10) - 1 downto 0);
-p_out_vd_clk : out std_logic;
+p_out_video_vs  : out std_logic;
+p_out_video_hs  : out std_logic;
+p_out_video_den : out std_logic;
+p_out_video_d   : out std_logic_vector((C_PCFG_CCD_DATA_LINE_COUNT
+                                          * C_PCFG_CCD_BIT_PER_PIXEL) - 1 downto 0);
+p_out_video_clk : out std_logic;
 
 p_in_refclk : in   std_logic;
 p_in_ccdclk : in   std_logic;
@@ -67,10 +73,14 @@ p_in_rst    : in   std_logic
 );
 end component;
 
-signal i_rst                            : std_logic;
-signal g_usrclk                         : std_logic_vector(7 downto 0);
-signal i_vd                             : std_logic_vector((C_PCFG_CCD_LVDS_COUNT * 10) - 1 downto 0);
-signal i_vd_clk                         : std_logic;
+signal i_rst              : std_logic;
+signal g_usrclk           : std_logic_vector(7 downto 0);
+signal i_video_d          : std_logic_vector((C_PCFG_CCD_DATA_LINE_COUNT
+                                               * C_PCFG_CCD_BIT_PER_PIXEL) - 1 downto 0);
+signal i_video_d_clk      : std_logic;
+signal i_video_vs         : std_logic;
+signal i_video_hs         : std_logic;
+signal i_video_den        : std_logic;
 
 signal tst_cnt : std_logic_vector(2 downto 0);
 
@@ -97,8 +107,11 @@ port map(
 p_in_ccd  => pin_in_ccd,
 p_out_ccd => pin_out_ccd,
 
-p_out_vd     => i_vd,
-p_out_vd_clk => i_vd_clk,
+p_out_video_vs  => i_video_vs,
+p_out_video_hs  => i_video_hs,
+p_out_video_den => i_video_den,
+p_out_video_d   => i_video_d,
+p_out_video_clk => i_video_d_clk,
 
 p_in_refclk => g_usrclk(0),
 p_in_ccdclk => g_usrclk(1),
@@ -119,9 +132,11 @@ p_in_rst    => i_rst
 --  end if;
 --end process;
 
-gen_tp : for i in 0 to (C_PCFG_CCD_LVDS_COUNT - 1) generate
-pin_out_TP(i) <= OR_reduce(i_vd((10 * (i + 1)) - 1 downto (10 * i)));
+gen_tp : for i in 0 to (C_PCFG_CCD_DATA_LINE_COUNT - 1) generate
+pin_out_TP(i) <= OR_reduce(i_video_d((C_PCFG_CCD_BIT_PER_PIXEL * (i + 1)) - 1 downto (C_PCFG_CCD_BIT_PER_PIXEL * i)));
 end generate;
+
+pin_out_syn <= i_video_den or i_video_hs or i_video_vs;
 
 --END MAIN
 end architecture;
