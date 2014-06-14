@@ -156,14 +156,14 @@ begin
          O => clk_in_int,
          I => clk_in_int_tmp);
 
-  gen_clock_region : for i in 0 to C_CLK_REGION_COUNT - 1 generate
+  gen_clk_region : for i in 0 to C_CLK_REGION_COUNT - 1 generate
 -- High Speed BUFIO clock buffer
      bufio_inst : BUFIO
        port map (
          O => clk_in_int_buf(i),
          I => clk_in_int);
 -- BUFR generates the slow clock
-     clkout_buf_inst : BUFR
+     bufr_inst : BUFR
        generic map (
           SIM_DEVICE => "7SERIES",
           BUFR_DIVIDE => "5")
@@ -181,7 +181,7 @@ begin
   pins: for pin_count in 0 to sys_w - 1 generate
   begin
 
-    clock_region0 : if pin_count < 8 generate
+    clk_region0 : if pin_count < 8 generate
     attribute IODELAY_GROUP of idelaye2_bus: label is "deser_lvds_ccd_group";
     begin
     -- Instantiate the buffers
@@ -318,10 +318,10 @@ begin
           OCLK             => '0',
           OCLKB            => '0',
           O                => open);                              -- unregistered output of ISERDESE1
-    end generate;--clock_region0 : if pin_count < 8 generate
+    end generate;--clk_region0 : if pin_count < 8 generate
 
 
-    clock_region1 : if pin_count > 7 generate
+    clk_region1 : if pin_count > 7 generate
     attribute IODELAY_GROUP of idelaye2_bus: label is "deser_lvds_ccd_group";
     begin
     -- Instantiate the buffers
@@ -458,7 +458,7 @@ begin
           OCLK             => '0',
           OCLKB            => '0',
           O                => open);                              -- unregistered output of ISERDESE1
-    end generate;--clock_region1 : if pin_count > 7 generate
+    end generate;--clk_region1 : if pin_count > 7 generate
 
      -- Concatenate the serdes outputs together. Keep the timesliced
      --   bits together, and placing the earliest bits on the right
