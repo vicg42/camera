@@ -17,16 +17,16 @@ NET "pin_in_refclk_clk<1>" CLOCK_DEDICATED_ROUTE = BACKBONE;
 #PIN "m_clocks/m_mmcm_ref_clk1.CLKIN1" CLOCK_DEDICATED_ROUTE = BACKBONE;
 
 
-NET "pin_out_ccd_clk_p"    LOC = "N22"  | IOSTANDARD = LVDS_25;
-NET "pin_out_ccd_clk_n"    LOC = "R21"  | IOSTANDARD = LVDS_25;
+NET "pin_out_ccd_clk_p"    LOC = "R21"  | IOSTANDARD = LVDS_25;
+NET "pin_out_ccd_clk_n"    LOC = "P21"  | IOSTANDARD = LVDS_25;
 NET "pin_out_ccd_rst_n"    LOC = "U16"  | IOSTANDARD = LVCMOS25;
 NET "pin_out_ccd_trig"     LOC = "R20"  | IOSTANDARD = LVCMOS25;
 
-NET "pin_in_ccd_clk_p"     LOC = "N23"  | IOSTANDARD = LVDS_25;
-NET "pin_in_ccd_clk_n"     LOC = "N21"  | IOSTANDARD = LVDS_25;
+NET "pin_in_ccd_clk_p"     LOC = "P23"  | IOSTANDARD = LVDS_25;
+NET "pin_in_ccd_clk_n"     LOC = "N23"  | IOSTANDARD = LVDS_25;
 
-#NET "pin_in_ccd_sync_p"    LOC = "P21"  | IOSTANDARD = LVDS_25;
-#NET "pin_in_ccd_sync_n"    LOC = "R22"  | IOSTANDARD = LVDS_25;
+#NET "pin_in_ccd_sync_p"    LOC = "R22"  | IOSTANDARD = LVDS_25;
+#NET "pin_in_ccd_sync_n"    LOC = "R23"  | IOSTANDARD = LVDS_25;
 
 NET "pin_in_ccd_vd_p<0>"   LOC = "R18"  | IOSTANDARD = LVDS_25;
 NET "pin_in_ccd_vd_n<0>"   LOC = "P18"  | IOSTANDARD = LVDS_25;
@@ -55,7 +55,7 @@ NET "pin_in_ccd_vd_n<11>"  LOC = "W24"  | IOSTANDARD = LVDS_25;
 NET "pin_in_ccd_vd_p<12>"  LOC = "AA25" | IOSTANDARD = LVDS_25;
 NET "pin_in_ccd_vd_n<12>"  LOC = "AB25" | IOSTANDARD = LVDS_25;
 NET "pin_in_ccd_vd_p<13>"  LOC = "W20"  | IOSTANDARD = LVDS_25;
-NET "pin_in_ccd_vd_n<13>"  LOC = "Y20"  | IOSTANDARD = LVDS_25;
+NET "pin_in_ccd_vd_n<13>"  LOC = "Y21"  | IOSTANDARD = LVDS_25;
 NET "pin_in_ccd_vd_p<14>"  LOC = "P16"  | IOSTANDARD = LVDS_25;
 NET "pin_in_ccd_vd_n<14>"  LOC = "N17"  | IOSTANDARD = LVDS_25;
 NET "pin_in_ccd_vd_p<15>"  LOC = "Y23"  | IOSTANDARD = LVDS_25;
