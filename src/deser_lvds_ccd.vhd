@@ -43,6 +43,28 @@ end deser_lvds_ccd;
 
 architecture xilinx of deser_lvds_ccd is
 
+component deser_clock_gen is
+generic (
+CLKIN_PERIOD    : real := 6.000 ;     -- clock period (ns) of input clock on clkin_p
+MMCM_MODE       : integer := 1 ;      -- Parameter to set multiplier for MMCM either 1 or 2 to get VCO in correct operating range. 1 multiplies clock by 7, 2 multiplies clock by 14
+MMCM_MODE_REAL  : real := 1.000 ;     -- Parameter to set multiplier for MMCM either 1 or 2 to get VCO in correct operating range. 1 multiplies clock by 7, 2 multiplies clock by 14
+TX_CLOCK        : string := "BUFIO" ; -- Parameter to set transmission clock buffer type, BUFIO, BUF_H, BUF_G
+INTER_CLOCK     : string := "BUF_R" ; -- Parameter to set intermediate clock buffer type, BUFR, BUF_H, BUF_G
+PIXEL_CLOCK     : string := "BUF_G" ; -- Parameter to set final clock buffer type, BUF_R, BUF_H, BUF_G
+USE_PLL         : boolean := FALSE ;  -- Parameter to enable PLL use rather than MMCM use, note, PLL does not support BUFIO and BUFR
+DIFF_TERM       : boolean := TRUE     -- Enable or disable internal differential termination
+);
+port  (
+reset     :  in std_logic ;     -- reset (active high)
+clkin_p   :  in std_logic ;     -- differential clock input
+clkin_n   :  in std_logic ;     -- differential clock input
+txclk     : out std_logic ;     -- CLK for serdes
+pixel_clk : out std_logic ;     -- Pixel clock output
+txclk_div : out std_logic ;     -- CLKDIV for serdes, and gearbox output = pixel clock / 2
+mmcm_lckd : out std_logic ;     -- Locked output from MMCM
+status    : out std_logic_vector(6 downto 0)   -- Status bus
+);
+end component;
 
   attribute CORE_GENERATION_INFO            : string;
   attribute CORE_GENERATION_INFO of xilinx  : architecture is "deser_lvds_ccd,selectio_wiz_v4_1,{component_name=deser_lvds_ccd,bus_dir=INPUTS,bus_sig_type=DIFF,bus_io_std=LVDS_25,use_serialization=true,use_phase_detector=false,serialization_factor=10,enable_bitslip=false,enable_train=false,system_data_width=16,bus_in_delay=NONE,bus_out_delay=NONE,clk_sig_type=DIFF,clk_io_std=LVCMOS18,clk_buf=BUFIO2,active_edge=RISING,clk_delay=NONE,v6_bus_in_delay=VAR_LOADABLE,v6_bus_out_delay=NONE,v6_clk_buf=BUFIO,v6_active_edge=DDR,v6_ddr_alignment=SAME_EDGE_PIPELINED,v6_oddr_alignment=SAME_EDGE,ddr_alignment=C0,v6_interface_type=NETWORKING,interface_type=NETWORKING,v6_bus_in_tap=1,v6_bus_out_tap=0,v6_clk_io_std=LVDS_25,v6_clk_sig_type=DIFF}";
@@ -76,7 +98,8 @@ architecture xilinx of deser_lvds_ccd is
   signal icascade1                : std_logic_vector(sys_w-1 downto 0);
   signal icascade2                : std_logic_vector(sys_w-1 downto 0);
   signal clk_in_int_inv           : std_logic_vector(0 downto 0);
-
+  signal i_io_reset               : std_logic;
+  signal i_mmcm_lckd              : std_logic;
 
   attribute IODELAY_GROUP : string;
   attribute IODELAY_GROUP of delayctrl : label is "deser_lvds_ccd_group";
@@ -91,18 +114,33 @@ begin
   end generate;
 
   -- Create the clock logic
-     ibufds_clk_inst : IBUFGDS
-       generic map (
-         IOSTANDARD => "LVDS_25")
-       port map (
-         I          => CLK_IN_P,
-         IB         => CLK_IN_N,
-         O          => clk_in_int);
+  CLK_DIV_OUT <= clk_div(0);
 
-    m_bufg_in: BUFG port map(I => clk_in_int_tmp, O => clk_in_int_buf(0));
-    clk_div(0) <= clk_in_int_buf(0);
-    CLK_DIV_OUT <= clk_in_int_buf(0);
+m_clk_gen : deser_clock_gen
+generic map(
+CLKIN_PERIOD    => 3.225  , -- clock period (ns) of input clock on clkin_p
+MMCM_MODE       => 1      , -- Parameter to set multiplier for MMCM either 1 or 2 to get VCO in correct operating range. 1 multiplies clock by 7, 2 multiplies clock by 14
+MMCM_MODE_REAL  => 1.000  , -- Parameter to set multiplier for MMCM either 1 or 2 to get VCO in correct operating range. 1 multiplies clock by 7, 2 multiplies clock by 14
+TX_CLOCK        => "BUF_G", -- Parameter to set transmission clock buffer type, BUFIO, BUF_H, BUF_G
+INTER_CLOCK     => "BUF_G", -- Parameter to set intermediate clock buffer type, BUFR, BUF_H, BUF_G
+PIXEL_CLOCK     => "BUF_G", -- Parameter to set final clock buffer type, BUF_R, BUF_H, BUF_G
+USE_PLL         => FALSE  , -- Parameter to enable PLL use rather than MMCM use, note, PLL does not support BUFIO and BUFR
+DIFF_TERM       => TRUE     -- Enable or disable internal differential termination
+)
+port map(
+reset     => CLK_RESET,
+clkin_p   => CLK_IN_P,
+clkin_n   => CLK_IN_N,
+txclk     => open,
+pixel_clk => clk_in_int,
+txclk_div => clk_div(0),
+mmcm_lckd => i_mmcm_lckd,
+status    => open
+);
 
+i_io_reset <= IO_RESET or (not i_mmcm_lckd);
+
+clk_in_int_buf(0) <= clk_in_int;
 
   -- We have multiple bits- step over every bit, instantiating the required elements
   pins: for pin_count in 0 to sys_w - 1 generate
@@ -143,7 +181,7 @@ begin
          INC                    => in_delay_inc_dec(pin_count), --IN_DELAY_DATA_INC,
          IDATAIN                => data_in_from_pins_int  (pin_count), -- Driven by IOB
          LD                     => IN_DELAY_RESET,
-         REGRST                 => IO_RESET,
+         REGRST                 => i_io_reset,
          LDPIPEEN               => '0',
          CNTVALUEIN             => in_delay_tap_in_int(pin_count), --IN_DELAY_TAP_IN,
          CNTVALUEOUT            => in_delay_tap_out_int(pin_count), --IN_DELAY_TAP_OUT,
@@ -190,7 +228,7 @@ begin
          CLKDIVP           => '0',
          D                 => '0',
          DDLY              => data_in_from_pins_delay(pin_count), -- 1-bit Input signal from IODELAYE1.
-         RST               => IO_RESET,                           -- 1-bit Asynchronous reset only.
+         RST               => i_io_reset,                           -- 1-bit Asynchronous reset only.
          SHIFTIN1          => '0',
          SHIFTIN2          => '0',
         -- unused connections
@@ -235,7 +273,7 @@ begin
          CLKDIVP           => '0',
          D                 => '0',                                -- Slave ISERDES module. No need to connect D, DDLY
          DDLY              => '0',
-         RST               => IO_RESET,                           -- 1-bit Asynchronous reset only.
+         RST               => i_io_reset,                           -- 1-bit Asynchronous reset only.
         -- unused connections
          DYNCLKDIVSEL      => '0',
          DYNCLKSEL         => '0',
@@ -268,7 +306,7 @@ delayctrl : IDELAYCTRL
     port map (
      RDY    => DELAY_LOCKED,
      REFCLK => REF_CLOCK,
-     RST    => IO_RESET
+     RST    => i_io_reset
      );
 
 
