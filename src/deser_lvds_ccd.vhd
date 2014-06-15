@@ -43,16 +43,15 @@ end deser_lvds_ccd;
 
 architecture xilinx of deser_lvds_ccd is
 
-  constant C_CLK_REGION_COUNT : integer := 2;
 
   attribute CORE_GENERATION_INFO            : string;
   attribute CORE_GENERATION_INFO of xilinx  : architecture is "deser_lvds_ccd,selectio_wiz_v4_1,{component_name=deser_lvds_ccd,bus_dir=INPUTS,bus_sig_type=DIFF,bus_io_std=LVDS_25,use_serialization=true,use_phase_detector=false,serialization_factor=10,enable_bitslip=false,enable_train=false,system_data_width=16,bus_in_delay=NONE,bus_out_delay=NONE,clk_sig_type=DIFF,clk_io_std=LVCMOS18,clk_buf=BUFIO2,active_edge=RISING,clk_delay=NONE,v6_bus_in_delay=VAR_LOADABLE,v6_bus_out_delay=NONE,v6_clk_buf=BUFIO,v6_active_edge=DDR,v6_ddr_alignment=SAME_EDGE_PIPELINED,v6_oddr_alignment=SAME_EDGE,ddr_alignment=C0,v6_interface_type=NETWORKING,interface_type=NETWORKING,v6_bus_in_tap=1,v6_bus_out_tap=0,v6_clk_io_std=LVDS_25,v6_clk_sig_type=DIFF}";
   constant clock_enable            : std_logic := '1';
   signal unused : std_logic;
-  signal clk_in_int                : std_logic; signal clk_in_int_tmp : std_logic;
-  signal clk_div                   : std_logic_vector(C_CLK_REGION_COUNT - 1 downto 0);
-  signal clk_div_int               : std_logic_vector(C_CLK_REGION_COUNT - 1 downto 0);
-  signal clk_in_int_buf            : std_logic_vector(C_CLK_REGION_COUNT - 1 downto 0);
+  signal clk_in_int                : std_logic;
+  signal clk_div                   : std_logic_vector(0 downto 0);
+  signal clk_div_int               : std_logic_vector(0 downto 0);
+  signal clk_in_int_buf            : std_logic_vector(0 downto 0);
 
 
   -- After the buffer
@@ -76,7 +75,7 @@ architecture xilinx of deser_lvds_ccd is
   signal serdesstrobe             : std_logic;
   signal icascade1                : std_logic_vector(sys_w-1 downto 0);
   signal icascade2                : std_logic_vector(sys_w-1 downto 0);
-  signal clk_in_int_inv           : std_logic_vector(C_CLK_REGION_COUNT - 1 downto 0);
+  signal clk_in_int_inv           : std_logic_vector(0 downto 0);
 
 
   attribute IODELAY_GROUP : string;
@@ -98,22 +97,18 @@ begin
        port map (
          I          => CLK_IN_P,
          IB         => CLK_IN_N,
-         O          => clk_in_int_tmp);
+         O          => clk_in_int);
 
     m_bufg_in: BUFG port map(I => clk_in_int_tmp, O => clk_in_int_buf(0));
-    clk_in_int_buf(1) <= clk_in_int_buf(0);
     clk_div(0) <= clk_in_int_buf(0);
-    clk_div(1) <= clk_in_int_buf(0);
     CLK_DIV_OUT <= clk_in_int_buf(0);
 
 
   -- We have multiple bits- step over every bit, instantiating the required elements
   pins: for pin_count in 0 to sys_w - 1 generate
+  attribute IODELAY_GROUP of idelaye2_bus: label is "deser_lvds_ccd_group";
   begin
 
-    clk_region0 : if pin_count < 8 generate
-    attribute IODELAY_GROUP of idelaye2_bus: label is "deser_lvds_ccd_group";
-    begin
     -- Instantiate the buffers
     ----------------------------------
     -- Instantiate a buffer for every bit of the data bus
@@ -248,147 +243,6 @@ begin
           OCLK             => '0',
           OCLKB            => '0',
           O                => open);                              -- unregistered output of ISERDESE1
-    end generate;--clk_region0 : if pin_count < 8 generate
-
-
-    clk_region1 : if pin_count > 7 generate
-    attribute IODELAY_GROUP of idelaye2_bus: label is "deser_lvds_ccd_group";
-    begin
-    -- Instantiate the buffers
-    ----------------------------------
-    -- Instantiate a buffer for every bit of the data bus
-     ibufds_inst : IBUFDS
-       generic map (
-         DIFF_TERM  => FALSE,             -- Differential termination
-         IOSTANDARD => "LVDS_25")
-       port map (
-         I          => DATA_IN_FROM_PINS_P  (pin_count),
-         IB         => DATA_IN_FROM_PINS_N  (pin_count),
-         O          => data_in_from_pins_int(pin_count));
-
-    -- Instantiate the delay primitive
-    -----------------------------------
-
-     idelaye2_bus : IDELAYE2
-       generic map (
-         CINVCTRL_SEL           => "FALSE",            -- TRUE, FALSE
-         DELAY_SRC              => "IDATAIN",        -- IDATAIN, DATAIN
-         HIGH_PERFORMANCE_MODE  => "FALSE",             -- TRUE, FALSE
-         IDELAY_TYPE            => "VAR_LOAD",          -- FIXED, VARIABLE, or VAR_LOADABLE
-         IDELAY_VALUE           => 1,                -- 0 to 31
-         REFCLK_FREQUENCY       => 200.0,
-         PIPE_SEL               => "FALSE",
-         SIGNAL_PATTERN         => "DATA"           -- CLOCK, DATA
-         )
-         port map (
-         DATAOUT                => data_in_from_pins_delay(pin_count),
-         DATAIN                 => '0', -- Data from FPGA logic
-         C                      => clk_div(1),
-         CE                     => in_delay_ce(pin_count), --IN_DELAY_DATA_CE,
-         INC                    => in_delay_inc_dec(pin_count), --IN_DELAY_DATA_INC,
-         IDATAIN                => data_in_from_pins_int  (pin_count), -- Driven by IOB
-         LD                     => IN_DELAY_RESET,
-         REGRST                 => IO_RESET,
-         LDPIPEEN               => '0',
-         CNTVALUEIN             => in_delay_tap_in_int(pin_count), --IN_DELAY_TAP_IN,
-         CNTVALUEOUT            => in_delay_tap_out_int(pin_count), --IN_DELAY_TAP_OUT,
-         CINVCTRL               => '0'
-         );
-
-
-     -- Instantiate the serdes primitive
-     ----------------------------------
-
-     clk_in_int_inv(1) <= not (clk_in_int_buf(1));
-
-
-     -- declare the iserdes
-     iserdese2_master : ISERDESE2
-       generic map (
-         DATA_RATE         => "DDR",
-         DATA_WIDTH        => 10,
-         INTERFACE_TYPE    => "NETWORKING",
-         DYN_CLKDIV_INV_EN => "FALSE",
-         DYN_CLK_INV_EN    => "FALSE",
-         NUM_CE            => 2,
-         OFB_USED          => "FALSE",
-         IOBDELAY          => "IFD",                              -- Use input at DDLY to output the data on Q1-Q6
-         SERDES_MODE       => "MASTER")
-       port map (
-         Q1                => iserdes_q(0)(pin_count),
-         Q2                => iserdes_q(1)(pin_count),
-         Q3                => iserdes_q(2)(pin_count),
-         Q4                => iserdes_q(3)(pin_count),
-         Q5                => iserdes_q(4)(pin_count),
-         Q6                => iserdes_q(5)(pin_count),
-         Q7                => iserdes_q(6)(pin_count),
-         Q8                => iserdes_q(7)(pin_count),
-         SHIFTOUT1         => icascade1(pin_count),               -- Cascade connection to Slave ISERDES
-         SHIFTOUT2         => icascade2(pin_count),               -- Cascade connection to Slave ISERDES
-         BITSLIP           => BITSLIP,                            -- 1-bit Invoke Bitslip. This can be used with any
-                                                                  -- DATA_WIDTH, cascaded or not.
-         CE1               => clock_enable,                       -- 1-bit Clock enable input
-         CE2               => clock_enable,                       -- 1-bit Clock enable input
-         CLK               => clk_in_int_buf(1),                     -- Fast Source Synchronous SERDES clock from BUFIO
-         CLKB              => clk_in_int_inv(1),                     -- Locally inverted clock
-         CLKDIV            => clk_div(1),                            -- Slow clock driven by BUFR
-         CLKDIVP           => '0',
-         D                 => '0',
-         DDLY              => data_in_from_pins_delay(pin_count), -- 1-bit Input signal from IODELAYE1.
-         RST               => IO_RESET,                           -- 1-bit Asynchronous reset only.
-         SHIFTIN1          => '0',
-         SHIFTIN2          => '0',
-        -- unused connections
-         DYNCLKDIVSEL      => '0',
-         DYNCLKSEL         => '0',
-         OFB               => '0',
-         OCLK              => '0',
-         OCLKB             => '0',
-         O                 => open);                              -- unregistered output of ISERDESE1
-
-     iserdese2_slave : ISERDESE2
-       generic map (
-         DATA_RATE         => "DDR",
-         DATA_WIDTH        => 10,
-         INTERFACE_TYPE    => "NETWORKING",
-         DYN_CLKDIV_INV_EN => "FALSE",
-         DYN_CLK_INV_EN    => "FALSE",
-         NUM_CE            => 2,
-         OFB_USED          => "FALSE",
-         IOBDELAY          => "IFD",                              -- Use input at DDLY to output the data on Q1-Q6
-         SERDES_MODE       => "SLAVE")
-       port map (
-         Q1                => open,
-         Q2                => open,
-         Q3                => iserdes_q(8)(pin_count),
-         Q4                => iserdes_q(9)(pin_count),
-         Q5                => iserdes_q(10)(pin_count),
-         Q6                => iserdes_q(11)(pin_count),
-         Q7                => iserdes_q(12)(pin_count),
-         Q8                => iserdes_q(13)(pin_count),
-         SHIFTOUT1         => open,
-         SHIFTOUT2         => open,
-         SHIFTIN1          => icascade1(pin_count),               -- Cascade connections from Master ISERDES
-         SHIFTIN2          => icascade2(pin_count),               -- Cascade connections from Master ISERDES
-         BITSLIP           => BITSLIP,                            -- 1-bit Invoke Bitslip. This can be used with any
-                                                                  -- DATA_WIDTH, cascaded or not.
-         CE1               => clock_enable,                       -- 1-bit Clock enable input
-         CE2               => clock_enable,                       -- 1-bit Clock enable input
-         CLK               => clk_in_int_buf(1),                     -- Fast source synchronous serdes clock
-         CLKB              => clk_in_int_inv(1),                     -- locally inverted clock
-         CLKDIV            => clk_div(1),                            -- Slow clock sriven by BUFR.
-         CLKDIVP           => '0',
-         D                 => '0',                                -- Slave ISERDES module. No need to connect D, DDLY
-         DDLY              => '0',
-         RST               => IO_RESET,                           -- 1-bit Asynchronous reset only.
-        -- unused connections
-         DYNCLKDIVSEL      => '0',
-         DYNCLKSEL         => '0',
-         OFB               => '0',
-          OCLK             => '0',
-          OCLKB            => '0',
-          O                => open);                              -- unregistered output of ISERDESE1
-    end generate;--clk_region1 : if pin_count > 7 generate
 
      -- Concatenate the serdes outputs together. Keep the timesliced
      --   bits together, and placing the earliest bits on the right
