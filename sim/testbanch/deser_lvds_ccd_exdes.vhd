@@ -127,8 +127,8 @@ end component;
    signal count_out          : std_logic_vector (num_serial_bits-1 downto 0);
    signal local_counter      : std_logic_vector(num_serial_bits-1 downto 0);
    signal count_out1         : std_logic_vector (num_serial_bits-1 downto 0);
-   signal count_out2         : std_logic_vector (num_serial_bits-1 downto 0);
-   signal pat_out            : std_logic_vector (num_serial_bits-1 downto 0);
+   signal count_out2         : std_logic_vector (num_serial_bits-1 downto 0); signal usr_cnt : std_logic_vector (9 downto 0);
+   signal pat_out            : std_logic_vector (num_serial_bits-1 downto 0); signal equal_cnt : std_logic_vector (2 downto 0);
    signal pattern_completed    : std_logic_vector (1 downto 0) := "00";
    signal clk_in_int_inv       : std_logic;
    -- This example design doesn't use the variable delay programming
@@ -415,6 +415,20 @@ begin
    end if;
   end process;
 
+
+process(clk_div_in)
+begin
+if (clk_div_in='1' and clk_div_in'event) then
+  if (rst_sync_int6_d = '1') then
+    usr_cnt <= (others=>'0');
+  else
+    if usr_cnt(9) /= '1' then
+    usr_cnt <= usr_cnt + 1;
+    end if;
+  end if;
+end if;
+end process;
+
    process(clk_div_in) begin
    if (clk_div_in='1' and clk_div_in'event) then
      if (rst_sync_int6_d = '1') then
@@ -422,7 +436,11 @@ begin
      elsif equal1='1' then
        count_out2 <= count_out1;
      else
+        if usr_cnt(9) /= '1' then
+          count_out2 <= usr_cnt(count_out2'range);
+        else
        count_out2 <= pat_out;
+       end if;
      end if;
     end if;
    end process;
