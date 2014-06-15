@@ -1,54 +1,3 @@
--- file: deser_lvds_ccd.vhd
--- (c) Copyright 2009 - 2011 Xilinx, Inc. All rights reserved.
---
--- This file contains confidential and proprietary information
--- of Xilinx, Inc. and is protected under U.S. and
--- international copyright and other intellectual property
--- laws.
---
--- DISCLAIMER
--- This disclaimer is not a license and does not grant any
--- rights to the materials distributed herewith. Except as
--- otherwise provided in a valid license issued to you by
--- Xilinx, and to the maximum extent permitted by applicable
--- law: (1) THESE MATERIALS ARE MADE AVAILABLE "AS IS" AND
--- WITH ALL FAULTS, AND XILINX HEREBY DISCLAIMS ALL WARRANTIES
--- AND CONDITIONS, EXPRESS, IMPLIED, OR STATUTORY, INCLUDING
--- BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, NON-
--- INFRINGEMENT, OR FITNESS FOR ANY PARTICULAR PURPOSE; and
--- (2) Xilinx shall not be liable (whether in contract or tort,
--- including negligence, or under any other theory of
--- liability) for any loss or damage of any kind or nature
--- related to, arising under or in connection with these
--- materials, including for any direct, or any indirect,
--- special, incidental, or consequential loss or damage
--- (including loss of data, profits, goodwill, or any type of
--- loss or damage suffered as a result of any action brought
--- by a third party) even if such damage or loss was
--- reasonably foreseeable or Xilinx had been advised of the
--- possibility of the same.
---
--- CRITICAL APPLICATIONS
--- Xilinx products are not designed or intended to be fail-
--- safe, or for use in any application requiring fail-safe
--- performance, such as life-support or safety devices or
--- systems, Class III medical devices, nuclear facilities,
--- applications related to the deployment of airbags, or any
--- other applications that could lead to death, personal
--- injury, or severe property or environmental damage
--- (individually and collectively, "Critical
--- Applications"). Customer assumes the sole risk and
--- liability of any use of Xilinx products in Critical
--- Applications, subject only to applicable laws and
--- regulations governing limitations on product liability.
---
--- THIS COPYRIGHT NOTICE AND DISCLAIMER MUST BE RETAINED AS
--- PART OF THIS FILE AT ALL TIMES.
-------------------------------------------------------------------------------
--- User entered comments
-------------------------------------------------------------------------------
--- --
-------------------------------------------------------------------------------
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -151,31 +100,12 @@ begin
          IB         => CLK_IN_N,
          O          => clk_in_int_tmp);
 
-     bufmr_inst : BUFMR
-       port map (
-         O => clk_in_int,
-         I => clk_in_int_tmp);
+    m_bufg_in: BUFG port map(I => clk_in_int_tmp, O => clk_in_int_buf(0));
+    clk_in_int_buf(1) <= clk_in_int_buf(0);
+    clk_div(0) <= clk_in_int_buf(0);
+    clk_div(1) <= clk_in_int_buf(0);
+    CLK_DIV_OUT <= clk_in_int_buf(0);
 
-  gen_clk_region : for i in 0 to C_CLK_REGION_COUNT - 1 generate
--- High Speed BUFIO clock buffer
-     bufio_inst : BUFIO
-       port map (
-         O => clk_in_int_buf(i),
-         I => clk_in_int);
--- BUFR generates the slow clock
-     bufr_inst : BUFR
-       generic map (
-          SIM_DEVICE => "7SERIES",
-          BUFR_DIVIDE => "5")
-       port map (
-          O           => clk_div(i),
-          CE          => '1',
-          CLR         => CLK_RESET,
-          I           => clk_in_int);
-
-    end generate;--gen_clock_region
-
-   m_bufg_clk_vd: BUFG port map(I => clk_div(0), O => CLK_DIV_OUT);--(i));
 
   -- We have multiple bits- step over every bit, instantiating the required elements
   pins: for pin_count in 0 to sys_w - 1 generate
