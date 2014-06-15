@@ -1,56 +1,3 @@
--- file: deser_lvds_ccd_exdes.vhd
--- (c) Copyright 2009 - 2011 Xilinx, Inc. All rights reserved.
---
--- This file contains confidential and proprietary information
--- of Xilinx, Inc. and is protected under U.S. and
--- international copyright and other intellectual property
--- laws.
---
--- DISCLAIMER
--- This disclaimer is not a license and does not grant any
--- rights to the materials distributed herewith. Except as
--- otherwise provided in a valid license issued to you by
--- Xilinx, and to the maximum extent permitted by applicable
--- law: (1) THESE MATERIALS ARE MADE AVAILABLE "AS IS" AND
--- WITH ALL FAULTS, AND XILINX HEREBY DISCLAIMS ALL WARRANTIES
--- AND CONDITIONS, EXPRESS, IMPLIED, OR STATUTORY, INCLUDING
--- BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, NON-
--- INFRINGEMENT, OR FITNESS FOR ANY PARTICULAR PURPOSE; and
--- (2) Xilinx shall not be liable (whether in contract or tort,
--- including negligence, or under any other theory of
--- liability) for any loss or damage of any kind or nature
--- related to, arising under or in connection with these
--- materials, including for any direct, or any indirect,
--- special, incidental, or consequential loss or damage
--- (including loss of data, profits, goodwill, or any type of
--- loss or damage suffered as a result of any action brought
--- by a third party) even if such damage or loss was
--- reasonably foreseeable or Xilinx had been advised of the
--- possibility of the same.
---
--- CRITICAL APPLICATIONS
--- Xilinx products are not designed or intended to be fail-
--- safe, or for use in any application requiring fail-safe
--- performance, such as life-support or safety devices or
--- systems, Class III medical devices, nuclear facilities,
--- applications related to the deployment of airbags, or any
--- other applications that could lead to death, personal
--- injury, or severe property or environmental damage
--- (individually and collectively, "Critical
--- Applications"). Customer assumes the sole risk and
--- liability of any use of Xilinx products in Critical
--- Applications, subject only to applicable laws and
--- regulations governing limitations on product liability.
---
--- THIS COPYRIGHT NOTICE AND DISCLAIMER MUST BE RETAINED AS
--- PART OF THIS FILE AT ALL TIMES.
-
-------------------------------------------------------------------------------
--- SelectIO wizard example design
-------------------------------------------------------------------------------
--- This example design instantiates the IO circuitry
-------------------------------------------------------------------------------
-
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
@@ -146,7 +93,8 @@ end component;
 
    signal data_out_from_device : std_logic_vector(dev_w-1 downto 0);
 
-    type serdarr is array (0 to 13) of std_logic_vector(sys_w-1 downto 0);
+   type serdarr is array (0 to 13) of std_logic_vector(sys_w-1 downto 0);
+--   type serdarr is array (0 to sys_w-1) of std_logic_vector(13 downto 0);
    signal oserdes_d                : serdarr := (( others => (others => '0')));
    signal ocascade_ms_d            : std_logic_vector(sys_w-1 downto 0);
    signal ocascade_ms_t            : std_logic_vector(sys_w-1 downto 0);
@@ -463,166 +411,171 @@ pinsss:for pinsss in 0 to sys_w-1 generate begin
 end generate pinsss;
 end generate assign;
 
-   data_delay(0) <=                 data_in_to_device(144) &
-                data_in_to_device(128) &
-                data_in_to_device(112) &
-                data_in_to_device(96) &
-                data_in_to_device(80) &
-                data_in_to_device(64) &
-                data_in_to_device(48) &
-                data_in_to_device(32) &
-                data_in_to_device(16) &
-   data_in_to_device(0);
-   data_delay(1) <=                 data_in_to_device(145) &
-                data_in_to_device(129) &
-                data_in_to_device(113) &
-                data_in_to_device(97) &
-                data_in_to_device(81) &
-                data_in_to_device(65) &
-                data_in_to_device(49) &
-                data_in_to_device(33) &
-                data_in_to_device(17) &
-   data_in_to_device(1);
-   data_delay(2) <=                 data_in_to_device(146) &
-                data_in_to_device(130) &
-                data_in_to_device(114) &
-                data_in_to_device(98) &
-                data_in_to_device(82) &
-                data_in_to_device(66) &
-                data_in_to_device(50) &
-                data_in_to_device(34) &
-                data_in_to_device(18) &
-   data_in_to_device(2);
-   data_delay(3) <=                 data_in_to_device(147) &
-                data_in_to_device(131) &
-                data_in_to_device(115) &
-                data_in_to_device(99) &
-                data_in_to_device(83) &
-                data_in_to_device(67) &
-                data_in_to_device(51) &
-                data_in_to_device(35) &
-                data_in_to_device(19) &
-   data_in_to_device(3);
-   data_delay(4) <=                 data_in_to_device(148) &
-                data_in_to_device(132) &
-                data_in_to_device(116) &
-                data_in_to_device(100) &
-                data_in_to_device(84) &
-                data_in_to_device(68) &
-                data_in_to_device(52) &
-                data_in_to_device(36) &
-                data_in_to_device(20) &
-   data_in_to_device(4);
-   data_delay(5) <=                 data_in_to_device(149) &
-                data_in_to_device(133) &
-                data_in_to_device(117) &
-                data_in_to_device(101) &
-                data_in_to_device(85) &
-                data_in_to_device(69) &
-                data_in_to_device(53) &
-                data_in_to_device(37) &
-                data_in_to_device(21) &
-   data_in_to_device(5);
-   data_delay(6) <=                 data_in_to_device(150) &
-                data_in_to_device(134) &
-                data_in_to_device(118) &
-                data_in_to_device(102) &
-                data_in_to_device(86) &
-                data_in_to_device(70) &
-                data_in_to_device(54) &
-                data_in_to_device(38) &
-                data_in_to_device(22) &
-   data_in_to_device(6);
-   data_delay(7) <=                 data_in_to_device(151) &
-                data_in_to_device(135) &
-                data_in_to_device(119) &
-                data_in_to_device(103) &
-                data_in_to_device(87) &
-                data_in_to_device(71) &
-                data_in_to_device(55) &
-                data_in_to_device(39) &
-                data_in_to_device(23) &
-   data_in_to_device(7);
-   data_delay(8) <=                 data_in_to_device(152) &
-                data_in_to_device(136) &
-                data_in_to_device(120) &
-                data_in_to_device(104) &
-                data_in_to_device(88) &
-                data_in_to_device(72) &
-                data_in_to_device(56) &
-                data_in_to_device(40) &
-                data_in_to_device(24) &
-   data_in_to_device(8);
-   data_delay(9) <=                 data_in_to_device(153) &
-                data_in_to_device(137) &
-                data_in_to_device(121) &
-                data_in_to_device(105) &
-                data_in_to_device(89) &
-                data_in_to_device(73) &
-                data_in_to_device(57) &
-                data_in_to_device(41) &
-                data_in_to_device(25) &
-   data_in_to_device(9);
-   data_delay(10) <=                 data_in_to_device(154) &
-                data_in_to_device(138) &
-                data_in_to_device(122) &
-                data_in_to_device(106) &
-                data_in_to_device(90) &
-                data_in_to_device(74) &
-                data_in_to_device(58) &
-                data_in_to_device(42) &
-                data_in_to_device(26) &
-   data_in_to_device(10);
-   data_delay(11) <=                 data_in_to_device(155) &
-                data_in_to_device(139) &
-                data_in_to_device(123) &
-                data_in_to_device(107) &
-                data_in_to_device(91) &
-                data_in_to_device(75) &
-                data_in_to_device(59) &
-                data_in_to_device(43) &
-                data_in_to_device(27) &
-   data_in_to_device(11);
-   data_delay(12) <=                 data_in_to_device(156) &
-                data_in_to_device(140) &
-                data_in_to_device(124) &
-                data_in_to_device(108) &
-                data_in_to_device(92) &
-                data_in_to_device(76) &
-                data_in_to_device(60) &
-                data_in_to_device(44) &
-                data_in_to_device(28) &
-   data_in_to_device(12);
-   data_delay(13) <=                 data_in_to_device(157) &
-                data_in_to_device(141) &
-                data_in_to_device(125) &
-                data_in_to_device(109) &
-                data_in_to_device(93) &
-                data_in_to_device(77) &
-                data_in_to_device(61) &
-                data_in_to_device(45) &
-                data_in_to_device(29) &
-   data_in_to_device(13);
-   data_delay(14) <=                 data_in_to_device(158) &
-                data_in_to_device(142) &
-                data_in_to_device(126) &
-                data_in_to_device(110) &
-                data_in_to_device(94) &
-                data_in_to_device(78) &
-                data_in_to_device(62) &
-                data_in_to_device(46) &
-                data_in_to_device(30) &
-   data_in_to_device(14);
-   data_delay(15) <=                 data_in_to_device(159) &
-                data_in_to_device(143) &
-                data_in_to_device(127) &
-                data_in_to_device(111) &
-                data_in_to_device(95) &
-                data_in_to_device(79) &
-                data_in_to_device(63) &
-                data_in_to_device(47) &
-                data_in_to_device(31) &
-   data_in_to_device(15);
+gen_dout : for lvds_ch in 0 to sys_w - 1 generate begin
+data_delay(lvds_ch) <= data_in_to_device(((lvds_ch + 1) * num_serial_bits) - 1 downto (lvds_ch * num_serial_bits));
+--DATA_IN_TO_DEVICE((lvds_ch * C_BITCOUNT) + bitnum) <= i_deser_d(lvds_ch)(bitnum);
+end generate gen_dout;
+
+--   data_delay(0) <=                 data_in_to_device(144) &
+--                data_in_to_device(128) &
+--                data_in_to_device(112) &
+--                data_in_to_device(96) &
+--                data_in_to_device(80) &
+--                data_in_to_device(64) &
+--                data_in_to_device(48) &
+--                data_in_to_device(32) &
+--                data_in_to_device(16) &
+--   data_in_to_device(0);
+--   data_delay(1) <=                 data_in_to_device(145) &
+--                data_in_to_device(129) &
+--                data_in_to_device(113) &
+--                data_in_to_device(97) &
+--                data_in_to_device(81) &
+--                data_in_to_device(65) &
+--                data_in_to_device(49) &
+--                data_in_to_device(33) &
+--                data_in_to_device(17) &
+--   data_in_to_device(1);
+--   data_delay(2) <=                 data_in_to_device(146) &
+--                data_in_to_device(130) &
+--                data_in_to_device(114) &
+--                data_in_to_device(98) &
+--                data_in_to_device(82) &
+--                data_in_to_device(66) &
+--                data_in_to_device(50) &
+--                data_in_to_device(34) &
+--                data_in_to_device(18) &
+--   data_in_to_device(2);
+--   data_delay(3) <=                 data_in_to_device(147) &
+--                data_in_to_device(131) &
+--                data_in_to_device(115) &
+--                data_in_to_device(99) &
+--                data_in_to_device(83) &
+--                data_in_to_device(67) &
+--                data_in_to_device(51) &
+--                data_in_to_device(35) &
+--                data_in_to_device(19) &
+--   data_in_to_device(3);
+--   data_delay(4) <=                 data_in_to_device(148) &
+--                data_in_to_device(132) &
+--                data_in_to_device(116) &
+--                data_in_to_device(100) &
+--                data_in_to_device(84) &
+--                data_in_to_device(68) &
+--                data_in_to_device(52) &
+--                data_in_to_device(36) &
+--                data_in_to_device(20) &
+--   data_in_to_device(4);
+--   data_delay(5) <=                 data_in_to_device(149) &
+--                data_in_to_device(133) &
+--                data_in_to_device(117) &
+--                data_in_to_device(101) &
+--                data_in_to_device(85) &
+--                data_in_to_device(69) &
+--                data_in_to_device(53) &
+--                data_in_to_device(37) &
+--                data_in_to_device(21) &
+--   data_in_to_device(5);
+--   data_delay(6) <=                 data_in_to_device(150) &
+--                data_in_to_device(134) &
+--                data_in_to_device(118) &
+--                data_in_to_device(102) &
+--                data_in_to_device(86) &
+--                data_in_to_device(70) &
+--                data_in_to_device(54) &
+--                data_in_to_device(38) &
+--                data_in_to_device(22) &
+--   data_in_to_device(6);
+--   data_delay(7) <=                 data_in_to_device(151) &
+--                data_in_to_device(135) &
+--                data_in_to_device(119) &
+--                data_in_to_device(103) &
+--                data_in_to_device(87) &
+--                data_in_to_device(71) &
+--                data_in_to_device(55) &
+--                data_in_to_device(39) &
+--                data_in_to_device(23) &
+--   data_in_to_device(7);
+--   data_delay(8) <=                 data_in_to_device(152) &
+--                data_in_to_device(136) &
+--                data_in_to_device(120) &
+--                data_in_to_device(104) &
+--                data_in_to_device(88) &
+--                data_in_to_device(72) &
+--                data_in_to_device(56) &
+--                data_in_to_device(40) &
+--                data_in_to_device(24) &
+--   data_in_to_device(8);
+--   data_delay(9) <=                 data_in_to_device(153) &
+--                data_in_to_device(137) &
+--                data_in_to_device(121) &
+--                data_in_to_device(105) &
+--                data_in_to_device(89) &
+--                data_in_to_device(73) &
+--                data_in_to_device(57) &
+--                data_in_to_device(41) &
+--                data_in_to_device(25) &
+--   data_in_to_device(9);
+--   data_delay(10) <=                 data_in_to_device(154) &
+--                data_in_to_device(138) &
+--                data_in_to_device(122) &
+--                data_in_to_device(106) &
+--                data_in_to_device(90) &
+--                data_in_to_device(74) &
+--                data_in_to_device(58) &
+--                data_in_to_device(42) &
+--                data_in_to_device(26) &
+--   data_in_to_device(10);
+--   data_delay(11) <=                 data_in_to_device(155) &
+--                data_in_to_device(139) &
+--                data_in_to_device(123) &
+--                data_in_to_device(107) &
+--                data_in_to_device(91) &
+--                data_in_to_device(75) &
+--                data_in_to_device(59) &
+--                data_in_to_device(43) &
+--                data_in_to_device(27) &
+--   data_in_to_device(11);
+--   data_delay(12) <=                 data_in_to_device(156) &
+--                data_in_to_device(140) &
+--                data_in_to_device(124) &
+--                data_in_to_device(108) &
+--                data_in_to_device(92) &
+--                data_in_to_device(76) &
+--                data_in_to_device(60) &
+--                data_in_to_device(44) &
+--                data_in_to_device(28) &
+--   data_in_to_device(12);
+--   data_delay(13) <=                 data_in_to_device(157) &
+--                data_in_to_device(141) &
+--                data_in_to_device(125) &
+--                data_in_to_device(109) &
+--                data_in_to_device(93) &
+--                data_in_to_device(77) &
+--                data_in_to_device(61) &
+--                data_in_to_device(45) &
+--                data_in_to_device(29) &
+--   data_in_to_device(13);
+--   data_delay(14) <=                 data_in_to_device(158) &
+--                data_in_to_device(142) &
+--                data_in_to_device(126) &
+--                data_in_to_device(110) &
+--                data_in_to_device(94) &
+--                data_in_to_device(78) &
+--                data_in_to_device(62) &
+--                data_in_to_device(46) &
+--                data_in_to_device(30) &
+--   data_in_to_device(14);
+--   data_delay(15) <=                 data_in_to_device(159) &
+--                data_in_to_device(143) &
+--                data_in_to_device(127) &
+--                data_in_to_device(111) &
+--                data_in_to_device(95) &
+--                data_in_to_device(79) &
+--                data_in_to_device(63) &
+--                data_in_to_device(47) &
+--                data_in_to_device(31) &
+--   data_in_to_device(15);
 
    process (clk_div_out) begin
    if (clk_div_out='1' and clk_div_out'event) then

@@ -82,13 +82,9 @@ signal in_delay_tap_out_int      : loadarr := (( others => (others => '0')));
 signal ce_out_uc                 : std_logic;
 signal inc_out_uc                : std_logic;
 signal regrst_out_uc             : std_logic;
-constant num_serial_bits         : integer := dev_w/sys_w;
-type serdarr is array (0 to 13) of std_logic_vector(sys_w-1 downto 0);
--- Array to use intermediately from the serdes to the internal
---  devices. bus "0" is the leftmost bus
--- * fills in starting with 0
-signal iserdes_q                 : serdarr := (( others => (others => '0')));
-signal serdesstrobe              : std_logic;
+constant C_BITCOUNT              : integer := dev_w/sys_w;
+type TDeserData is array (0 to sys_w-1) of std_logic_vector(13 downto 0);
+signal i_deser_d                 : TDeserData := (( others => (others => '0')));
 signal icascade1                 : std_logic_vector(sys_w-1 downto 0);
 signal icascade2                 : std_logic_vector(sys_w-1 downto 0);
 signal i_io_reset                : std_logic;
@@ -102,6 +98,7 @@ begin
 in_delay_ce <= IN_DELAY_DATA_CE;
 in_delay_inc_dec <= IN_DELAY_DATA_INC;
 gen : for i in 0 to sys_w - 1 generate
+begin
 in_delay_tap_in_int(i) <= IN_DELAY_TAP_IN(5*(i + 1) -1 downto 5*(i));
 IN_DELAY_TAP_OUT(5*(i + 1) -1 downto 5*(i)) <= in_delay_tap_out_int(i);
 end generate;
@@ -111,13 +108,13 @@ CLK_DIV_OUT <= clk_div;
 m_clk_gen : deser_clock_gen
 generic map(
 CLKIN_PERIOD    => 3.225  , -- clock period (ns) of input clock on clkin_p
-MMCM_MODE       => 1      , -- Parameter to set multiplier for MMCM either 1 or 2 to get VCO in correct operating range. 1 multiplies clock by 7, 2 multiplies clock by 14
-MMCM_MODE_REAL  => 1.000  , -- Parameter to set multiplier for MMCM either 1 or 2 to get VCO in correct operating range. 1 multiplies clock by 7, 2 multiplies clock by 14
+MMCM_MODE       => 1      ,
+MMCM_MODE_REAL  => 1.000  ,
 TX_CLOCK        => "BUF_G", -- Parameter to set transmission clock buffer type, BUFIO, BUF_H, BUF_G
 INTER_CLOCK     => "BUF_G", -- Parameter to set intermediate clock buffer type, BUFR, BUF_H, BUF_G
 PIXEL_CLOCK     => "BUF_G", -- Parameter to set final clock buffer type, BUF_R, BUF_H, BUF_G
-USE_PLL         => FALSE  , -- Parameter to enable PLL use rather than MMCM use, note, PLL does not support BUFIO and BUFR
-DIFF_TERM       => TRUE     -- Enable or disable internal differential termination
+USE_PLL         => FALSE  ,
+DIFF_TERM       => TRUE     -- differential termination on CLK_IN_P/CLK_IN_N
 )
 port map(
 reset     => CLK_RESET,
@@ -192,16 +189,16 @@ OFB_USED          => "FALSE",
 IOBDELAY          => "IFD",                    -- Use input at DDLY to output the data on Q1-Q6
 SERDES_MODE       => "MASTER")
 port map (
-Q1                => iserdes_q(0)(lvds_ch),
-Q2                => iserdes_q(1)(lvds_ch),
-Q3                => iserdes_q(2)(lvds_ch),
-Q4                => iserdes_q(3)(lvds_ch),
-Q5                => iserdes_q(4)(lvds_ch),
-Q6                => iserdes_q(5)(lvds_ch),
-Q7                => iserdes_q(6)(lvds_ch),
-Q8                => iserdes_q(7)(lvds_ch),
-SHIFTOUT1         => icascade1(lvds_ch),       -- Cascade connection to Slave ISERDES
-SHIFTOUT2         => icascade2(lvds_ch),       -- Cascade connection to Slave ISERDES
+Q1                => i_deser_d(lvds_ch)(0),
+Q2                => i_deser_d(lvds_ch)(1),
+Q3                => i_deser_d(lvds_ch)(2),
+Q4                => i_deser_d(lvds_ch)(3),
+Q5                => i_deser_d(lvds_ch)(4),
+Q6                => i_deser_d(lvds_ch)(5),
+Q7                => i_deser_d(lvds_ch)(6),
+Q8                => i_deser_d(lvds_ch)(7),
+SHIFTOUT1         => icascade1(lvds_ch),       -- Cascade connection to Slave
+SHIFTOUT2         => icascade2(lvds_ch),       -- Cascade connection to Slave
 BITSLIP           => BITSLIP,                  -- 1-bit Invoke Bitslip. This can be used with any
                                                -- DATA_WIDTH, cascaded or not.
 CE1               => i_clk_en,
@@ -238,16 +235,16 @@ SERDES_MODE       => "SLAVE")
 port map (
 Q1                => open,
 Q2                => open,
-Q3                => iserdes_q(8)(lvds_ch),
-Q4                => iserdes_q(9)(lvds_ch),
-Q5                => iserdes_q(10)(lvds_ch),
-Q6                => iserdes_q(11)(lvds_ch),
-Q7                => iserdes_q(12)(lvds_ch),
-Q8                => iserdes_q(13)(lvds_ch),
+Q3                => i_deser_d(lvds_ch)(8) ,
+Q4                => i_deser_d(lvds_ch)(9) ,
+Q5                => i_deser_d(lvds_ch)(10),
+Q6                => i_deser_d(lvds_ch)(11),
+Q7                => i_deser_d(lvds_ch)(12),
+Q8                => i_deser_d(lvds_ch)(13),
 SHIFTOUT1         => open,
 SHIFTOUT2         => open,
-SHIFTIN1          => icascade1(lvds_ch),       -- Cascade connections from Master ISERDES
-SHIFTIN2          => icascade2(lvds_ch),       -- Cascade connections from Master ISERDES
+SHIFTIN1          => icascade1(lvds_ch),       -- Cascade connections from Master
+SHIFTIN2          => icascade2(lvds_ch),       -- Cascade connections from Master
 BITSLIP           => BITSLIP,                  -- 1-bit Invoke Bitslip. This can be used with any
                                                -- DATA_WIDTH, cascaded or not.
 CE1               => i_clk_en,
@@ -267,20 +264,14 @@ OCLK              => '0',
 OCLKB             => '0',
 O                 => open);                    -- unregistered output of ISERDESE1
 
--- Concatenate the serdes outputs together. Keep the timesliced
---   bits together, and placing the earliest bits on the right
---   ie, if data comes in 0, 1, 2, 3, 4, 5, 6, 7, ...
---       the output will be 3210, 7654, ...
--------------------------------------------------------------
-in_slices: for slice_count in 0 to num_serial_bits-1 generate begin
--- This places the first data in time on the right
-DATA_IN_TO_DEVICE(slice_count*sys_w+sys_w-1 downto slice_count*sys_w) <=
-  iserdes_q(num_serial_bits-slice_count-1);
--- To place the first data in time on the left, use the
---   following code, instead
--- DATA_IN_TO_DEVICE(slice_count*sys_w+sys_w-1 downto sys_w) <=
---   iserdes_q(slice_count);
-end generate in_slices;
+
+gen_dout : for bitnum in 0 to C_BITCOUNT - 1 generate
+begin
+
+DATA_IN_TO_DEVICE((lvds_ch * C_BITCOUNT) + bitnum) <= i_deser_d(lvds_ch)(C_BITCOUNT - bitnum - 1);
+--DATA_IN_TO_DEVICE((lvds_ch * C_BITCOUNT) + bitnum) <= i_deser_d(lvds_ch)(bitnum);
+
+end generate gen_dout;
 
 end generate gen_lvds_ch;
 
