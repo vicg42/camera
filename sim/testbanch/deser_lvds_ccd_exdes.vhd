@@ -93,8 +93,8 @@ end component;
 
    signal data_out_from_device : std_logic_vector(dev_w-1 downto 0);
 
-   type serdarr is array (0 to 13) of std_logic_vector(sys_w-1 downto 0);
---   type serdarr is array (0 to sys_w-1) of std_logic_vector(13 downto 0);
+--   type serdarr is array (0 to 13) of std_logic_vector(sys_w-1 downto 0);
+   type serdarr is array (0 to sys_w-1) of std_logic_vector(13 downto 0);
    signal oserdes_d                : serdarr := (( others => (others => '0')));
    signal ocascade_ms_d            : std_logic_vector(sys_w-1 downto 0);
    signal ocascade_ms_t            : std_logic_vector(sys_w-1 downto 0);
@@ -405,11 +405,9 @@ end process;
 
 
 
-assign:for assg in 0 to num_serial_bits-1 generate begin
-pinsss:for pinsss in 0 to sys_w-1 generate begin
-   data_out_from_device(pinsss+sys_w*assg) <= count_out(assg);
+pinsss:for pin_count in 0 to sys_w-1 generate begin
+   data_out_from_device(((pin_count + 1) * num_serial_bits) - 1 downto (pin_count * num_serial_bits)) <= count_out;
 end generate pinsss;
-end generate assign;
 
 gen_dout : for lvds_ch in 0 to sys_w - 1 generate begin
 data_delay(lvds_ch) <= data_in_to_device(((lvds_ch + 1) * num_serial_bits) - 1 downto (lvds_ch * num_serial_bits));
@@ -829,14 +827,14 @@ end generate gen_dout;
     -- commenting as synth gives error
          SERDES_MODE    => "MASTER")
        port map (
-         D1             => oserdes_d(13)(pin_count),
-         D2             => oserdes_d(12)(pin_count),
-         D3             => oserdes_d(11)(pin_count),
-         D4             => oserdes_d(10)(pin_count),
-         D5             => oserdes_d(9)(pin_count),
-         D6             => oserdes_d(8)(pin_count),
-         D7             => oserdes_d(7)(pin_count),
-         D8             => oserdes_d(6)(pin_count),
+         D1             => oserdes_d(pin_count)(13),
+         D2             => oserdes_d(pin_count)(12),
+         D3             => oserdes_d(pin_count)(11),
+         D4             => oserdes_d(pin_count)(10),
+         D5             => oserdes_d(pin_count)(9) ,
+         D6             => oserdes_d(pin_count)(8) ,
+         D7             => oserdes_d(pin_count)(7) ,
+         D8             => oserdes_d(pin_count)(6) ,
          T1             => '0',
          T2             => '0',
          T3             => '0',
@@ -872,12 +870,12 @@ end generate gen_dout;
        port map (
          D1             => '0',
          D2             => '0',
-         D3             => oserdes_d(5)(pin_count),
-         D4             => oserdes_d(4)(pin_count),
-         D5             => oserdes_d(3)(pin_count),
-         D6             => oserdes_d(2)(pin_count),
-         D7             => oserdes_d(1)(pin_count),
-         D8             => oserdes_d(0)(pin_count),
+         D3             => oserdes_d(pin_count)(5),
+         D4             => oserdes_d(pin_count)(4),
+         D5             => oserdes_d(pin_count)(3),
+         D6             => oserdes_d(pin_count)(2),
+         D7             => oserdes_d(pin_count)(1),
+         D8             => oserdes_d(pin_count)(0),
          T1             => '0',
          T2             => '0',
          T3             => '0',
@@ -905,13 +903,10 @@ end generate gen_dout;
      --       the output will be 3210, 7654, ...
      -------------------------------------------------------------
     out_slices: for slice_count in 0 to num_serial_bits-1 generate begin
-        -- This places the first data in time on the right
-        oserdes_d(14-slice_count-1) <=
-           data_out_from_device(slice_count*sys_w+sys_w-1 downto slice_count*sys_w);
-        -- To place the first data in time on the left, use the
-        --   following code, instead
-        -- oserdes_d(slice_count) <=
-        --    data_out_from_device(slice_count*sys_w+sys_w-1 downto slice_count*sys_w);
+
+        oserdes_d(pin_count)(14 - slice_count - 1) <=
+           data_out_from_device((pin_count * num_serial_bits) + slice_count);
+
      end generate out_slices;
   end generate pins;
 
