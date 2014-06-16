@@ -90,6 +90,7 @@ signal i_video_sync     : std_logic_vector(G_BIT_COUNT - 1 downto 0);
 signal i_pattern_det_en : std_logic;
 signal i_bitslip_en     : std_logic;
 signal i_sync_tr_det    : std_logic;
+signal i_sync_tr_det_cnt: std_logic_vector(3 downto 0);
 signal i_bitslip        : std_logic;
 signal i_bitcnt         : std_logic_vector(2 downto 0);
 
@@ -364,16 +365,22 @@ if rising_edge(clk_div) then
     i_video_vs <= '0';
     i_video_hs <= '0';
     i_video_den <= '0';
+    i_sync_tr_det_cnt <= (others => '0');
 
   else
     if (i_pattern_det_en = '1') then
       if i_sync_tr_det = '0' then
---          if (i_video_sync = "1011010011") then --
         if (i_video_sync = CONV_STD_LOGIC_VECTOR(C_CCD_CHSYNC_TRAINING,
                                                         i_video_sync'length)) then
           i_bitslip_en <= '0';
-          i_sync_tr_det <= '1';
+
+          if i_sync_tr_det_cnt(3) = '1' then
+            i_sync_tr_det <= '1';
+          else
+            i_sync_tr_det_cnt <= i_sync_tr_det_cnt + 1;
+          end if;
         else
+          i_sync_tr_det_cnt <= (others => '0');
           i_bitslip_en <= '1';
           i_sync_tr_det <= '0';
         end if;

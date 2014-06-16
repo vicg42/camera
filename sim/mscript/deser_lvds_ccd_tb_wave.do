@@ -5,7 +5,7 @@ add wave -noupdate -radix unsigned /deser_lvds_ccd_tb/dut/dev_w
 add wave -noupdate /deser_lvds_ccd_tb/io_reset
 add wave -noupdate /deser_lvds_ccd_tb/clk_reset
 add wave -noupdate -divider TX
-add wave -noupdate -radix binary /deser_lvds_ccd_tb/dut/pat_out
+add wave -noupdate -radix hexadecimal /deser_lvds_ccd_tb/dut/pat_out
 add wave -noupdate /deser_lvds_ccd_tb/dut/count_out1
 add wave -noupdate /deser_lvds_ccd_tb/dut/count_out2
 add wave -noupdate /deser_lvds_ccd_tb/dut/count_out
@@ -29,13 +29,14 @@ add wave -noupdate /deser_lvds_ccd_tb/dut/m_ccd/m_deser/sr_sync_rst
 add wave -noupdate /deser_lvds_ccd_tb/dut/m_ccd/m_deser/i_mmcm_lckd
 add wave -noupdate /deser_lvds_ccd_tb/dut/m_ccd/m_deser/i_idelayctrl_rdy
 add wave -noupdate /deser_lvds_ccd_tb/dut/m_ccd/m_deser/i_deser_rdy
-add wave -noupdate /deser_lvds_ccd_tb/dut/m_ccd/m_deser/i_video_d
-add wave -noupdate /deser_lvds_ccd_tb/dut/m_ccd/m_deser/i_video_sync
+add wave -noupdate -radix binary /deser_lvds_ccd_tb/dut/m_ccd/m_deser/i_video_d
+add wave -noupdate -radix hexadecimal /deser_lvds_ccd_tb/dut/m_ccd/m_deser/i_video_sync
 add wave -noupdate /deser_lvds_ccd_tb/dut/m_ccd/m_deser/i_pattern_det_en
 add wave -noupdate /deser_lvds_ccd_tb/dut/m_ccd/m_deser/i_bitslip_en
 add wave -noupdate /deser_lvds_ccd_tb/dut/m_ccd/m_deser/i_bitcnt
 add wave -noupdate /deser_lvds_ccd_tb/dut/m_ccd/m_deser/i_bitslip
 add wave -noupdate /deser_lvds_ccd_tb/dut/m_ccd/m_deser/i_sync_tr_det
+add wave -noupdate /deser_lvds_ccd_tb/dut/m_ccd/m_deser/i_sync_tr_det_cnt
 add wave -noupdate /deser_lvds_ccd_tb/dut/m_ccd/m_deser/i_video_vs
 add wave -noupdate /deser_lvds_ccd_tb/dut/m_ccd/m_deser/i_video_hs
 add wave -noupdate /deser_lvds_ccd_tb/dut/m_ccd/m_deser/i_video_den

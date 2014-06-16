@@ -741,7 +741,7 @@ end generate gen_dout;
       (data_delay(1) = pat_out) and
       (data_delay(0) = pat_out)) then
           bitslip_int <= '0';
-          equal <= '1';
+          equal <= '0';
         else
           bitslip_int <= '1';
           equal <= '0';
