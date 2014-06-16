@@ -379,11 +379,11 @@ begin
    if (clk_div_in='1' and clk_div_in'event) then
      if (rst_sync_int6_d = '1') then
        count_out1 <= (others => '0');
-       pat_out <= "1011010011";
+       pat_out <= CONV_STD_LOGIC_VECTOR(C_CCD_CHSYNC_TRAINING, pat_out'length);-- "1011010011";
        count_out1 <= (others => '0');
      elsif locked='1' then
      if equal1='0' then
-      pat_out <= "1011010011";
+      pat_out <= CONV_STD_LOGIC_VECTOR(C_CCD_CHSYNC_TRAINING, pat_out'length);--"1011010011";
        count_out1 <= (others => '0');
     else
        count_out1 <= count_out1 + 1;
