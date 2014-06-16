@@ -15,8 +15,6 @@ use work.prj_cfg.all;
 
 entity deser_lvds_ccd is
 generic(
---G_LVDS_CH_COUNT : integer := 1;
---G_BIT_COUNT : integer := 8;
 sys_w       : integer := 16; -- width of the data for the system
 dev_w       : integer := 160 -- width of the data for the device
 );
