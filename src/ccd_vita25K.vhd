@@ -70,7 +70,7 @@ BITSLIP             : in    std_logic; -- Bitslip module is enabled in NETWORKIN
 -- Clock and reset signals
 CLK_IN_P            : in    std_logic;   -- Differential fast clock from IOB
 CLK_IN_N            : in    std_logic;
-CLK_DIV_OUT         : out   std_logic;--_vector(1 downto 0);   -- Slow clock output
+CLK_DIV_OUT         : out   std_logic;   -- Slow clock output
 CLK_RESET           : in    std_logic;   -- Reset signal for Clock circuit
 IO_RESET            : in    std_logic    -- Reset signal for IO circuit
 );
@@ -116,8 +116,8 @@ I  => p_in_ccdclk
 
 m_lvds_in : deser_lvds_ccd
 generic map (
-sys_w  => C_PCFG_CCD_LVDS_COUNT, -- width of the data for the system
-dev_w  => (C_PCFG_CCD_LVDS_COUNT * C_PCFG_CCD_BIT_PER_PIXEL) -- width of the data for the device
+sys_w  => C_PCFG_CCD_LVDS_COUNT,
+dev_w  => (C_PCFG_CCD_LVDS_COUNT * C_PCFG_CCD_BIT_PER_PIXEL)
 )
 port map (
 -- From the system into the device
@@ -131,7 +131,7 @@ IN_DELAY_DATA_CE    => i_delay_data_ce,
 IN_DELAY_DATA_INC   => i_delay_data_inc,
 IN_DELAY_TAP_IN     => i_delay_tap_in,
 IN_DELAY_TAP_OUT    => i_delay_tap_out,
-DELAY_LOCKED        => i_idelayctrl_rdy,--: out   std_logic; -- Locked signal from IDELAYCTRL
+DELAY_LOCKED        => i_idelayctrl_rdy,
 REF_CLOCK           => p_in_refclk,
 BITSLIP             => i_bitslip,
 
