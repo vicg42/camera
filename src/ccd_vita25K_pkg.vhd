@@ -17,10 +17,11 @@ use work.prj_cfg.all;
 
 package ccd_vita25K_pkg is
 
-constant C_CCD_CHSYNC_TRAINING : integer := 16#3A6#;--
-constant C_CCD_CHSYNC_BLACKPIX : integer := 16#015#;--
-constant C_CCD_CHSYNC_CRC      : integer := 16#059#;--
-constant C_CCD_CHSYNC_IMAGE    : integer := 16#035#;--
+--10Bit per pix
+constant C_CCD_CHSYNC_TRAINING : integer := 16#3A6#;
+constant C_CCD_CHSYNC_BLACKPIX : integer := 16#015#;
+constant C_CCD_CHSYNC_CRC      : integer := 16#059#;
+constant C_CCD_CHSYNC_IMAGE    : integer := 16#035#;
 constant C_CCD_CHSYNC_FS       : integer := 16#2AA#;-- 10_1|010_1010
 constant C_CCD_CHSYNC_FE       : integer := 16#32A#;-- 11_0|010_1010
 constant C_CCD_CHSYNC_LS       : integer := 16#3AA#;-- 00_1|010_1010
