@@ -87,9 +87,6 @@ signal i_deser_d_clk    : std_logic;--_vector(1 downto 0);
 signal i_deser_d        : std_logic_vector((C_PCFG_CCD_LVDS_COUNT
                                               * C_PCFG_CCD_BIT_PER_PIXEL) - 1 downto 0);
 
---signal sr_deser_d        : std_logic_vector((C_PCFG_CCD_LVDS_COUNT
---                                              * C_PCFG_CCD_BIT_PER_PIXEL) - 1 downto 0);
-
 signal i_video_d        : std_logic_vector((C_PCFG_CCD_DATA_LINE_COUNT
                                               * C_PCFG_CCD_BIT_PER_PIXEL) - 1 downto 0);
 
@@ -164,22 +161,3 @@ p_out_video_clk <= '0';
 
 --END MAIN
 end architecture;
-
---process(i_deser_d_clk(0))
---begin
---  if rising_edge(i_deser_d_clk(0)) then
---    sr_deser_d((8 * C_PCFG_CCD_BIT_PER_PIXEL) - 1 downto 0)
---        <= i_deser_d((8 * C_PCFG_CCD_BIT_PER_PIXEL) - 1 downto 0);
---  end if;
---end process;
---
---process(i_deser_d_clk(1))
---begin
---  if rising_edge(i_deser_d_clk(1)) then
---    sr_deser_d((C_PCFG_CCD_LVDS_COUNT * C_PCFG_CCD_BIT_PER_PIXEL) - 1
---                   downto (8 * C_PCFG_CCD_BIT_PER_PIXEL))
---
---                   <= i_deser_d((C_PCFG_CCD_LVDS_COUNT * C_PCFG_CCD_BIT_PER_PIXEL) - 1
---                                   downto (8 * C_PCFG_CCD_BIT_PER_PIXEL));
---  end if;
---end process;
