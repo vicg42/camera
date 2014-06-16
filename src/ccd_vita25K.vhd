@@ -83,7 +83,7 @@ signal i_delay_data_inc : std_logic_vector(C_PCFG_CCD_LVDS_COUNT - 1 downto 0);
 signal i_idelayctrl_rdy : std_logic;
 
 signal i_bitslip        : std_logic;
-signal i_deser_d_clk    : std_logic;--_vector(1 downto 0);
+signal i_deser_d_clk    : std_logic;
 signal i_deser_d        : std_logic_vector((C_PCFG_CCD_LVDS_COUNT
                                               * C_PCFG_CCD_BIT_PER_PIXEL) - 1 downto 0);
 
