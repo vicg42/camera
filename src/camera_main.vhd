@@ -132,8 +132,8 @@ p_in_rst    => i_rst
 --  end if;
 --end process;
 
-gen_tp : for i in 0 to (C_PCFG_CCD_DATA_LINE_COUNT - 2) generate
-pin_out_TP(i) <= OR_reduce(i_video_d((C_PCFG_CCD_BIT_PER_PIXEL * (i + 1)) - 1 downto (C_PCFG_CCD_BIT_PER_PIXEL * i)));
+gen_tp : for i in 1 to (C_PCFG_CCD_LVDS_COUNT - 1) generate
+pin_out_TP(i - 1) <= OR_reduce(i_video_d((C_PCFG_CCD_BIT_PER_PIXEL * (i + 1)) - 1 downto (C_PCFG_CCD_BIT_PER_PIXEL * i)));
 end generate;
 
 pin_out_syn <= i_video_den or i_video_hs or i_video_vs;
