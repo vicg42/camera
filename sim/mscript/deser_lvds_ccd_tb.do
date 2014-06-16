@@ -3,6 +3,8 @@ set work work
 vlib work
 
 # compile all of the files
+vcom -work work ../../src/prj_cfg.vhd
+vcom -work work ../../src/ccd_vita25K_pkg.vhd
 vcom -work work ../../src/deser_clock_gen.vhd
 vcom -work work ../../src/deser_lvds_ccd.vhd
 #vcom -work work ../../ise/core_gen/deser_lvds_ccd.vhd

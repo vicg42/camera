@@ -9,8 +9,14 @@ use ieee.numeric_std.all;
 library unisim;
 use unisim.vcomponents.all;
 
+library work;
+use work.ccd_vita25K_pkg.all;
+use work.prj_cfg.all;
+
 entity deser_lvds_ccd is
 generic(
+--G_LVDS_CH_COUNT : integer := 1;
+--G_BIT_COUNT : integer := 8;
 sys_w       : integer := 16; -- width of the data for the system
 dev_w       : integer := 160 -- width of the data for the device
 );
@@ -92,6 +98,21 @@ signal i_mmcm_lckd               : std_logic;
 
 attribute IODELAY_GROUP : string;
 attribute IODELAY_GROUP of delayctrl : label is "deser_lvds_ccd_group";
+
+signal i_deser_dout     : std_logic_vector(dev_w-1 downto 0);
+
+signal i_sync           : std_logic_vector(C_BITCOUNT - 1 downto 0);
+
+signal i_pattern_det_en : std_logic;
+signal i_bitslip_en     : std_logic;
+signal i_sync_tr_det    : std_logic;
+signal i_bitslip        : std_logic;
+signal i_bitcnt         : std_logic_vector(2 downto 0);
+
+signal i_video_vs       : std_logic;
+signal i_video_hs       : std_logic;
+signal i_video_d_en     : std_logic;
+
 
 begin
 
@@ -199,7 +220,7 @@ Q7                => i_deser_d(lvds_ch)(6),
 Q8                => i_deser_d(lvds_ch)(7),
 SHIFTOUT1         => icascade1(lvds_ch),       -- Cascade connection to Slave
 SHIFTOUT2         => icascade2(lvds_ch),       -- Cascade connection to Slave
-BITSLIP           => BITSLIP,                  -- 1-bit Invoke Bitslip. This can be used with any
+BITSLIP           => i_bitslip,                  -- 1-bit Invoke Bitslip. This can be used with any
                                                -- DATA_WIDTH, cascaded or not.
 CE1               => i_clk_en,
 CE2               => i_clk_en,
@@ -245,7 +266,7 @@ SHIFTOUT1         => open,
 SHIFTOUT2         => open,
 SHIFTIN1          => icascade1(lvds_ch),       -- Cascade connections from Master
 SHIFTIN2          => icascade2(lvds_ch),       -- Cascade connections from Master
-BITSLIP           => BITSLIP,                  -- 1-bit Invoke Bitslip. This can be used with any
+BITSLIP           => i_bitslip,                  -- 1-bit Invoke Bitslip. This can be used with any
                                                -- DATA_WIDTH, cascaded or not.
 CE1               => i_clk_en,
 CE2               => i_clk_en,
@@ -268,12 +289,14 @@ O                 => open);                    -- unregistered output of ISERDES
 gen_dout : for bitnum in 0 to C_BITCOUNT - 1 generate
 begin
 
-DATA_IN_TO_DEVICE((lvds_ch * C_BITCOUNT) + bitnum) <= i_deser_d(lvds_ch)(C_BITCOUNT - bitnum - 1);
---DATA_IN_TO_DEVICE((lvds_ch * C_BITCOUNT) + bitnum) <= i_deser_d(lvds_ch)(bitnum);
+i_deser_dout((lvds_ch * C_BITCOUNT) + bitnum) <= i_deser_d(lvds_ch)(C_BITCOUNT - bitnum - 1);
+--i_deser_dout((lvds_ch * C_BITCOUNT) + bitnum) <= i_deser_d(lvds_ch)(bitnum);
 
 end generate gen_dout;
 
 end generate gen_lvds_ch;
+
+DATA_IN_TO_DEVICE <= i_deser_dout;
 
 
 -- IDELAYCTRL is needed for calibration
@@ -283,6 +306,116 @@ RDY    => DELAY_LOCKED,
 REFCLK => REF_CLOCK,
 RST    => i_io_reset
 );
+
+
+process(clk_div)
+begin
+  if rising_edge(clk_div) then
+    i_sync <= i_deser_dout(C_BITCOUNT - 1 downto 0);
+  end if;
+end process;
+
+process(clk_div)
+begin
+if rising_edge(clk_div) then
+  if i_mmcm_lckd = '0' then
+    i_bitslip <= '0';
+    i_bitcnt <= (others => '0');
+  else
+
+    i_bitcnt <= i_bitcnt + '1';
+
+    if i_bitcnt = (i_bitcnt'range => '1') then
+      if i_bitslip_en = '1' then
+        i_bitslip <= not(i_bitslip);
+      else
+        i_bitslip <= '0';
+      end if;
+    else
+      i_bitslip <= '0';
+    end if;
+  end if;
+end if;
+end process;
+
+process(clk_div)
+begin
+if rising_edge(clk_div) then
+  if (i_mmcm_lckd = '0') then
+    i_pattern_det_en <= '0';
+  else
+     if (i_sync /= (i_sync'range => '0')) then
+       i_pattern_det_en <= '1';
+     end if;
+  end if;
+end if;
+end process;
+
+process(clk_div)
+begin
+if rising_edge(clk_div) then
+  if i_mmcm_lckd = '0' then
+    i_bitslip_en <= '0';
+    i_sync_tr_det <= '0';
+--    i_video_vs <= '0';
+--    i_video_hs <= '0';
+--    i_video_d_en <= '0';
+
+  else
+    if (i_pattern_det_en = '1') then
+      if i_sync_tr_det = '0' then
+--          if (i_sync = "1011010011") then
+        if (i_sync = CONV_STD_LOGIC_VECTOR(C_CCD_CHSYNC_TRAINING,
+                                                        i_sync'length)) then
+          i_bitslip_en <= '0';
+          i_sync_tr_det <= '1';
+        else
+          i_bitslip_en <= '1';
+          i_sync_tr_det <= '0';
+        end if;
+
+      else
+
+        i_bitslip_en <= '0';
+
+--        if (i_sync = CONV_STD_LOGIC_VECTOR(C_CCD_CHSYNC_FS, i_sync'length)) then
+--          i_video_vs <= '1';
+--          i_video_hs <= '0';
+--          i_video_d_en <= '0';
+--
+--        elsif (i_sync = CONV_STD_LOGIC_VECTOR(C_CCD_CHSYNC_FE, i_sync'length)) then
+--          i_video_vs <= '0';
+--          i_video_hs <= '0';
+--          i_video_d_en <= '0';
+--
+--        elsif (i_sync = CONV_STD_LOGIC_VECTOR(C_CCD_CHSYNC_LS, i_sync'length)) then
+--          i_video_vs <= '0';
+--          i_video_hs <= '1';
+--          i_video_d_en <= '0';
+--
+--        elsif (i_sync = CONV_STD_LOGIC_VECTOR(C_CCD_CHSYNC_LE, i_sync'length)) then
+--          i_video_vs <= '0';
+--          i_video_hs <= '0';
+--          i_video_d_en <= '0';
+--
+--        elsif (i_sync = CONV_STD_LOGIC_VECTOR(C_CCD_CHSYNC_IMAGE, i_sync'length)) then
+--          i_video_vs <= '0';
+--          i_video_d_en <= '1';
+--
+--        else
+--          i_video_vs <= '0';
+--          i_video_hs <= '0';
+--          i_video_d_en <= '0';
+--
+--        end if;
+
+      end if;
+    else
+      i_bitslip_en <= '0';
+    end if;
+  end if;
+end if;
+end process;
 
 end xilinx;
 
