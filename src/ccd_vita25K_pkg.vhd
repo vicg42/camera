@@ -18,7 +18,7 @@ use work.prj_cfg.all;
 package ccd_vita25K_pkg is
 
 --10Bit per pix
-constant C_CCD_CHSYNC_TRAINING : integer := 16#3A6#;
+constant C_CCD_CHSYNC_TRAINING : integer := 16#2D3#;--16#3A6#;--10_1101_0011"
 constant C_CCD_CHSYNC_BLACKPIX : integer := 16#015#;
 constant C_CCD_CHSYNC_CRC      : integer := 16#059#;
 constant C_CCD_CHSYNC_IMAGE    : integer := 16#035#;

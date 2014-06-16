@@ -17,10 +17,6 @@ add wave -noupdate /deser_lvds_ccd_tb/dut/equal
 add wave -noupdate /deser_lvds_ccd_tb/dut/start_check
 add wave -noupdate -radix hexadecimal /deser_lvds_ccd_tb/dut/bit_count
 add wave -noupdate /deser_lvds_ccd_tb/dut/bitslip
-add wave -noupdate /deser_lvds_ccd_tb/dut/io_inst/DATA_IN_FROM_PINS_P
-add wave -noupdate /deser_lvds_ccd_tb/dut/io_inst/DATA_IN_FROM_PINS_N
-add wave -noupdate /deser_lvds_ccd_tb/dut/io_inst/CLK_IN_P
-add wave -noupdate /deser_lvds_ccd_tb/dut/io_inst/CLK_IN_N
 add wave -noupdate -divider RX
 add wave -noupdate /deser_lvds_ccd_tb/dut/clk_div_out
 add wave -noupdate /deser_lvds_ccd_tb/dut/pattern_completed
@@ -29,9 +25,22 @@ add wave -noupdate -radix binary /deser_lvds_ccd_tb/dut/data_delay
 add wave -noupdate /deser_lvds_ccd_tb/dut/equal
 add wave -noupdate /deser_lvds_ccd_tb/dut/start_count
 add wave -noupdate /deser_lvds_ccd_tb/dut/local_counter
+add wave -noupdate /deser_lvds_ccd_tb/dut/m_ccd/m_deser/sr_sync_rst
+add wave -noupdate /deser_lvds_ccd_tb/dut/m_ccd/m_deser/i_mmcm_lckd
+add wave -noupdate /deser_lvds_ccd_tb/dut/m_ccd/m_deser/i_idelayctrl_rdy
+add wave -noupdate /deser_lvds_ccd_tb/dut/m_ccd/m_deser/i_deser_rdy
+add wave -noupdate /deser_lvds_ccd_tb/dut/m_ccd/m_deser/i_video_d
+add wave -noupdate /deser_lvds_ccd_tb/dut/m_ccd/m_deser/i_video_sync
+add wave -noupdate /deser_lvds_ccd_tb/dut/m_ccd/m_deser/i_pattern_det_en
+add wave -noupdate /deser_lvds_ccd_tb/dut/m_ccd/m_deser/i_bitslip_en
+add wave -noupdate /deser_lvds_ccd_tb/dut/m_ccd/m_deser/i_bitcnt
+add wave -noupdate /deser_lvds_ccd_tb/dut/m_ccd/m_deser/i_bitslip
+add wave -noupdate /deser_lvds_ccd_tb/dut/m_ccd/m_deser/i_sync_tr_det
+add wave -noupdate /deser_lvds_ccd_tb/dut/m_ccd/m_deser/i_video_vs
+add wave -noupdate /deser_lvds_ccd_tb/dut/m_ccd/m_deser/i_video_hs
+add wave -noupdate /deser_lvds_ccd_tb/dut/m_ccd/m_deser/i_video_den
 add wave -noupdate -divider {New Divider}
 add wave -noupdate /deser_lvds_ccd_tb/dut/IO_RESET
-add wave -noupdate /deser_lvds_ccd_tb/dut/io_inst/clk_in_int
 add wave -noupdate /deser_lvds_ccd_tb/dut/delay_busy
 add wave -noupdate /deser_lvds_ccd_tb/dut/delay_clk
 add wave -noupdate /deser_lvds_ccd_tb/dut/delay_data_inc
@@ -43,7 +52,7 @@ quietly wave cursor active 0
 configure wave -namecolwidth 230
 configure wave -valuecolwidth 100
 configure wave -justifyvalue left
-configure wave -signalnamewidth 0
+configure wave -signalnamewidth 1
 configure wave -snapdistance 10
 configure wave -datasetprefix 0
 configure wave -rowmargin 4
@@ -54,4 +63,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ns
 update
-WaveRestoreZoom {0 ps} {29400 ns}
+WaveRestoreZoom {0 ps} {11134582 ps}

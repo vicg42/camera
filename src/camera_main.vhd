@@ -63,7 +63,7 @@ p_out_ccd  : out  TCCD_PortOUT;
 p_out_video_vs  : out std_logic;
 p_out_video_hs  : out std_logic;
 p_out_video_den : out std_logic;
-p_out_video_d   : out std_logic_vector((C_PCFG_CCD_DATA_LINE_COUNT
+p_out_video_d   : out std_logic_vector((C_PCFG_CCD_LVDS_COUNT
                                           * C_PCFG_CCD_BIT_PER_PIXEL) - 1 downto 0);
 p_out_video_clk : out std_logic;
 
@@ -75,7 +75,7 @@ end component;
 
 signal i_rst              : std_logic;
 signal g_usrclk           : std_logic_vector(7 downto 0);
-signal i_video_d          : std_logic_vector((C_PCFG_CCD_DATA_LINE_COUNT
+signal i_video_d          : std_logic_vector((C_PCFG_CCD_LVDS_COUNT
                                                * C_PCFG_CCD_BIT_PER_PIXEL) - 1 downto 0);
 signal i_video_d_clk      : std_logic;
 signal i_video_vs         : std_logic;
@@ -132,7 +132,7 @@ p_in_rst    => i_rst
 --  end if;
 --end process;
 
-gen_tp : for i in 0 to (C_PCFG_CCD_DATA_LINE_COUNT - 1) generate
+gen_tp : for i in 0 to (C_PCFG_CCD_DATA_LINE_COUNT - 2) generate
 pin_out_TP(i) <= OR_reduce(i_video_d((C_PCFG_CCD_BIT_PER_PIXEL * (i + 1)) - 1 downto (C_PCFG_CCD_BIT_PER_PIXEL * i)));
 end generate;
 

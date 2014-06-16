@@ -7,6 +7,10 @@ use ieee.std_logic_misc.and_reduce;
 library unisim;
 use unisim.vcomponents.all;
 
+library work;
+use work.ccd_vita25K_pkg.all;
+use work.prj_cfg.all;
+
 entity deser_lvds_ccd_exdes is
 generic (
   -- width of the data for the system
@@ -36,6 +40,26 @@ end deser_lvds_ccd_exdes;
 
 architecture xilinx of deser_lvds_ccd_exdes is
 
+signal p_in_ccd   : TCCD_PortIN;
+
+component ccd_vita25K is
+port(
+p_in_ccd   : in   TCCD_PortIN;
+p_out_ccd  : out  TCCD_PortOUT;
+
+p_out_video_vs  : out std_logic;
+p_out_video_hs  : out std_logic;
+p_out_video_den : out std_logic;
+p_out_video_d   : out std_logic_vector((C_PCFG_CCD_LVDS_COUNT
+                                          * C_PCFG_CCD_BIT_PER_PIXEL) - 1 downto 0);
+p_out_video_clk : out std_logic;
+
+p_in_refclk : in   std_logic;
+p_in_ccdclk : in   std_logic;
+p_in_rst    : in   std_logic
+);
+end component;
+
 component deser_lvds_ccd is
 generic
  (-- width of the data for the system
@@ -60,7 +84,12 @@ port
   BITSLIP                 : in    std_logic;                    -- Bitslip module is enabled in NETWORKING mode
                                                                 -- User should tie it to '0' if not needed
 
+MMCM_LOCKED             : out   std_logic;
+CLK_IN_CCD              : in    std_logic;
+
 -- Clock and reset signals
+CLK_OUT_P               : out   std_logic;                    -- Differential fast clock from IOB
+CLK_OUT_N               : out   std_logic;
   CLK_IN_P                : in    std_logic;                    -- Differential fast clock from IOB
   CLK_IN_N                : in    std_logic;
   CLK_DIV_OUT             : out   std_logic;                    -- Slow clock output
@@ -954,28 +983,59 @@ end generate gen_dout;
              OB         => CLK_TO_PINS_FWD_N,
              I          => clk_fwd_out);
 
-   -- Instantiate the IO design
-   io_inst : deser_lvds_ccd
-   port map
-   (
-    -- From the system into the device
-    DATA_IN_FROM_PINS_P     => DATA_IN_FROM_PINS_P,
-    DATA_IN_FROM_PINS_N     => DATA_IN_FROM_PINS_N,
-    DATA_IN_TO_DEVICE       => data_in_to_device,
+--   -- Instantiate the IO design
+--   io_inst : deser_lvds_ccd
+--   port map
+--   (
+--    -- From the system into the device
+--    DATA_IN_FROM_PINS_P     => DATA_IN_FROM_PINS_P,
+--    DATA_IN_FROM_PINS_N     => DATA_IN_FROM_PINS_N,
+--    DATA_IN_TO_DEVICE       => data_in_to_device,
+--
+--    IN_DELAY_RESET            => '0',
+--    IN_DELAY_DATA_CE          => (others => '0'),
+--    IN_DELAY_DATA_INC         => (others => '0'),
+--    IN_DELAY_TAP_IN           => (others => '0'),
+--    IN_DELAY_TAP_OUT          => open,
+--    DELAY_LOCKED            => DELAY_LOCKED,
+--    REF_CLOCK               => ref_clk_int,
+--    BITSLIP                 => bitslip,              -- This example design does not implement Bitslip
+--
+--MMCM_LOCKED => open,
+--CLK_IN_CCD  => '0',
+--
+---- Clock and reset signals
+--CLK_OUT_P => open,
+--CLK_OUT_N => open,
+--    CLK_IN_P                => CLK_IN_FWD_P,
+--    CLK_IN_N                => CLK_IN_FWD_N,
+--    CLK_DIV_OUT             => clk_div_out,
+--    CLK_RESET               => CLK_RESET,
+--    IO_RESET                => rst_sync_int);
 
-    IN_DELAY_RESET            => '0',
-    IN_DELAY_DATA_CE          => (others => '0'),
-    IN_DELAY_DATA_INC         => (others => '0'),
-    IN_DELAY_TAP_IN           => (others => '0'),
-    IN_DELAY_TAP_OUT          => open,
-    DELAY_LOCKED            => DELAY_LOCKED,
-    REF_CLOCK               => ref_clk_int,
-    BITSLIP                 => bitslip,              -- This example design does not implement Bitslip
+gen : for i in 0 to C_PCFG_CCD_LVDS_COUNT - 1 generate begin
+p_in_ccd.data_p(i) <= DATA_IN_FROM_PINS_P(i);
+p_in_ccd.data_n(i) <= DATA_IN_FROM_PINS_N(i);
+end generate;
+
+p_in_ccd.clk_p <= CLK_IN_FWD_P;
+p_in_ccd.clk_n <= CLK_IN_FWD_N;
+
+m_ccd : ccd_vita25K
+port map(
+p_in_ccd   => p_in_ccd,
+p_out_ccd  => open,
+
+p_out_video_vs  => open,
+p_out_video_hs  => open,
+p_out_video_den => open,
+p_out_video_d   => data_in_to_device,
+p_out_video_clk => clk_div_out,
+
+p_in_refclk => ref_clk_int,
+p_in_ccdclk => '0',
+p_in_rst    => CLK_RESET
+);
 
 
-    CLK_IN_P                => CLK_IN_FWD_P,
-    CLK_IN_N                => CLK_IN_FWD_N,
-    CLK_DIV_OUT             => clk_div_out,
-    CLK_RESET               => CLK_RESET,
-    IO_RESET                => rst_sync_int);
 end xilinx;
