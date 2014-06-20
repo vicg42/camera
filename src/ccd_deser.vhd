@@ -19,14 +19,17 @@ G_LVDS_CH_COUNT : integer := 16;
 G_BIT_COUNT     : integer := 10
 );
 port(
-p_in_ccd        : in    TCCD_PortIN;
-p_out_ccd       : out   TCCD_PortOUT;
+p_in_ccd        : in    TCCD_pinin;
+p_out_ccd       : out   TCCD_pinout;
 
 p_out_video_vs  : out   std_logic;
 p_out_video_hs  : out   std_logic;
 p_out_video_den : out   std_logic;
 p_out_video_d   : out   std_logic_vector((G_LVDS_CH_COUNT * G_BIT_COUNT) - 1 downto 0);
 p_out_video_clk : out   std_logic;
+
+p_out_tst       : out   std_logic_vector(31 downto 0);
+p_in_tst        : in    std_logic_vector(31 downto 0);
 
 p_in_ccdclk     : in    std_logic;
 p_in_refclk     : in    std_logic;

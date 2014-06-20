@@ -43,6 +43,9 @@ architecture xilinx of deser_lvds_ccd_exdes is
 signal p_in_ccd   : TCCD_PortIN;
 
 component ccd_vita25K is
+generic(
+G_SIM : string := "OFF"
+);
 port(
 p_in_ccd   : in   TCCD_PortIN;
 p_out_ccd  : out  TCCD_PortOUT;
@@ -53,6 +56,9 @@ p_out_video_den : out std_logic;
 p_out_video_d   : out std_logic_vector((C_PCFG_CCD_LVDS_COUNT
                                           * C_PCFG_CCD_BIT_PER_PIXEL) - 1 downto 0);
 p_out_video_clk : out std_logic;
+
+p_out_tst       : out   std_logic_vector(31 downto 0);
+p_in_tst        : in    std_logic_vector(31 downto 0);
 
 p_in_refclk : in   std_logic;
 p_in_ccdclk : in   std_logic;
@@ -1022,6 +1028,9 @@ p_in_ccd.clk_p <= CLK_IN_FWD_P;
 p_in_ccd.clk_n <= CLK_IN_FWD_N;
 
 m_ccd : ccd_vita25K
+generic map(
+G_SIM => "ON"
+)
 port map(
 p_in_ccd   => p_in_ccd,
 p_out_ccd  => open,
@@ -1031,6 +1040,9 @@ p_out_video_hs  => open,
 p_out_video_den => open,
 p_out_video_d   => data_in_to_device,
 p_out_video_clk => clk_div_out,
+
+p_out_tst       => open,
+p_in_tst        => (others => '0'),
 
 p_in_refclk => ref_clk_int,
 p_in_ccdclk => '0',

@@ -16,7 +16,7 @@ use ieee.std_logic_1164.all;
 
 package clocks_pkg is
 
-type TRefClkPinIN is record
+type TRefclk_pinin is record
 clk : std_logic_vector(2 downto 0);
 end record;
 

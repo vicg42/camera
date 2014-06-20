@@ -16,10 +16,8 @@ use ieee.std_logic_1164.all;
 
 package prj_cfg is
 
-constant C_PCFG_SIM : string := "OFF";
-
 constant C_PCFG_CCD_BIT_PER_PIXEL : integer := 10;
-constant C_PCFG_CCD_DATA_LINE_COUNT : integer := 32;
+constant C_PCFG_CCD_DATA_LINE_COUNT : integer := 15;
 constant C_PCFG_CCD_SYNC_LINE_COUNT : integer := 1;
 
 constant C_PCFG_CCD_LVDS_COUNT : integer := C_PCFG_CCD_DATA_LINE_COUNT

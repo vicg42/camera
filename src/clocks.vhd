@@ -29,7 +29,7 @@ p_out_rst  : out   std_logic;
 p_out_gclk : out   std_logic_vector(7 downto 0);
 
 --p_out_clk  : out   TRefClkPinOUT;
-p_in_clk   : in    TRefClkPinIN
+p_in_clk   : in    TRefclk_pinin
 );
 end;
 

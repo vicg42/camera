@@ -28,20 +28,26 @@ constant C_CCD_CHSYNC_LS       : integer := 16#3AA#;-- 00_1|010_1010
 constant C_CCD_CHSYNC_LE       : integer := 16#22A#;-- 01_0|010_1010
 
 
-type TCCD_PortIN is record
+type TCCD_pinin is record
 data_p : std_logic_vector(C_PCFG_CCD_LVDS_COUNT - 1 downto 0);
 data_n : std_logic_vector(C_PCFG_CCD_LVDS_COUNT - 1 downto 0);
 
 clk_p : std_logic;
 clk_n : std_logic;
+
+miso  : std_logic;
 end record;
 
-type TCCD_PortOUT is record
+type TCCD_pinout is record
 clk_p : std_logic;
 clk_n : std_logic;
 
 rst_n : std_logic;
 trig  : std_logic;
+
+sck  : std_logic;
+ss_n : std_logic;
+mosi : std_logic;--Master OUT, Slave IN
 end record;
 
 end ccd_vita25K_pkg;
