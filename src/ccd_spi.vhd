@@ -17,6 +17,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 library work;
+use work.ccd_vita25K_pkg.all;
 use work.spi_pkg.all;
 use work.vicg_common_pkg.all;
 
@@ -28,9 +29,9 @@ port(
 p_out_physpi    : out  TSPI_pinout;
 p_in_physpi     : in   TSPI_pinin;
 
-p_in_fifo_dout  : in   std_logic_vector(15 downto 0);
-p_out_fifo_rd   : out  std_logic;
-p_in_fifo_empty : in   std_logic;
+--p_in_fifo_dout  : in   std_logic_vector(15 downto 0);
+--p_out_fifo_rd   : out  std_logic;
+--p_in_fifo_empty : in   std_logic;
 
 p_out_init_done : out  std_logic;
 
@@ -43,31 +44,6 @@ p_in_rst        : in   std_logic
 end;
 
 architecture behavior of ccd_spi is
-
-type TCCD_RegINIT is array (0 to 19) of std_logic_vector(24 downto 0);
-
-constant CI_CCD_REGINIT : TCCD_RegINIT := (
-std_logic_vector(TO_UNSIGNED(10#002#, 9)) & std_logic_vector(TO_UNSIGNED(16#0001#, 16)),
-std_logic_vector(TO_UNSIGNED(10#032#, 9)) & std_logic_vector(TO_UNSIGNED(16#2002#, 16)),
-std_logic_vector(TO_UNSIGNED(10#034#, 9)) & std_logic_vector(TO_UNSIGNED(16#0001#, 16)),
-std_logic_vector(TO_UNSIGNED(10#065#, 9)) & std_logic_vector(TO_UNSIGNED(16#008B#, 16)),
-std_logic_vector(TO_UNSIGNED(10#066#, 9)) & std_logic_vector(TO_UNSIGNED(16#53C6#, 16)),
-std_logic_vector(TO_UNSIGNED(10#067#, 9)) & std_logic_vector(TO_UNSIGNED(16#0844#, 16)),
-std_logic_vector(TO_UNSIGNED(10#068#, 9)) & std_logic_vector(TO_UNSIGNED(16#0086#, 16)),
-std_logic_vector(TO_UNSIGNED(10#128#, 9)) & std_logic_vector(TO_UNSIGNED(16#4520#, 16)),
-std_logic_vector(TO_UNSIGNED(10#204#, 9)) & std_logic_vector(TO_UNSIGNED(16#09E5#, 16)),
-std_logic_vector(TO_UNSIGNED(10#224#, 9)) & std_logic_vector(TO_UNSIGNED(16#3E04#, 16)),
-std_logic_vector(TO_UNSIGNED(10#225#, 9)) & std_logic_vector(TO_UNSIGNED(16#6733#, 16)),
-std_logic_vector(TO_UNSIGNED(10#129#, 9)) & std_logic_vector(TO_UNSIGNED(16#C001#, 16)),
-std_logic_vector(TO_UNSIGNED(10#447#, 9)) & std_logic_vector(TO_UNSIGNED(16#0BF1#, 16)),
-std_logic_vector(TO_UNSIGNED(10#448#, 9)) & std_logic_vector(TO_UNSIGNED(16#0BC3#, 16)),
-std_logic_vector(TO_UNSIGNED(10#032#, 9)) & std_logic_vector(TO_UNSIGNED(16#2003#, 16)),
-std_logic_vector(TO_UNSIGNED(10#064#, 9)) & std_logic_vector(TO_UNSIGNED(16#0001#, 16)),
-std_logic_vector(TO_UNSIGNED(10#040#, 9)) & std_logic_vector(TO_UNSIGNED(16#0003#, 16)),
-std_logic_vector(TO_UNSIGNED(10#048#, 9)) & std_logic_vector(TO_UNSIGNED(16#0001#, 16)),
-std_logic_vector(TO_UNSIGNED(10#112#, 9)) & std_logic_vector(TO_UNSIGNED(16#0007#, 16)),
-std_logic_vector(TO_UNSIGNED(10#192#, 9)) & std_logic_vector(TO_UNSIGNED(16#0000#, 16))  --Reg 192[0]=1 - Start Image Capture CCD
-);
 
 component spi_core is
 generic(
@@ -174,10 +150,10 @@ begin
           --------------------------------
           when S_REG_INIT_SET =>
 
-            for i in 0 to CI_CCD_REGINIT'length - 1 loop
+            for i in 0 to C_CCD_REGINIT'length - 1 loop
               if i_cnt = i then
-                i_adr <= CI_CCD_REGINIT(i)(24 downto 16);
-                i_txd <= CI_CCD_REGINIT(i)(15 downto 0);
+                i_adr <= C_CCD_REGINIT(i)(24 downto 16);
+                i_txd <= C_CCD_REGINIT(i)(15 downto 0);
               end if;
             end loop;
 
@@ -195,7 +171,7 @@ begin
           when S_REG_INIT_DONE =>
 
             if i_busy = '0' then
-              if i_cnt = TO_UNSIGNED(CI_CCD_REGINIT'length - 1, i_cnt'length) then
+              if i_cnt = TO_UNSIGNED(C_CCD_REGINIT'length - 1, i_cnt'length) then
                 i_init_done <= '1';
                 i_fsm_spi_cs <= S_REG_USR;
               else
@@ -221,8 +197,8 @@ end process;
 
 m_spi_core : spi_core
 generic map(
-G_AWIDTH => 9 ,
-G_DWIDTH => 16
+G_AWIDTH => C_CCD_SPI_AWIDTH,
+G_DWIDTH => C_CCD_SPI_DWIDTH
 )
 port map(
 p_in_adr    => i_adr,

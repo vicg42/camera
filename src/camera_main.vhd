@@ -89,6 +89,7 @@ signal i_video_hs         : std_logic;
 signal i_video_den        : std_logic;
 
 signal tst_cnt : std_logic_vector(2 downto 0);
+signal i_tst_out : std_logic_vector(31 downto 0);
 
 
 --MAIN
@@ -123,7 +124,7 @@ p_out_video_den => i_video_den,
 p_out_video_d   => i_video_d,
 p_out_video_clk => i_video_d_clk,
 
-p_out_tst       => open,
+p_out_tst       => i_tst_out,
 p_in_tst        => (others => '0'),
 
 p_in_refclk => g_usrclk(0),
@@ -149,7 +150,7 @@ gen_tp : for i in 1 to (C_PCFG_CCD_LVDS_COUNT - 1) generate
 pin_out_TP(i - 1) <= OR_reduce(i_video_d((C_PCFG_CCD_BIT_PER_PIXEL * (i + 1)) - 1 downto (C_PCFG_CCD_BIT_PER_PIXEL * i)));
 end generate;
 
-pin_out_syn <= i_video_den or i_video_hs or i_video_vs;
+pin_out_syn <= i_video_den or i_video_hs or i_video_vs or OR_reduce(i_tst_out);
 
 --END MAIN
 end architecture;

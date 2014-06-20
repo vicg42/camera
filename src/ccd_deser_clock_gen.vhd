@@ -81,7 +81,7 @@ status(6) <= '1' ;
 -- CLKFBOUT = (CLKIN1/DIVCLK_DIVIDE)
 -- CLKOUTn  = (CLKIN1/DIVCLK_DIVIDE) * CLKFBOUT_MULT_F/CLKOUTn_DIVIDE
 
-tx_mmcm_adv_inst : MMCM_ADV
+tx_mmcm_adv_inst : MMCME2_ADV
 generic map(
 COMPENSATION    => "ZHOLD",      -- "SYSTEM_SYNCHRONOUS", "SOURCE_SYNCHRONOUS", "INTERNAL", "EXTERNAL", "DCM2MMCM", "MMCM2DCM"
 BANDWIDTH       => "OPTIMIZED",  -- "high", "low" or "optimized"

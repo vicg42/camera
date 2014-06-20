@@ -319,7 +319,7 @@ begin
   end if;
 end process;
 
-i_video_sync <= i_deser_dout(G_BIT_COUNT - 1 downto 0);
+i_video_sync <= i_video_d(G_BIT_COUNT - 1 downto 0);
 
 i_deser_rdy <= i_mmcm_lckd and i_idelayctrl_rdy;
 

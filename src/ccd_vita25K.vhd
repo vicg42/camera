@@ -56,9 +56,11 @@ port(
 p_out_physpi    : out  TSPI_pinout;
 p_in_physpi     : in   TSPI_pinin;
 
-p_in_fifo_dout  : in   std_logic_vector(15 downto 0);
-p_out_fifo_rd   : out  std_logic;
-p_in_fifo_empty : in   std_logic;
+--p_in_fifo_dout  : in   std_logic_vector(15 downto 0);
+--p_out_fifo_rd   : out  std_logic;
+--p_in_fifo_empty : in   std_logic;
+
+p_out_init_done : out  std_logic;
 
 p_out_tst       : out   std_logic_vector(31 downto 0);
 p_in_tst        : in    std_logic_vector(31 downto 0);
@@ -99,6 +101,8 @@ signal i_video_d        : std_logic_vector((C_PCFG_CCD_LVDS_COUNT
                                                 * C_PCFG_CCD_BIT_PER_PIXEL) - 1 downto 0);
 signal i_video_clk      : std_logic;
 
+signal i_ccd_init_done  : std_logic;
+
 signal i_ccd_out        : TCCD_pinout;
 signal i_spi_out        : TSPI_pinout;
 signal i_spi_in         : TSPI_pinin;
@@ -116,12 +120,13 @@ signal i_tst_spi_out    : std_logic_vector(31 downto 0);
 begin
 
 p_out_tst(15 downto 0) <= i_tst_deser_out(15 downto 0);
-p_out_tst(31 downto 16) <= i_tst_spi_out(31 downto 16);
+p_out_tst(30 downto 16) <= i_tst_spi_out(30 downto 16);
+p_out_tst(31) <= i_ccd_init_done;
 
 
 p_out_ccd.clk_p <= i_ccd_out.clk_p;
 p_out_ccd.clk_n <= i_ccd_out.clk_n;
---deasert reset ccd  after clock ccd enable > 10us
+--deasert reset ccd after input clock ccd enable > 10us
 p_out_ccd.rst_n <= i_ccd_rst_n;
 p_out_ccd.trig <= '1';
 
@@ -150,7 +155,7 @@ i_ccd_rst <= not i_ccd_rst_n;
 
 
 ---------------------------------------
---Programing internal register of CCD
+--Program internal register of CCD
 ---------------------------------------
 m_spi : ccd_spi
 generic map(
@@ -160,9 +165,11 @@ port map(
 p_out_physpi    => i_spi_out,
 p_in_physpi     => i_spi_in,
 
-p_in_fifo_dout  => (others => '0'),
-p_out_fifo_rd   => open,
-p_in_fifo_empty => '0',
+--p_in_fifo_dout  => (others => '0'),
+--p_out_fifo_rd   => open,
+--p_in_fifo_empty => '0',
+
+p_out_init_done => i_ccd_init_done,
 
 p_out_tst       => i_tst_spi_out,
 p_in_tst        => (others => '0'),
