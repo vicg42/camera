@@ -102,6 +102,54 @@ NET "pin_in_ccd_data_n<32>"  LOC = "AD24" | IOSTANDARD = LVDS_25;
 
 
 ################################################################################
+## DAC
+################################################################################
+NET "pin_out_dac_blank_n"  LOC = "D20" | IOSTANDARD = LVCMOS33;
+NET "pin_out_dac_sync_n"   LOC = "G19" | IOSTANDARD = LVCMOS33;
+NET "pin_out_dac_psave_n"  LOC = "F19" | IOSTANDARD = LVCMOS33;
+NET "pin_out_dac_clk"      LOC = "F20" | IOSTANDARD = LVCMOS33;
+
+################################################################################
+## VGA
+################################################################################
+NET "pin_out_video_dr<0>"   LOC = "C17" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_dr<1>"   LOC = "B19" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_dr<2>"   LOC = "C19" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_dr<3>"   LOC = "A17" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_dr<4>"   LOC = "B17" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_dr<5>"   LOC = "A19" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_dr<6>"   LOC = "A18" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_dr<7>"   LOC = "B16" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_dr<8>"   LOC = "C16" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_dr<9>"   LOC = "K15" | IOSTANDARD = LVCMOS33;
+
+NET "pin_out_video_dg<0>"   LOC = "E15" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_dg<1>"   LOC = "J16" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_dg<2>"   LOC = "J15" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_dg<3>"   LOC = "F15" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_dg<4>"   LOC = "G15" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_dg<5>"   LOC = "G16" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_dg<6>"   LOC = "H16" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_dg<7>"   LOC = "D16" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_dg<8>"   LOC = "D15" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_dg<9>"   LOC = "C18" | IOSTANDARD = LVCMOS33;
+
+NET "pin_out_video_db<0>"   LOC = "D19" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_db<1>"   LOC = "H18" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_db<2>"   LOC = "H17" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_db<3>"   LOC = "D18" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_db<4>"   LOC = "E18" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_db<5>"   LOC = "E17" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_db<6>"   LOC = "F17" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_db<7>"   LOC = "F18" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_db<8>"   LOC = "G17" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_db<9>"   LOC = "E16" | IOSTANDARD = LVCMOS33;
+
+NET "pin_out_video_vs"      LOC = "M16" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_hs"      LOC = "K18" | IOSTANDARD = LVCMOS33;
+
+
+################################################################################
 ##
 ################################################################################
 NET "pin_out_TP<0>"   LOC = "F24" | IOSTANDARD = LVCMOS25;

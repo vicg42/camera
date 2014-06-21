@@ -38,6 +38,23 @@ pin_in_ccd          : in   TCCD_pinin;
 pin_out_ccd         : out  TCCD_pinout;
 
 --------------------------------------------------
+--DAC
+--------------------------------------------------
+pin_out_dac_blank_n : out  std_logic;
+pin_out_dac_sync_n  : out  std_logic;
+pin_out_dac_psave_n : out  std_logic;
+pin_out_dac_clk     : out  std_logic;
+
+--------------------------------------------------
+--VGA
+--------------------------------------------------
+pin_out_video_dr    : out  std_logic_vector(10 - 1 downto 0);
+pin_out_video_dg    : out  std_logic_vector(10 - 1 downto 0);
+pin_out_video_db    : out  std_logic_vector(10 - 1 downto 0);
+pin_out_video_vs    : out  std_logic;
+pin_out_video_hs    : out  std_logic;
+
+--------------------------------------------------
 --Reference clock
 --------------------------------------------------
 pin_in_refclk       : in    TRefclk_pinin
@@ -79,6 +96,27 @@ p_in_rst    : in   std_logic
 );
 end component;
 
+component vga is
+generic(
+G_SEL : integer := 0
+);
+port(
+--PHY
+p_out_video_dr : out  std_logic_vector(10 - 1 downto 0);
+p_out_video_dg : out  std_logic_vector(10 - 1 downto 0);
+p_out_video_db : out  std_logic_vector(10 - 1 downto 0);
+p_out_video_vs : out  std_logic;
+p_out_video_hs : out  std_logic;
+
+p_in_fifo_do   : in   std_logic_vector(31 downto 0);
+p_out_fifo_rd  : out  std_logic;
+
+--System
+p_in_clk      : in   std_logic;
+p_in_rst      : in   std_logic
+);
+end component;
+
 signal i_rst              : std_logic;
 signal g_usrclk           : std_logic_vector(7 downto 0);
 signal i_video_d          : std_logic_vector((C_PCFG_CCD_LVDS_COUNT
@@ -87,6 +125,12 @@ signal i_video_d_clk      : std_logic;
 signal i_video_vs         : std_logic;
 signal i_video_hs         : std_logic;
 signal i_video_den        : std_logic;
+
+signal i_vga_hs           : std_logic;
+signal i_vga_vs           : std_logic;
+
+signal i_vfifo_do         : std_logic_vector(31 downto 0) := (others => '0');
+signal i_vfifo_rd         : std_logic;
 
 signal tst_cnt : std_logic_vector(2 downto 0);
 signal i_tst_out : std_logic_vector(31 downto 0);
@@ -131,6 +175,43 @@ p_in_refclk => g_usrclk(0),
 p_in_ccdclk => g_usrclk(1),
 p_in_rst    => i_rst
 );
+
+
+--***********************************************************
+--Video DAC
+--***********************************************************
+pin_out_dac_blank_n <= i_vfifo_rd;
+pin_out_dac_sync_n  <= i_vga_hs;
+pin_out_dac_psave_n <= '0';
+pin_out_dac_clk     <= g_usrclk(2);
+
+
+--***********************************************************
+--VGA
+--***********************************************************
+m_vga : vga
+generic map(
+G_SEL => 2
+)
+port map(
+--PHY
+p_out_video_dr => pin_out_video_dr,
+p_out_video_dg => pin_out_video_dg,
+p_out_video_db => pin_out_video_db,
+p_out_video_vs => i_vga_vs,
+p_out_video_hs => i_vga_hs,
+
+p_in_fifo_do   => i_vfifo_do,
+p_out_fifo_rd  => i_vfifo_rd,
+
+--System
+p_in_clk      => g_usrclk(2),
+p_in_rst      => i_rst
+);
+
+pin_out_video_hs <= i_vga_hs;
+pin_out_video_vs <= i_vga_vs;
+
 
 --***********************************************************
 --Технологический порт
