@@ -21,6 +21,7 @@ use work.vicg_common_pkg.all;
 use work.clocks_pkg.all;
 use work.ccd_vita25K_pkg.all;
 use work.prj_cfg.all;
+use work.vout_pkg.all;
 
 entity camera_main is
 port(
@@ -38,21 +39,9 @@ pin_in_ccd          : in   TCCD_pinin;
 pin_out_ccd         : out  TCCD_pinout;
 
 --------------------------------------------------
---DAC
+--Video Output
 --------------------------------------------------
-pin_out_dac_blank_n : out  std_logic;
-pin_out_dac_sync_n  : out  std_logic;
-pin_out_dac_psave_n : out  std_logic;
-pin_out_dac_clk     : out  std_logic;
-
---------------------------------------------------
---VGA
---------------------------------------------------
-pin_out_video_dr    : out  std_logic_vector(10 - 1 downto 0);
-pin_out_video_dg    : out  std_logic_vector(10 - 1 downto 0);
-pin_out_video_db    : out  std_logic_vector(10 - 1 downto 0);
-pin_out_video_vs    : out  std_logic;
-pin_out_video_hs    : out  std_logic;
+pin_out_video       : out  TVout_pinout;
 
 --------------------------------------------------
 --Reference clock
@@ -96,20 +85,13 @@ p_in_rst    : in   std_logic
 );
 end component;
 
-component vga is
-generic(
-G_SEL : integer := 0
-);
+component vout is
 port(
 --PHY
-p_out_video_dr : out  std_logic_vector(10 - 1 downto 0);
-p_out_video_dg : out  std_logic_vector(10 - 1 downto 0);
-p_out_video_db : out  std_logic_vector(10 - 1 downto 0);
-p_out_video_vs : out  std_logic;
-p_out_video_hs : out  std_logic;
+p_out_video   : out  TVout_pinout;
 
-p_in_fifo_do   : in   std_logic_vector(31 downto 0);
-p_out_fifo_rd  : out  std_logic;
+p_in_fifo_do  : in   std_logic_vector(31 downto 0);
+p_out_fifo_rd : out  std_logic;
 
 --System
 p_in_clk      : in   std_logic;
@@ -125,9 +107,6 @@ signal i_video_d_clk      : std_logic;
 signal i_video_vs         : std_logic;
 signal i_video_hs         : std_logic;
 signal i_video_den        : std_logic;
-
-signal i_vga_hs           : std_logic;
-signal i_vga_vs           : std_logic;
 
 signal i_vfifo_do         : std_logic_vector(31 downto 0) := (others => '0');
 signal i_vfifo_rd         : std_logic;
@@ -178,39 +157,21 @@ p_in_rst    => i_rst
 
 
 --***********************************************************
---Video DAC
+--
 --***********************************************************
-pin_out_dac_blank_n <= i_vfifo_rd;
-pin_out_dac_sync_n  <= i_vga_hs;
-pin_out_dac_psave_n <= '0';
-pin_out_dac_clk     <= g_usrclk(2);
-
-
---***********************************************************
---VGA
---***********************************************************
-m_vga : vga
-generic map(
-G_SEL => 2
-)
+m_video_out : vout
 port map(
 --PHY
-p_out_video_dr => pin_out_video_dr,
-p_out_video_dg => pin_out_video_dg,
-p_out_video_db => pin_out_video_db,
-p_out_video_vs => i_vga_vs,
-p_out_video_hs => i_vga_hs,
+p_out_video   => pin_out_video,
 
-p_in_fifo_do   => i_vfifo_do,
-p_out_fifo_rd  => i_vfifo_rd,
+p_in_fifo_do  => i_vfifo_do,
+p_out_fifo_rd => i_vfifo_rd,
 
 --System
 p_in_clk      => g_usrclk(2),
 p_in_rst      => i_rst
 );
 
-pin_out_video_hs <= i_vga_hs;
-pin_out_video_vs <= i_vga_vs;
 
 
 --***********************************************************
