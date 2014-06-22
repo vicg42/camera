@@ -73,15 +73,15 @@ p_in_rst    => p_in_rst
 );
 
 
-p_out_video.vga_dr <= p_in_fifo_do(10 - 1 downto 0) when i_video_den = '1' else (others => '0');
-p_out_video.vga_dg <= p_in_fifo_do(10 - 1 downto 0) when i_video_den = '1' else (others => '0');
-p_out_video.vga_db <= p_in_fifo_do(10 - 1 downto 0) when i_video_den = '1' else (others => '0');
+p_out_video.vga_dr <= p_in_fifo_do(10 - 1 downto 0);
+p_out_video.vga_dg <= p_in_fifo_do(10 - 1 downto 0);
+p_out_video.vga_db <= p_in_fifo_do(10 - 1 downto 0);
 p_out_video.vga_hs <= i_video_hs;
 p_out_video.vga_vs <= i_video_vs;
 
 p_out_video.dac_blank_n <= i_video_den;
 p_out_video.dac_sync_n  <= i_video_hs;
-p_out_video.dac_psave_n <= '1';
+p_out_video.dac_psave_n <= '1'; --Power Down OFF
 p_out_video.dac_clk     <= p_in_clk;
 
 p_out_fifo_rd <= i_video_den;
