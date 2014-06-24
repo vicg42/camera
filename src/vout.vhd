@@ -23,6 +23,7 @@ p_out_video   : out  TVout_pinout;
 
 p_in_fifo_do  : in   std_logic_vector(31 downto 0);
 p_out_fifo_rd : out  std_logic;
+p_out_fifo_empty : in  std_logic;
 
 --System
 p_in_clk      : in   std_logic;

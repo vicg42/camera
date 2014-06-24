@@ -40,7 +40,7 @@ signal g_clkin       : std_logic_vector(2 downto 0);
 signal i_clk_fb      : std_logic_vector(2 downto 0);
 signal g_clk_fb      : std_logic_vector(2 downto 0);
 signal i_pll_locked  : std_logic_vector(2 downto 0);
-signal i_clk0_out    : std_logic_vector(0 downto 0);
+signal i_clk0_out    : std_logic_vector(1 downto 1);
 signal i_clk1_out    : std_logic_vector(0 downto 0);
 signal i_clk2_out    : std_logic_vector(0 downto 0);
 
@@ -49,7 +49,7 @@ begin
 
 p_out_rst <= not (AND_reduce(i_pll_locked));
 
-bufg_clk0: BUFG port map(I => i_clk0_out(0), O => p_out_gclk(0)); --200MHz
+bufg_clk0: BUFG port map(I => i_clk0_out(1), O => p_out_gclk(0)); --200MHz
 bufg_clk1: BUFG port map(I => i_clk2_out(0), O => p_out_gclk(1)); --310MHz (CCD inputclk)
 bufg_clk2: BUFG port map(I => i_clk1_out(0), O => p_out_gclk(2)); --135MHz (VGA Pixclk)
 
@@ -67,7 +67,7 @@ end generate;--gen_clkin
 -- CLKFBOUT = (CLKIN1/DIVCLK_DIVIDE) * CLKFBOUT_MULT_F
 -- CLKOUTn  = (CLKIN1/DIVCLK_DIVIDE) * CLKFBOUT_MULT_F/CLKOUTn_DIVIDE
 -- CLKFvco =  (20 MHz/1) * 50.000      = 1000 MHz
--- CLKOUT0  = (20 MHz/1) * 50.000/5    = 200 MHz
+-- CLKOUT0  = (20 MHz/1) * 50.000/2.5  = 400 MHz
 -- CLKOUT1  = (20 MHz/1) * 50.000/5    = 200 MHz
 -- CLKOUT2  = (20 MHz/1) * 50.000/5    = 200 MHz
 -- CLKOUT3  = (20 MHz/1) * 50.000/5    = 200 MHz
@@ -78,7 +78,7 @@ BANDWIDTH          => "OPTIMIZED", -- string := "OPTIMIZED"
 CLKIN1_PERIOD      => 50.000,      -- real := 0.0
 DIVCLK_DIVIDE      => 1,           -- integer := 1 (1 to 128)
 CLKFBOUT_MULT_F    => 50.000,      -- real := 1.0  (5.0 to 64.0)
-CLKOUT0_DIVIDE_F   => 5.000,       -- real := 1.0  (1.0 to 128.0)
+CLKOUT0_DIVIDE_F   => 2.500,       -- real := 1.0  (1.0 to 128.0)
 CLKOUT1_DIVIDE     => 5,           -- integer := 1
 CLKOUT2_DIVIDE     => 5,           -- integer := 1
 CLKOUT3_DIVIDE     => 5,           -- integer := 1
@@ -110,9 +110,9 @@ CLKIN1    => g_clkin(0),
 CLKFBIN   => g_clk_fb(0),
 CLKFBOUT  => i_clk_fb(0),
 CLKFBOUTB => open,
-CLKOUT0   => i_clk0_out(0),
+CLKOUT0   => open,--i_clk0_out(0),
 CLKOUT0B  => open,
-CLKOUT1   => open,--i_clk0_out(1),
+CLKOUT1   => i_clk0_out(1),
 CLKOUT1B  => open,
 CLKOUT2   => open,--i_clk0_out(2),
 CLKOUT2B  => open,
