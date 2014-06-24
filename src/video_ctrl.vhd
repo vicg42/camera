@@ -280,7 +280,7 @@ end generate gen_dbgcs_on;
 ----------------------------------------------------
 --Выходной видеобуфер
 ----------------------------------------------------
-m_vbufi : vbufi
+m_bufi : vbufi
 port map(
 din         => p_in_ccd_d,
 wr_en       => p_in_ccd_den,
@@ -300,7 +300,7 @@ rst         => p_in_rst
 --###########################################
 --Запись видео информации в ОЗУ
 --###########################################
-m_vwrite : video_writer
+m_frwr : video_writer
 generic map(
 G_USR_OPT         => G_USR_OPT(3 downto 0),
 G_DBGCS           => G_DBGCS,
@@ -365,7 +365,7 @@ end process;
 --###########################################
 --Модуль чтение видео информации из ОЗУ
 --###########################################
-m_vread : video_reader
+m_frrd : video_reader
 generic map(
 G_USR_OPT         => G_USR_OPT(7 downto 4),
 G_DBGCS           => G_DBGCS,
@@ -421,7 +421,7 @@ p_in_rst              => p_in_rst
 ----------------------------------------------------
 --Выходной видеобуфер
 ----------------------------------------------------
-m_vbufo : vbufo
+m_bufo : vbufo
 port map(
 din         => i_vreader_dout,
 wr_en       => i_vreader_dout_en,
