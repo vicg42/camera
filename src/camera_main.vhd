@@ -214,6 +214,10 @@ signal i_mem_ctrl_status  : TMEMCTRL_status;
 signal i_mem_ctrl_sysin   : TMEMCTRL_sysin;
 signal i_mem_ctrl_sysout  : TMEMCTRL_sysout;
 
+attribute keep : string;
+attribute keep of g_usrclk : signal is "true";
+attribute keep of g_usr_highclk : signal is "true";
+
 signal tst_cnt : std_logic_vector(2 downto 0);
 signal i_tst_out : std_logic_vector(31 downto 0);
 
@@ -233,9 +237,11 @@ p_in_clk   => pin_in_refclk
 );
 
 g_usr_highclk <= i_mem_ctrl_sysout.clk;
-i_mem_ctrl_sysin.ref_clk <= g_usrclk(0);
-i_mem_ctrl_sysin.clk <= g_usrclk(0);
+i_mem_ctrl_sysin.ref_clk <= g_usrclk(3);
+i_mem_ctrl_sysin.clk <= g_usrclk(4);
+
 i_mem_ctrl_sysin.rst <= i_rst;
+i_arb_mem_rst <= not OR_reduce(i_mem_ctrl_status.rdy);
 
 
 --***********************************************************

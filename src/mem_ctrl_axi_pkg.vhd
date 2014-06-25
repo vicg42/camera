@@ -64,12 +64,12 @@ constant CI_ODT_WIDTH     : integer:=1 ;
 
 --Memory interface types
 type TMEMCTRL_pinout is record
-a     : std_logic_vector(CI_ROW_WIDTH - 1 downto 0);
+addr  : std_logic_vector(CI_ROW_WIDTH - 1 downto 0);
 ba    : std_logic_vector(CI_BANK_WIDTH - 1 downto 0);
 ras_n : std_logic;
 cas_n : std_logic;
 we_n  : std_logic;
-rst_n : std_logic;
+reset_n : std_logic;
 cs_n  : std_logic_vector((CI_CS_WIDTH * CI_nCS_PER_RANK) - 1 downto 0);--SODIMM - pin Sx#
 odt   : std_logic_vector(CI_ODT_WIDTH - 1 downto 0);
 cke   : std_logic_vector(CI_CKE_WIDTH - 1 downto 0);

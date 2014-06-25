@@ -214,9 +214,9 @@ module mem_ctrl_core_axi #
    // The following parameters are multiplier and divisor factors for PLLE2.
    // Based on the selected design frequency these parameters vary.
    //***************************************************************************
-   parameter CLKIN_PERIOD          = 5000,
+   parameter CLKIN_PERIOD          = 2500,
                                      // Input Clock Period
-   parameter CLKFBOUT_MULT         = 4,
+   parameter CLKFBOUT_MULT         = 2,
                                      // write PLL VCO multiplier
    parameter DIVCLK_DIVIDE         = 1,
                                      // write PLL VCO divisor
@@ -283,7 +283,7 @@ module mem_ctrl_core_axi #
    //***************************************************************************
    parameter BYTE_LANES_B0         = 4'b1111,
                                      // Byte lanes used in an IO column.
-   parameter BYTE_LANES_B1         = 4'b1000,
+   parameter BYTE_LANES_B1         = 4'b0000,
                                      // Byte lanes used in an IO column.
    parameter BYTE_LANES_B2         = 4'b0000,
                                      // Byte lanes used in an IO column.
@@ -291,12 +291,12 @@ module mem_ctrl_core_axi #
                                      // Byte lanes used in an IO column.
    parameter BYTE_LANES_B4         = 4'b0000,
                                      // Byte lanes used in an IO column.
-   parameter DATA_CTL_B0           = 4'b0001,
+   parameter DATA_CTL_B0           = 4'b1100,
                                      // Indicates Byte lane is data byte lane
                                      // or control Byte lane. '1' in a bit
                                      // position indicates a data byte lane and
                                      // a '0' indicates a control byte lane
-   parameter DATA_CTL_B1           = 4'b1000,
+   parameter DATA_CTL_B1           = 4'b0000,
                                      // Indicates Byte lane is data byte lane
                                      // or control Byte lane. '1' in a bit
                                      // position indicates a data byte lane and
@@ -316,28 +316,28 @@ module mem_ctrl_core_axi #
                                      // or control Byte lane. '1' in a bit
                                      // position indicates a data byte lane and
                                      // a '0' indicates a control byte lane
-   parameter PHY_0_BITLANES        = 48'h3FE_FFE_C00_2FF,
-   parameter PHY_1_BITLANES        = 48'h3FE_000_000_000,
+   parameter PHY_0_BITLANES        = 48'h3FE_3FE_3FF_FFF,
+   parameter PHY_1_BITLANES        = 48'h000_000_000_000,
    parameter PHY_2_BITLANES        = 48'h000_000_000_000,
 
    // control/address/data pin mapping parameters
    parameter CK_BYTE_MAP
-     = 144'h00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_03,
+     = 144'h00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_01,
    parameter ADDR_MAP
-     = 192'h000_000_000_039_038_037_036_035_034_033_032_031_029_028_027_026,
-   parameter BANK_MAP   = 36'h02B_02A_025,
-   parameter CAS_MAP    = 12'h023,
+     = 192'h000_000_000_00B_013_015_017_019_016_012_001_014_006_018_008_009,
+   parameter BANK_MAP   = 36'h004_010_000,
+   parameter CAS_MAP    = 12'h002,
    parameter CKE_ODT_BYTE_MAP = 8'h00,
-   parameter CKE_MAP    = 96'h000_000_000_000_000_000_000_01B,
-   parameter ODT_MAP    = 96'h000_000_000_000_000_000_000_01A,
-   parameter CS_MAP     = 120'h000_000_000_000_000_000_000_000_000_021,
+   parameter CKE_MAP    = 96'h000_000_000_000_000_000_000_00A,
+   parameter ODT_MAP    = 96'h000_000_000_000_000_000_000_011,
+   parameter CS_MAP     = 120'h000_000_000_000_000_000_000_000_000_005,
    parameter PARITY_MAP = 12'h000,
-   parameter RAS_MAP    = 12'h024,
-   parameter WE_MAP     = 12'h022,
+   parameter RAS_MAP    = 12'h003,
+   parameter WE_MAP     = 12'h007,
    parameter DQS_BYTE_MAP
-     = 144'h00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_13_00,
-   parameter DATA0_MAP  = 96'h000_001_002_003_004_005_006_007,
-   parameter DATA1_MAP  = 96'h131_132_133_134_135_136_137_138,
+     = 144'h00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_03_02,
+   parameter DATA0_MAP  = 96'h024_027_021_026_022_025_028_029,
+   parameter DATA1_MAP  = 96'h031_032_035_033_037_038_034_036,
    parameter DATA2_MAP  = 96'h000_000_000_000_000_000_000_000,
    parameter DATA3_MAP  = 96'h000_000_000_000_000_000_000_000,
    parameter DATA4_MAP  = 96'h000_000_000_000_000_000_000_000,
@@ -354,7 +354,7 @@ module mem_ctrl_core_axi #
    parameter DATA15_MAP = 96'h000_000_000_000_000_000_000_000,
    parameter DATA16_MAP = 96'h000_000_000_000_000_000_000_000,
    parameter DATA17_MAP = 96'h000_000_000_000_000_000_000_000,
-   parameter MASK0_MAP  = 108'h000_000_000_000_000_000_000_139_009,
+   parameter MASK0_MAP  = 108'h000_000_000_000_000_000_000_039_023,
    parameter MASK1_MAP  = 108'h000_000_000_000_000_000_000_000_000,
 
    parameter SLOT_0_CONFIG         = 8'b0000_0001,
