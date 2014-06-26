@@ -35,6 +35,7 @@ port(
 --                                                * C_PCFG_CCD_BIT_PER_PIXEL) - 1 downto 0);
 pin_out_tst_syn     : out   std_logic;
 pin_out_tst_mem_rdy : out   std_logic;
+pin_in_btn          : in    std_logic;
 
 --------------------------------------------------
 --CCD
@@ -463,6 +464,38 @@ p_in_sys        => i_mem_ctrl_sysin
 
 pin_out_tst_syn <= i_video_den or i_video_hs or i_video_vs or OR_reduce(i_tst_out);
 pin_out_tst_mem_rdy <= OR_reduce(i_mem_ctrl_status.rdy);
+
+
+m_led1_tst: fpga_test_01
+generic map(
+G_BLINK_T05   =>10#250#,
+G_CLK_T05us   =>10#75#
+)
+port map(
+p_out_test_led => i_test_led(1),
+p_out_test_done=> open,
+
+p_out_1us      => open,
+p_out_1ms      => i_1ms,
+-------------------------------
+--System
+-------------------------------
+p_in_clk       => g_usrclk(1),
+p_in_rst       => i_rst
+);
+
+pin_in_btn;
+
+process(i_rst, g_usrclk(5))
+begin
+  if i_rst = '1' then
+    sr_in_btn <= (others => '0');
+  elsif rising_edge(g_usrclk(5)) then
+
+    sr_in_btn <= pin_in_btn & sr_in_btn(0 to 0);
+
+  end if;
+end process;
 
 --END MAIN
 end architecture;

@@ -54,6 +54,7 @@ bufg_clk1: BUFG port map(I => i_clk2_out(0), O => p_out_gclk(1)); --310MHz (CCD 
 bufg_clk2: BUFG port map(I => i_clk1_out(0), O => p_out_gclk(2)); --135MHz (VGA Pixclk)
 bufg_clk3: BUFG port map(I => i_clk0_out(2), O => p_out_gclk(3)); --200MHz
 bufg_clk4: BUFG port map(I => i_clk0_out(0), O => p_out_gclk(4)); --400MHz
+bufg_clk5: BUFG port map(I => g_clkin(0), O => p_out_gclk(5)); --20MHz
 
 gen_clkin : for i in 0 to p_in_clk.clk'length - 1 generate
 m_ibufg : IBUFG port map(I  => p_in_clk.clk(i), O => g_clkin(i));
