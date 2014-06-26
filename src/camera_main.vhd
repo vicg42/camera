@@ -31,8 +31,8 @@ port(
 --------------------------------------------------
 --Технологический порт
 --------------------------------------------------
-pin_out_TP          : out   std_logic_vector((C_PCFG_CCD_DATA_LINE_COUNT
-                                                * C_PCFG_CCD_BIT_PER_PIXEL) - 1 downto 0);
+--pin_out_TP          : out   std_logic_vector((C_PCFG_CCD_DATA_LINE_COUNT
+--                                                * C_PCFG_CCD_BIT_PER_PIXEL) - 1 downto 0);
 pin_out_tst_syn     : out   std_logic;
 pin_out_tst_mem_rdy : out   std_logic;
 
@@ -457,9 +457,9 @@ p_in_sys        => i_mem_ctrl_sysin
 --  end if;
 --end process;
 
-gen_tp : for i in 1 to (C_PCFG_CCD_LVDS_COUNT - 1) generate
-pin_out_TP(i - 1) <= OR_reduce(i_video_d((C_PCFG_CCD_BIT_PER_PIXEL * (i + 1)) - 1 downto (C_PCFG_CCD_BIT_PER_PIXEL * i)));
-end generate;
+--gen_tp : for i in 1 to (C_PCFG_CCD_LVDS_COUNT - 1) generate
+--pin_out_TP(i - 1) <= OR_reduce(i_video_d((C_PCFG_CCD_BIT_PER_PIXEL * (i + 1)) - 1 downto (C_PCFG_CCD_BIT_PER_PIXEL * i)));
+--end generate;
 
 pin_out_tst_syn <= i_video_den or i_video_hs or i_video_vs or OR_reduce(i_tst_out);
 pin_out_tst_mem_rdy <= OR_reduce(i_mem_ctrl_status.rdy);
