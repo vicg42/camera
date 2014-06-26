@@ -1,16 +1,18 @@
 setMode -pff
-setSubmode -pffserial
+setSubmode -pffspi
 setAttribute -configdevice -attr compressed -value "FALSE"
 setAttribute -configdevice -attr multiboot -value "FALSE"
-addPromDevice -p 1 -name xcf32p
+setAttribute -configdevice -attr dir -value "UP"
+setAttribute -configdevice -attr spiSelected -value "TRUE"
+addPromDevice -p 1 -size 32768 -name 32M
 addDesign -version 0 -name 0
 addDeviceChain -index 0
-addDevice -p 1 -file d:\Work\Yansar\camera\firmware\top.bit
-generate -format mcs -fillvalue FF -output d:\Work\Yansar\camera\firmware\top.mcs
+addDevice -p 1 -file d:\Work\Yansar\camera\firmware\test_main.bit
+generate -format mcs -fillvalue FF -output d:\Work\Yansar\camera\firmware\test_main.mcs
 setMode -bs
 setCable -port auto
 identify
-assignFile -p 1 -file d:\Work\Yansar\camera\firmware\top.mcs
-setAttribute -position 1 -attr readnextdevice -value "(null)"
-Program -p 1 -e
+attachflash -position 1 -spi "N25Q256"
+assignfiletoattachedflash -position 1 -file "D:/Work/Yansar/camera/firmware/test_main.mcs"
+program -p 1 -dataWidth 16 -rs1 NONE -rs0 NONE -bpionly -e -v -loadfpga
 quit
