@@ -294,5 +294,10 @@ TIMESPEC "TS_MULTICYCLEPATH_DEVICE_TEMP_SYNC" = TO "TNM_MULTICYCLEPATH_DEVICE_TE
 #NET "pin_out_TP<30>"  LOC = "D23" | IOSTANDARD = LVCMOS25;
 #NET "pin_out_TP<31>"  LOC = "D24" | IOSTANDARD = LVCMOS25;
 
-NET "pin_out_tst_syn"         LOC = "L25" | IOSTANDARD = LVCMOS25;#׀אחתול X2 pin(7)
-NET "pin_out_tst_mem_rdy"     LOC = "P24" | IOSTANDARD = LVCMOS25;#׀אחתול X2 pin(8)
+
+NET "pin_out_TP<0>"      LOC = "N16"  | IOSTANDARD = LVCMOS25;#׀אחתול X2 pin(1)
+NET "pin_out_TP<1>"      LOC = "K25"  | IOSTANDARD = LVCMOS25;#׀אחתול X2 pin(2)
+NET "pin_out_TP<2>"      LOC = "K26"  | IOSTANDARD = LVCMOS25;#׀אחתול X2 pin(3)
+NET "pin_in_btn"         LOC = "P26"  | IOSTANDARD = LVCMOS25;#׀אחתול X2 pin(5)
+NET "pin_out_led<0>"     LOC = "P24"  | IOSTANDARD = LVCMOS25;#׀אחתול X2 pin(8)
+NET "pin_out_led<1>"     LOC = "L25"  | IOSTANDARD = LVCMOS25;#׀אחתול X2 pin(7)

@@ -3,7 +3,7 @@
 -- Engineer    : Golovachenko Victor
 --
 -- Create Date : 13.06.2014 12:31:35
--- Module Name : caamera_main
+-- Module Name : camera_main
 --
 -- Назначение/Описание :
 --
@@ -31,10 +31,8 @@ port(
 --------------------------------------------------
 --Технологический порт
 --------------------------------------------------
---pin_out_TP          : out   std_logic_vector((C_PCFG_CCD_DATA_LINE_COUNT
---                                                * C_PCFG_CCD_BIT_PER_PIXEL) - 1 downto 0);
-pin_out_tst_syn     : out   std_logic;
-pin_out_tst_mem_rdy : out   std_logic;
+pin_out_TP          : out   std_logic_vector(2 downto 0);
+pin_out_led         : out   std_logic_vector(1 downto 0);
 pin_in_btn          : in    std_logic;
 
 --------------------------------------------------
@@ -63,6 +61,26 @@ end entity;
 
 architecture struct of camera_main is
 
+component fpga_test_01
+generic(
+G_BLINK_T05   : integer:=10#125#; -- 1/2 периода мигания светодиода.(время в ms)
+G_CLK_T05us   : integer:=10#1000# -- кол-во периодов частоты порта p_in_clk
+                                  -- укладывающиес_ в 1/2 периода 1us
+);
+port(
+p_out_test_led : out   std_logic;--мигание сведодиода
+p_out_test_done: out   std_logic;--сигнал переходи в '1' через 3 сек.
+
+p_out_1us      : out   std_logic;
+p_out_1ms      : out   std_logic;
+-------------------------------
+--System
+-------------------------------
+p_in_clk       : in    std_logic;
+p_in_rst       : in    std_logic
+);
+end component;
+
 component clocks is
 port(
 p_out_rst  : out   std_logic;
@@ -87,6 +105,9 @@ p_out_video_d   : out std_logic_vector((C_PCFG_CCD_LVDS_COUNT
                                           * C_PCFG_CCD_BIT_PER_PIXEL) - 1 downto 0);
 p_out_video_clk : out std_logic;
 
+p_out_init_done : out  std_logic;
+p_out_detect_tr : out  std_logic;
+
 p_out_tst       : out   std_logic_vector(31 downto 0);
 p_in_tst        : in    std_logic_vector(31 downto 0);
 
@@ -103,7 +124,7 @@ p_out_video   : out  TVout_pinout;
 
 p_in_fifo_do  : in   std_logic_vector(31 downto 0);
 p_out_fifo_rd : out  std_logic;
-p_out_fifo_empty : in  std_logic;
+p_in_fifo_empty : in  std_logic;
 
 --System
 p_in_clk      : in   std_logic;
@@ -138,15 +159,6 @@ p_in_ccd_den          : in    std_logic;
 p_in_ccd_hs           : in    std_logic;
 p_in_ccd_vs           : in    std_logic;
 p_in_ccd_dclk         : in    std_logic;
-
----------------------------------
-----VBUFI
----------------------------------
---p_in_vbufi_do         : in    std_logic_vector(G_MEMWR_DWIDTH - 1 downto 0);
---p_out_vbufi_rd        : out   std_logic;
---p_in_vbufi_empty      : in    std_logic;
---p_in_vbufi_full       : in    std_logic;
---p_in_vbufi_pfull      : in    std_logic;
 
 -------------------------------
 --VBUFO
@@ -215,16 +227,27 @@ signal i_mem_ctrl_status  : TMEMCTRL_status;
 signal i_mem_ctrl_sysin   : TMEMCTRL_sysin;
 signal i_mem_ctrl_sysout  : TMEMCTRL_sysout;
 
+signal tst_rxd            : std_logic_vector(15 downto 0);
+
+signal i_test_led         : std_logic_vector(1 downto 0);
+signal i_1ms              : std_logic;
+signal i_debcnt           : unsigned(8 downto 0) := (others => '0');
+signal i_btn_push         : std_logic;
+signal sr_btn_push        : std_logic_vector(0 to 1) := (others =>'0');
+signal i_btn_push_edge    : std_logic := '0';
+
+signal i_ccd_init_done    : std_logic;
+signal i_ccd_tst_in       : std_logic_vector(31 downto 0);
+signal i_ccd_tst_out      : std_logic_vector(31 downto 0);
+
 attribute keep : string;
 attribute keep of g_usrclk : signal is "true";
 attribute keep of g_usr_highclk : signal is "true";
 
-signal tst_cnt : std_logic_vector(2 downto 0);
-signal i_tst_out : std_logic_vector(31 downto 0);
-
 
 --MAIN
 begin
+
 
 --***********************************************************
 --Установка частот проекта:
@@ -246,15 +269,15 @@ i_arb_mem_rst <= not OR_reduce(i_mem_ctrl_status.rdy);
 
 
 --***********************************************************
---Установка частот проекта:
+--
 --***********************************************************
 m_ccd : ccd_vita25K
 generic map(
 G_SIM => C_PCFG_SIM
 )
 port map(
-p_in_ccd  => pin_in_ccd,
-p_out_ccd => pin_out_ccd,
+p_in_ccd   => pin_in_ccd ,
+p_out_ccd  => pin_out_ccd,
 
 p_out_video_vs  => i_video_vs,
 p_out_video_hs  => i_video_hs,
@@ -262,8 +285,11 @@ p_out_video_den => i_video_den,
 p_out_video_d   => i_video_d,
 p_out_video_clk => i_video_d_clk,
 
-p_out_tst       => i_tst_out,
-p_in_tst        => (others => '0'),
+p_out_init_done => open,
+p_out_detect_tr => open,
+
+p_out_tst   => i_ccd_tst_out,
+p_in_tst    => i_ccd_tst_in,
 
 p_in_refclk => g_usrclk(0),
 p_in_ccdclk => g_usrclk(1),
@@ -281,7 +307,7 @@ p_out_video   => pin_out_video,
 
 p_in_fifo_do  => i_vbufo_do,
 p_out_fifo_rd => i_vbufo_rd,
-p_out_fifo_empty => i_vbufo_empty,
+p_in_fifo_empty => i_vbufo_empty,
 
 --System
 p_in_clk      => g_usrclk(2),
@@ -333,15 +359,6 @@ p_in_ccd_den          => i_video_den,
 p_in_ccd_hs           => i_video_hs,
 p_in_ccd_vs           => i_video_vs,
 p_in_ccd_dclk         => i_video_d_clk,
-
----------------------------------
-----VBUFI
----------------------------------
---p_in_vbufi_do         : in    std_logic_vector(G_MEMWR_DWIDTH - 1 downto 0);
---p_out_vbufi_rd        : out   std_logic;
---p_in_vbufi_empty      : in    std_logic;
---p_in_vbufi_full       : in    std_logic;
---p_in_vbufi_pfull      : in    std_logic;
 
 -------------------------------
 --VBUFO
@@ -444,35 +461,28 @@ p_out_sys       => i_mem_ctrl_sysout,
 p_in_sys        => i_mem_ctrl_sysin
 );
 
+
 --***********************************************************
 --Технологический порт
 --***********************************************************
---pin_out_TP <= tst_cnt;--(others => '0');
---
---process(i_rst, g_usrclk(0))
---begin
---  if i_rst = '1' then
---    tst_cnt <= (others => '0');
---  elsif rising_edge(g_usrclk(0)) then
---    tst_cnt <= tst_cnt;
---  end if;
---end process;
-
 --gen_tp : for i in 1 to (C_PCFG_CCD_LVDS_COUNT - 1) generate
 --pin_out_TP(i - 1) <= OR_reduce(i_video_d((C_PCFG_CCD_BIT_PER_PIXEL * (i + 1)) - 1 downto (C_PCFG_CCD_BIT_PER_PIXEL * i)));
 --end generate;
+pin_out_TP(0) <= OR_reduce(i_ccd_tst_out);
+pin_out_TP(1) <= i_video_vs or i_video_hs or i_video_den;
+pin_out_TP(2) <= '0';
 
-pin_out_tst_syn <= i_video_den or i_video_hs or i_video_vs or OR_reduce(i_tst_out);
-pin_out_tst_mem_rdy <= OR_reduce(i_mem_ctrl_status.rdy);
+pin_out_led(0) <= i_test_led(0);
+pin_out_led(1) <= OR_reduce(i_mem_ctrl_status.rdy);
 
 
 m_led1_tst: fpga_test_01
 generic map(
 G_BLINK_T05   =>10#250#,
-G_CLK_T05us   =>10#75#
+G_CLK_T05us   =>10#10#
 )
 port map(
-p_out_test_led => i_test_led(1),
+p_out_test_led => i_test_led(0),
 p_out_test_done=> open,
 
 p_out_1us      => open,
@@ -480,22 +490,48 @@ p_out_1ms      => i_1ms,
 -------------------------------
 --System
 -------------------------------
-p_in_clk       => g_usrclk(1),
+p_in_clk       => g_usrclk(5),
 p_in_rst       => i_rst
 );
 
-pin_in_btn;
 
 process(i_rst, g_usrclk(5))
 begin
   if i_rst = '1' then
-    sr_in_btn <= (others => '0');
+    i_debcnt <= (others => '0');
+    i_btn_push <= '0';
+
   elsif rising_edge(g_usrclk(5)) then
 
-    sr_in_btn <= pin_in_btn & sr_in_btn(0 to 0);
+    if pin_in_btn = '1' then
+      i_debcnt <= (others => '0');
+      i_btn_push <= '0';
+    else
+      if i_1ms = '1' then
+        if i_debcnt = TO_UNSIGNED(80 ,i_debcnt'length) then
+          i_btn_push <= '1';
+        else
+          i_debcnt <= i_debcnt + 1;
+        end if;
+      end if;
+    end if;
 
   end if;
 end process;
+
+
+process(g_usrclk(1))
+begin
+  if rising_edge(g_usrclk(1)) then
+    sr_btn_push <= i_btn_push & sr_btn_push(0 to 0);
+    i_btn_push_edge <= sr_btn_push(0) and not sr_btn_push(1);
+  end if;
+end process;
+
+i_ccd_tst_in(0) <= i_btn_push_edge;
+i_ccd_tst_in(i_ccd_tst_in'length - 1 downto 1) <= (others => '0');
+
+
 
 --END MAIN
 end architecture;

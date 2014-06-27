@@ -37,6 +37,9 @@ p_out_video_d   : out std_logic_vector((C_PCFG_CCD_LVDS_COUNT
                                           * C_PCFG_CCD_BIT_PER_PIXEL) - 1 downto 0);
 p_out_video_clk : out std_logic;
 
+p_out_init_done : out  std_logic;
+p_out_detect_tr : out  std_logic;
+
 p_out_tst       : out   std_logic_vector(31 downto 0);
 p_in_tst        : in    std_logic_vector(31 downto 0);
 
@@ -85,6 +88,8 @@ p_out_video_den : out   std_logic;
 p_out_video_d   : out   std_logic_vector((G_LVDS_CH_COUNT * G_BIT_COUNT) - 1 downto 0);
 p_out_video_clk : out   std_logic;
 
+p_out_detect_tr : out   std_logic;
+
 p_out_tst       : out   std_logic_vector(31 downto 0);
 p_in_tst        : in    std_logic_vector(31 downto 0);
 
@@ -94,20 +99,11 @@ p_in_rst        : in    std_logic
 );
 end component;
 
-signal i_video_vs       : std_logic;
-signal i_video_hs       : std_logic;
-signal i_video_den      : std_logic;
-signal i_video_d        : std_logic_vector((C_PCFG_CCD_LVDS_COUNT
-                                                * C_PCFG_CCD_BIT_PER_PIXEL) - 1 downto 0);
-signal i_video_clk      : std_logic;
-
-signal i_ccd_init_done  : std_logic;
-
 signal i_ccd_out        : TCCD_pinout;
 signal i_spi_out        : TSPI_pinout;
 signal i_spi_in         : TSPI_pinin;
 
-signal i_rstcnt         : unsigned(15 downto 0) := (others => '0');
+signal i_rstcnt         : unsigned(14 downto 0) := (others => '0');
 signal i_ccd_rst_n      : std_logic;
 signal i_ccd_rst        : std_logic;
 
@@ -120,9 +116,7 @@ signal i_tst_spi_out    : std_logic_vector(31 downto 0);
 begin
 
 p_out_tst(15 downto 0) <= i_tst_deser_out(15 downto 0);
-p_out_tst(30 downto 16) <= i_tst_spi_out(30 downto 16);
-p_out_tst(31) <= i_ccd_init_done;
-
+p_out_tst(31 downto 16) <= i_tst_spi_out(15 downto 0);
 
 p_out_ccd.clk_p <= i_ccd_out.clk_p;
 p_out_ccd.clk_n <= i_ccd_out.clk_n;
@@ -163,16 +157,16 @@ G_SIM => G_SIM
 )
 port map(
 p_out_physpi    => i_spi_out,
-p_in_physpi     => i_spi_in,
+p_in_physpi     => i_spi_in ,
 
 --p_in_fifo_dout  => (others => '0'),
 --p_out_fifo_rd   => open,
 --p_in_fifo_empty => '0',
 
-p_out_init_done => i_ccd_init_done,
+p_out_init_done => p_out_init_done,
 
 p_out_tst       => i_tst_spi_out,
-p_in_tst        => (others => '0'),
+p_in_tst        => p_in_tst,
 
 p_in_clk        => p_in_ccdclk,
 p_in_rst        => i_ccd_rst
@@ -190,25 +184,21 @@ port map(
 p_in_ccd        => p_in_ccd,
 p_out_ccd       => i_ccd_out,
 
-p_out_video_vs  => i_video_vs,
-p_out_video_hs  => i_video_hs,
-p_out_video_den => i_video_den,
-p_out_video_d   => i_video_d,
-p_out_video_clk => i_video_clk,
+p_out_video_vs  => p_out_video_vs,
+p_out_video_hs  => p_out_video_hs,
+p_out_video_den => p_out_video_den,
+p_out_video_d   => p_out_video_d,
+p_out_video_clk => p_out_video_clk,
+
+p_out_detect_tr => p_out_detect_tr,
 
 p_out_tst       => i_tst_deser_out,
-p_in_tst        => (others => '0'),
+p_in_tst        => p_in_tst,
 
 p_in_ccdclk     => p_in_ccdclk,
 p_in_refclk     => p_in_refclk,
 p_in_rst        => p_in_rst
 );
-
-p_out_video_vs  <= i_video_vs;
-p_out_video_hs  <= i_video_hs;
-p_out_video_den <= i_video_den;
-p_out_video_d <= i_video_d;
-p_out_video_clk <= i_video_clk;
 
 
 --END MAIN

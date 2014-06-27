@@ -76,7 +76,10 @@ S_IDLE,
 S_REG_INIT_SET,
 S_REG_INIT_START,
 S_REG_INIT_DONE,
-S_REG_USR
+S_REG_USR,
+S_REG_RD_0,
+S_REG_RD_1,
+S_REG_RD_2
 );
 
 signal i_fsm_spi_cs : TFsm_spireg;
@@ -95,11 +98,16 @@ signal i_cnt        : unsigned(4 downto 0) := (others => '0');
 
 signal i_init_done  : std_logic := '0';
 
+signal i_spi_start  : std_logic := '0';
+signal i_ccd_start_init: std_logic := '0';
+signal tst_rxd      : std_logic_vector(i_rxd'range) := (others => '0');
+
 
 --MAIN
 begin
 
-p_out_tst <= (others => '0');
+p_out_tst(15 downto 0) <= tst_rxd;
+p_out_tst(31 downto 16) <= (others => '0');
 
 p_out_init_done <= i_init_done;
 
@@ -126,7 +134,7 @@ begin
       i_txd <= (others => '0');
       i_dir <= '0';
       i_start <= '0';
-      i_init_done <= '0';
+      i_init_done <= '0'; tst_rxd <= (others => '0');
       i_fsm_spi_cs <= S_IDLE;
 
     else
@@ -136,13 +144,16 @@ begin
 
           when S_IDLE =>
 
-            if i_cnt = (i_cnt'range => '1') then
-              i_cnt <= (others => '0');
-              i_fsm_spi_cs <= S_REG_INIT_SET;
-
-            else
-              i_cnt <= i_cnt + 1;
-
+--            if i_cnt = (i_cnt'range => '1') then
+--              i_cnt <= (others => '0');
+--              i_fsm_spi_cs <= S_REG_INIT_SET;
+--
+--            else
+--              i_cnt <= i_cnt + 1;
+--
+--            end if;
+            if i_ccd_start_init = '1' then
+              i_fsm_spi_cs <= S_REG_RD_0;
             end if;
 
           --------------------------------
@@ -186,6 +197,30 @@ begin
           when S_REG_USR =>
             i_dir <= C_SPI_WRITE;
             i_start <= '0';
+            i_fsm_spi_cs <= S_IDLE;
+
+          --------------------------------
+          --
+          --------------------------------
+          when S_REG_RD_0 =>
+
+            i_adr <= (others => '0');
+
+            i_dir <= C_SPI_READ;
+            i_start <= '1';
+            i_fsm_spi_cs <= S_REG_RD_1;
+
+          when S_REG_RD_1 =>
+
+            i_start <= '0';
+            i_fsm_spi_cs <= S_REG_RD_2;
+
+          when S_REG_RD_2 =>
+
+            if i_busy = '0' then
+              tst_rxd <= i_rxd;
+              i_fsm_spi_cs <= S_REG_INIT_SET;--S_IDLE;--
+            end if;
 
         end case;
 
@@ -213,13 +248,25 @@ p_out_physpi => p_out_physpi,
 p_in_physpi  => p_in_physpi,
 
 p_out_tst    => open,
-p_in_tst     => (others => '0'),
+p_in_tst     => p_in_tst,
 
 p_in_clk_en => i_clk_en,
 p_in_clk    => p_in_clk,
 p_in_rst    => p_in_rst
 );
 
+
+i_spi_start <= p_in_tst(0);
+process(p_in_clk)
+begin
+  if rising_edge(p_in_clk) then
+    if i_spi_start = '1' then
+      i_ccd_start_init <= '1';
+    elsif i_clk_en = '1' then
+      i_ccd_start_init <= '0';
+    end if;
+  end if;
+end process;
 
 --END MAIN
 end architecture;

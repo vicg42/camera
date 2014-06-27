@@ -28,6 +28,8 @@ p_out_video_den : out   std_logic;
 p_out_video_d   : out   std_logic_vector((G_LVDS_CH_COUNT * G_BIT_COUNT) - 1 downto 0);
 p_out_video_clk : out   std_logic;
 
+p_out_detect_tr : out   std_logic;
+
 p_out_tst       : out   std_logic_vector(31 downto 0);
 p_in_tst        : in    std_logic_vector(31 downto 0);
 
@@ -378,6 +380,7 @@ if rising_edge(clk_div) then
           i_bitslip_en <= '0';
 
           if i_sync_tr_det_cnt(3) = '1' then
+          --Обноружил в подряд 8 TR кодов
             i_sync_tr_det <= '1';
           else
             i_sync_tr_det_cnt <= i_sync_tr_det_cnt + 1;
@@ -437,6 +440,8 @@ p_out_video_hs  <= i_video_hs;
 p_out_video_den <= i_video_den;
 p_out_video_d <= i_video_d;
 p_out_video_clk <= clk_div;
+
+p_out_detect_tr <= i_sync_tr_det;
 
 end xilinx;
 
