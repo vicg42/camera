@@ -58,6 +58,7 @@ G_SIM : string := "OFF"
 port(
 p_out_physpi    : out  TSPI_pinout;
 p_in_physpi     : in   TSPI_pinin;
+p_out_ccdrst_n  : out  std_logic;
 
 --p_in_fifo_dout  : in   std_logic_vector(15 downto 0);
 --p_out_fifo_rd   : out  std_logic;
@@ -103,9 +104,11 @@ signal i_ccd_out        : TCCD_pinout;
 signal i_spi_out        : TSPI_pinout;
 signal i_spi_in         : TSPI_pinin;
 
-signal i_rstcnt         : unsigned(14 downto 0) := (others => '0');
+signal i_rstcnt         : unsigned(20 downto 0) := (others => '0');
 signal i_ccd_rst_n      : std_logic;
 signal i_ccd_rst        : std_logic;
+signal i_ccd_init_done  : std_logic;
+signal i_ccd_deser_rst  : std_logic;
 
 signal i_tst_deser_out  : std_logic_vector(31 downto 0);
 signal i_tst_spi_out    : std_logic_vector(31 downto 0);
@@ -117,6 +120,8 @@ begin
 
 p_out_tst(15 downto 0) <= i_tst_deser_out(15 downto 0);
 p_out_tst(31 downto 16) <= i_tst_spi_out(15 downto 0);
+
+p_out_init_done <= i_ccd_init_done;
 
 p_out_ccd.clk_p <= i_ccd_out.clk_p;
 p_out_ccd.clk_n <= i_ccd_out.clk_n;
@@ -137,15 +142,15 @@ begin
     if p_in_rst = '1' then
       i_rstcnt <= (others => '0');
     else
-      if i_rstcnt(selval(13, 8, strcmp(G_SIM, "OFF"))) /= '1' then
+      if i_rstcnt(selval(19, 8, strcmp(G_SIM, "OFF"))) /= '1' then
         i_rstcnt <= i_rstcnt + 1;
       end if;
     end if;
   end if;
 end process;
 
-i_ccd_rst_n <= i_rstcnt( selval(13, 8, strcmp(G_SIM, "OFF")) );
-i_ccd_rst <= not i_ccd_rst_n;
+--i_ccd_rst_n <= i_rstcnt( selval(13, 8, strcmp(G_SIM, "OFF")) );
+i_ccd_rst <= not i_rstcnt( selval(19, 8, strcmp(G_SIM, "OFF")) );
 
 
 ---------------------------------------
@@ -158,12 +163,13 @@ G_SIM => G_SIM
 port map(
 p_out_physpi    => i_spi_out,
 p_in_physpi     => i_spi_in ,
+p_out_ccdrst_n  => i_ccd_rst_n,
 
 --p_in_fifo_dout  => (others => '0'),
 --p_out_fifo_rd   => open,
 --p_in_fifo_empty => '0',
 
-p_out_init_done => p_out_init_done,
+p_out_init_done => i_ccd_init_done,
 
 p_out_tst       => i_tst_spi_out,
 p_in_tst        => p_in_tst,
@@ -197,8 +203,10 @@ p_in_tst        => p_in_tst,
 
 p_in_ccdclk     => p_in_ccdclk,
 p_in_refclk     => p_in_refclk,
-p_in_rst        => p_in_rst
+p_in_rst        => i_ccd_deser_rst
 );
+
+i_ccd_deser_rst <= not i_ccd_init_done;
 
 
 --END MAIN

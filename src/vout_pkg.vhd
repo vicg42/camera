@@ -25,11 +25,19 @@ vga_db      : std_logic_vector(10 - 1 downto 0);
 vga_hs      : std_logic;
 vga_vs      : std_logic;
 
+--ADV7123
 dac_blank_n : std_logic;
 dac_sync_n  : std_logic;
 dac_psave_n : std_logic;
 dac_clk     : std_logic;
 
+----AD723
+--hsync        : std_logic;
+--vsync        : std_logic;
+--ce           : std_logic;
+--sa           : std_logic;
+--stnd         : std_logic;
+--fcs4         : std_logic;
 end record;
 
 end vout_pkg;
