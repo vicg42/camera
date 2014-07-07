@@ -20,13 +20,17 @@ library unisim;
 use unisim.vcomponents.all;
 
 library work;
-use work.reduce_Pack.all;
+use work.reduce_pack.all;
 use work.clocks_pkg.all;
+use work.vicg_common_pkg.all;
 
 entity clocks is
+generic(
+G_VOUT_TYPE : string := "VGA"
+);
 port(
 p_out_rst  : out   std_logic;
-p_out_gclk : out   std_logic_vector(7 downto 0);
+p_out_gclk : out   std_logic_vector(6 downto 0);
 
 --p_out_clk  : out   TRefClkPinOUT;
 p_in_clk   : in    TRefclk_pinin
@@ -37,13 +41,12 @@ architecture behavior of clocks is
 
 signal g_clkin       : std_logic_vector(2 downto 0);
 
-signal i_clk_fb      : std_logic_vector(3 downto 0);
-signal g_clk_fb      : std_logic_vector(3 downto 0);
-signal i_pll_locked  : std_logic_vector(3 downto 0);
+signal i_clk_fb      : std_logic_vector(2 downto 0);
+signal g_clk_fb      : std_logic_vector(2 downto 0);
+signal i_pll_locked  : std_logic_vector(2 downto 0);
 signal i_clk0_out    : std_logic_vector(3 downto 0);
 signal i_clk1_out    : std_logic_vector(0 downto 0);
 signal i_clk2_out    : std_logic_vector(0 downto 0);
-signal i_clk3_out    : std_logic_vector(0 downto 0);
 
 begin
 
@@ -51,12 +54,21 @@ begin
 p_out_rst <= not (AND_reduce(i_pll_locked));
 
 bufg_clk0: BUFG port map(I => i_clk0_out(1), O => p_out_gclk(0)); --200MHz
-bufg_clk1: BUFG port map(I => i_clk2_out(0), O => p_out_gclk(1)); --310MHz (CCD inputclk)
-bufg_clk2: BUFG port map(I => i_clk1_out(0), O => p_out_gclk(2)); --135MHz (VGA Pixclk)
+bufg_clk1: BUFG port map(I => i_clk1_out(0), O => p_out_gclk(1)); --310MHz (CCD inputclk)
+
+gen_vga1 : if strcmp(G_VOUT_TYPE, "VGA") generate begin
+bufg_clk2: BUFG port map(I => i_clk2_out(0), O => p_out_gclk(2)); --135MHz (VGA Pixclk)
+end generate gen_vga1;
+
 bufg_clk3: BUFG port map(I => i_clk0_out(2), O => p_out_gclk(3)); --200MHz
 bufg_clk4: BUFG port map(I => i_clk0_out(0), O => p_out_gclk(4)); --400MHz
 bufg_clk5: BUFG port map(I => g_clkin(0), O => p_out_gclk(5)); --20MHz
-bufg_clk6: BUFG port map(I => i_clk3_out(0), O => p_out_gclk(6)); --17,734472MHz
+
+gen_tv1 : if strcmp(G_VOUT_TYPE, "TV") generate begin
+bufg_clk2: BUFG port map(I => i_clk0_out(3), O => p_out_gclk(2)); --12,5MHz
+bufg_clk6: BUFG port map(I => i_clk2_out(0), O => p_out_gclk(6)); --17,734472MHz
+end generate gen_tv1;
+
 
 gen_clkin : for i in 0 to p_in_clk.clk'length - 1 generate
 m_ibufg : IBUFG port map(I  => p_in_clk.clk(i), O => g_clkin(i));
@@ -85,7 +97,7 @@ CLKFBOUT_MULT_F    => 50.000,      -- real := 1.0  (5.0 to 64.0)
 CLKOUT0_DIVIDE_F   => 2.500,       -- real := 1.0  (1.0 to 128.0)
 CLKOUT1_DIVIDE     => 5,           -- integer := 1
 CLKOUT2_DIVIDE     => 5,           -- integer := 1
-CLKOUT3_DIVIDE     => 5,           -- integer := 1
+CLKOUT3_DIVIDE     => 80,          -- integer := 1
 CLKOUT4_DIVIDE     => 1,           -- integer := 1
 CLKOUT5_DIVIDE     => 1,           -- integer := 1
 CLKOUT6_DIVIDE     => 1,           -- integer := 1
@@ -129,74 +141,6 @@ LOCKED    => i_pll_locked(0)
 );
 -- MMCM feedback (not using BUFG, because we don't care about phase compensation)
 g_clk_fb(0) <= i_clk_fb(0);
-
-
---#######################################
---54Mhz
---#######################################
--- Reference clock MMCM (CLKFBOUT range 600.00 MHz to 1440.00 MHz)
--- CLKvco   = (CLKIN1/DIVCLK_DIVIDE) * CLKFBOUT_MULT_F
--- CLKFBOUT = (CLKIN1/DIVCLK_DIVIDE) * CLKFBOUT_MULT_F
--- CLKOUTn  = (CLKIN1/DIVCLK_DIVIDE) * CLKFBOUT_MULT_F/CLKOUTn_DIVIDE
--- CLKFvco =  (54 MHz/2) * 36.875       = 995,625 MHz
--- CLKOUT0  = (54 MHz/2) * 36.875/7.375 = 135 MHz
--- CLKOUT1  = (54 MHz/2) * 36.875/1     = 995,625 MHz
--- CLKOUT2  = (54 MHz/2) * 36.875/1     = 995,625 MHz
--- CLKOUT3  = (54 MHz/2) * 36.875/1     = 995,625 MHz
-
-m_mmcm_clk_54HHz : MMCME2_BASE
-generic map(
-BANDWIDTH          => "OPTIMIZED", -- string := "OPTIMIZED"
-CLKIN1_PERIOD      => 18.518,      -- real := 0.0
-DIVCLK_DIVIDE      => 2,           -- integer := 1 (1 to 128)
-CLKFBOUT_MULT_F    => 36.875,      -- real := 1.0  (5.0 to 64.0)
-CLKOUT0_DIVIDE_F   => 7.375,       -- real := 1.0  (1.0 to 128.0)
-CLKOUT1_DIVIDE     => 1,           -- integer := 1
-CLKOUT2_DIVIDE     => 1,           -- integer := 1
-CLKOUT3_DIVIDE     => 1,           -- integer := 1
-CLKOUT4_DIVIDE     => 1,           -- integer := 1
-CLKOUT5_DIVIDE     => 1,           -- integer := 1
-CLKOUT6_DIVIDE     => 1,           -- integer := 1
-CLKFBOUT_PHASE     => 0.000,       -- real := 0.0
-CLKOUT0_PHASE      => 0.000,       -- real := 0.0
-CLKOUT1_PHASE      => 0.000,       -- real := 0.0
-CLKOUT2_PHASE      => 0.000,       -- real := 0.0
-CLKOUT3_PHASE      => 0.000,       -- real := 0.0
-CLKOUT4_PHASE      => 0.000,       -- real := 0.0
-CLKOUT5_PHASE      => 0.000,       -- real := 0.0
-CLKOUT6_PHASE      => 0.000,       -- real := 0.0
-CLKOUT0_DUTY_CYCLE => 0.500,       -- real := 0.5
-CLKOUT1_DUTY_CYCLE => 0.500,       -- real := 0.5
-CLKOUT2_DUTY_CYCLE => 0.500,       -- real := 0.5
-CLKOUT3_DUTY_CYCLE => 0.500,       -- real := 0.5
-CLKOUT4_DUTY_CYCLE => 0.500,       -- real := 0.5
-CLKOUT5_DUTY_CYCLE => 0.500,       -- real := 0.5
-CLKOUT6_DUTY_CYCLE => 0.500,       -- real := 0.5
-CLKOUT4_CASCADE    => FALSE,       -- boolean := FALSE
-REF_JITTER1        => 0.0,         -- real := 0.0
-STARTUP_WAIT       => FALSE)       -- boolean := FALSE
-port map(
-RST       => '0',
-PWRDWN    => '0',
-CLKIN1    => g_clkin(1),
-CLKFBIN   => g_clk_fb(1),
-CLKFBOUT  => i_clk_fb(1),
-CLKFBOUTB => open,
-CLKOUT0   => i_clk1_out(0),
-CLKOUT0B  => open,
-CLKOUT1   => open,--i_clk1_out(1),
-CLKOUT1B  => open,
-CLKOUT2   => open,--i_clk1_out(2),
-CLKOUT2B  => open,
-CLKOUT3   => open,--i_clk1_out(3),
-CLKOUT3B  => open,
-CLKOUT4   => open,--i_clk1_out(5),
-CLKOUT5   => open,
-CLKOUT6   => open,
-LOCKED    => i_pll_locked(1)
-);
--- MMCM feedback (not using BUFG, because we don't care about phase compensation)
-g_clk_fb(1) <= i_clk_fb(1);
 
 
 --#######################################
@@ -247,10 +191,10 @@ port map(
 RST       => '0',
 PWRDWN    => '0',
 CLKIN1    => g_clkin(2),
-CLKFBIN   => g_clk_fb(2),
-CLKFBOUT  => i_clk_fb(2),
+CLKFBIN   => g_clk_fb(1),
+CLKFBOUT  => i_clk_fb(1),
 CLKFBOUTB => open,
-CLKOUT0   => i_clk2_out(0),
+CLKOUT0   => i_clk1_out(0),
 CLKOUT0B  => open,
 CLKOUT1   => open,--i_clk2_out(1),
 CLKOUT1B  => open,
@@ -261,12 +205,13 @@ CLKOUT3B  => open,
 CLKOUT4   => open,--i_clk2_out(5),
 CLKOUT5   => open,
 CLKOUT6   => open,
-LOCKED    => i_pll_locked(2)
+LOCKED    => i_pll_locked(1)
 );
 -- MMCM feedback (not using BUFG, because we don't care about phase compensation)
-g_clk_fb(2) <= i_clk_fb(2);
+g_clk_fb(1) <= i_clk_fb(1);
 
-
+gen_vga2 : if strcmp(G_VOUT_TYPE, "VGA") generate
+begin
 --#######################################
 --54Mhz
 --#######################################
@@ -274,19 +219,19 @@ g_clk_fb(2) <= i_clk_fb(2);
 -- CLKvco   = (CLKIN1/DIVCLK_DIVIDE) * CLKFBOUT_MULT_F
 -- CLKFBOUT = (CLKIN1/DIVCLK_DIVIDE) * CLKFBOUT_MULT_F
 -- CLKOUTn  = (CLKIN1/DIVCLK_DIVIDE) * CLKFBOUT_MULT_F/CLKOUTn_DIVIDE
--- CLKFvco =  (54 MHz/4) * 52.875        = 713,8125 MHz
--- CLKOUT0  = (54 MHz/4) * 52.875/40.250 = 17,734472049689440993788819875776 MHz
--- CLKOUT1  = (54 MHz/4) * 52.875/1      = 713,8125 MHz
--- CLKOUT2  = (54 MHz/4) * 52.875/1      = 713,8125 MHz
--- CLKOUT3  = (54 MHz/4) * 52.875/1      = 713,8125 MHz
+-- CLKFvco =  (54 MHz/2) * 36.875       = 995,625 MHz
+-- CLKOUT0  = (54 MHz/2) * 36.875/7.375 = 135 MHz
+-- CLKOUT1  = (54 MHz/2) * 36.875/1     = 995,625 MHz
+-- CLKOUT2  = (54 MHz/2) * 36.875/1     = 995,625 MHz
+-- CLKOUT3  = (54 MHz/2) * 36.875/1     = 995,625 MHz
 
-m_mmcm_tv : MMCME2_BASE
+m_mmcm_clk_54HHz : MMCME2_BASE
 generic map(
 BANDWIDTH          => "OPTIMIZED", -- string := "OPTIMIZED"
 CLKIN1_PERIOD      => 18.518,      -- real := 0.0
-DIVCLK_DIVIDE      => 4,           -- integer := 1 (1 to 128)
-CLKFBOUT_MULT_F    => 52.875,      -- real := 1.0  (5.0 to 64.0)
-CLKOUT0_DIVIDE_F   => 40.250,      -- real := 1.0  (1.0 to 128.0)
+DIVCLK_DIVIDE      => 2,           -- integer := 1 (1 to 128)
+CLKFBOUT_MULT_F    => 36.875,      -- real := 1.0  (5.0 to 64.0)
+CLKOUT0_DIVIDE_F   => 7.375,       -- real := 1.0  (1.0 to 128.0)
 CLKOUT1_DIVIDE     => 1,           -- integer := 1
 CLKOUT2_DIVIDE     => 1,           -- integer := 1
 CLKOUT3_DIVIDE     => 1,           -- integer := 1
@@ -315,10 +260,10 @@ port map(
 RST       => '0',
 PWRDWN    => '0',
 CLKIN1    => g_clkin(1),
-CLKFBIN   => g_clk_fb(3),
-CLKFBOUT  => i_clk_fb(3),
+CLKFBIN   => g_clk_fb(2),
+CLKFBOUT  => i_clk_fb(2),
 CLKFBOUTB => open,
-CLKOUT0   => i_clk3_out(0),
+CLKOUT0   => i_clk2_out(0),
 CLKOUT0B  => open,
 CLKOUT1   => open,--i_clk1_out(1),
 CLKOUT1B  => open,
@@ -329,10 +274,82 @@ CLKOUT3B  => open,
 CLKOUT4   => open,--i_clk1_out(5),
 CLKOUT5   => open,
 CLKOUT6   => open,
-LOCKED    => i_pll_locked(3)
+LOCKED    => i_pll_locked(2)
 );
 -- MMCM feedback (not using BUFG, because we don't care about phase compensation)
-g_clk_fb(3) <= i_clk_fb(3);
+g_clk_fb(2) <= i_clk_fb(2);
+end generate gen_vga2;
 
+
+gen_tv2 : if strcmp(G_VOUT_TYPE, "TV") generate
+begin
+--#######################################
+--54Mhz
+--#######################################
+-- Reference clock MMCM (CLKFBOUT range 600.00 MHz to 1440.00 MHz)
+-- CLKvco   = (CLKIN1/DIVCLK_DIVIDE) * CLKFBOUT_MULT_F
+-- CLKFBOUT = (CLKIN1/DIVCLK_DIVIDE) * CLKFBOUT_MULT_F
+-- CLKOUTn  = (CLKIN1/DIVCLK_DIVIDE) * CLKFBOUT_MULT_F/CLKOUTn_DIVIDE
+-- CLKFvco =  (54 MHz/3) * 50.000       = 900 MHz
+-- CLKOUT0  = (54 MHz/3) * 50.000/50.750 = 17,733990147783251231527093596059 MHz
+-- CLKOUT1  = (54 MHz/3) * 50.000/1     = 900 MHz
+-- CLKOUT2  = (54 MHz/3) * 50.000/1     = 900 MHz
+-- CLKOUT3  = (54 MHz/3) * 50.000/1     = 900 MHz
+
+m_mmcm_tv_pal : MMCME2_BASE
+generic map(
+BANDWIDTH          => "OPTIMIZED", -- string := "OPTIMIZED"
+CLKIN1_PERIOD      => 18.518,      -- real := 0.0
+DIVCLK_DIVIDE      => 3,           -- integer := 1 (1 to 128)
+CLKFBOUT_MULT_F    => 50.000,      -- real := 1.0  (5.0 to 64.0)
+CLKOUT0_DIVIDE_F   => 50.750,      -- real := 1.0  (1.0 to 128.0)
+CLKOUT1_DIVIDE     => 1,           -- integer := 1
+CLKOUT2_DIVIDE     => 1,           -- integer := 1
+CLKOUT3_DIVIDE     => 1,           -- integer := 1
+CLKOUT4_DIVIDE     => 1,           -- integer := 1
+CLKOUT5_DIVIDE     => 1,           -- integer := 1
+CLKOUT6_DIVIDE     => 1,           -- integer := 1
+CLKFBOUT_PHASE     => 0.000,       -- real := 0.0
+CLKOUT0_PHASE      => 0.000,       -- real := 0.0
+CLKOUT1_PHASE      => 0.000,       -- real := 0.0
+CLKOUT2_PHASE      => 0.000,       -- real := 0.0
+CLKOUT3_PHASE      => 0.000,       -- real := 0.0
+CLKOUT4_PHASE      => 0.000,       -- real := 0.0
+CLKOUT5_PHASE      => 0.000,       -- real := 0.0
+CLKOUT6_PHASE      => 0.000,       -- real := 0.0
+CLKOUT0_DUTY_CYCLE => 0.500,       -- real := 0.5
+CLKOUT1_DUTY_CYCLE => 0.500,       -- real := 0.5
+CLKOUT2_DUTY_CYCLE => 0.500,       -- real := 0.5
+CLKOUT3_DUTY_CYCLE => 0.500,       -- real := 0.5
+CLKOUT4_DUTY_CYCLE => 0.500,       -- real := 0.5
+CLKOUT5_DUTY_CYCLE => 0.500,       -- real := 0.5
+CLKOUT6_DUTY_CYCLE => 0.500,       -- real := 0.5
+CLKOUT4_CASCADE    => FALSE,       -- boolean := FALSE
+REF_JITTER1        => 0.0,         -- real := 0.0
+STARTUP_WAIT       => FALSE)       -- boolean := FALSE
+port map(
+RST       => '0',
+PWRDWN    => '0',
+CLKIN1    => g_clkin(1),
+CLKFBIN   => g_clk_fb(2),
+CLKFBOUT  => i_clk_fb(2),
+CLKFBOUTB => open,
+CLKOUT0   => i_clk2_out(0),
+CLKOUT0B  => open,
+CLKOUT1   => open,--i_clk1_out(1),
+CLKOUT1B  => open,
+CLKOUT2   => open,--i_clk1_out(2),
+CLKOUT2B  => open,
+CLKOUT3   => open,--i_clk1_out(3),
+CLKOUT3B  => open,
+CLKOUT4   => open,--i_clk1_out(5),
+CLKOUT5   => open,
+CLKOUT6   => open,
+LOCKED    => i_pll_locked(2)
+);
+-- MMCM feedback (not using BUFG, because we don't care about phase compensation)
+g_clk_fb(2) <= i_clk_fb(2);
+
+end generate gen_tv2;
 
 end architecture;

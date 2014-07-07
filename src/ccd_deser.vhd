@@ -83,6 +83,7 @@ signal icascade1                 : std_logic_vector(G_LVDS_CH_COUNT - 1 downto 0
 signal icascade2                 : std_logic_vector(G_LVDS_CH_COUNT - 1 downto 0);
 signal i_io_reset                : std_logic;
 signal i_mmcm_lckd               : std_logic;
+signal tst_mmcm_lckd             : std_logic;
 
 attribute IODELAY_GROUP : string;
 attribute IODELAY_GROUP of delayctrl : label is "deser_lvds_ccd_group";
@@ -442,6 +443,15 @@ p_out_video_d <= i_video_d;
 p_out_video_clk <= clk_div;
 
 p_out_detect_tr <= i_sync_tr_det;
+
+process(p_in_ccdclk)
+begin
+if rising_edge(p_in_ccdclk) then
+  tst_mmcm_lckd <= i_mmcm_lckd;
+end if;
+end process;
+
+p_out_tst(0) <= tst_mmcm_lckd;
 
 end xilinx;
 
