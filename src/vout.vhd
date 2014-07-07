@@ -33,7 +33,7 @@ p_out_tst     : out std_logic_vector(31 downto 0);
 p_in_tst      : in  std_logic_vector(31 downto 0);
 
 --System
-p_in_clk      : in   std_logic_vector(1 downto 0);
+p_in_clk      : in   std_logic;
 p_in_rst      : in   std_logic
 );
 end entity;
@@ -57,6 +57,16 @@ p_in_rst      : in   std_logic
 end component;
 
 component tv_gen is
+generic(
+N_ROW  : integer:=625;--Кол-во строк в кадре. (312.5 строк в одном поле)
+N_H2   : integer:=400;--т.е. 64us/2=32us (удвоеная частота строк)
+W2_32us: integer:=29 ;--т.е. 2.32 us
+W4_7us : integer:=59 ;--т.е. 4.7 us
+W1_53us: integer:=19 ;--т.е. 1.53 us
+W5_8us : integer:=73 ;--т.е. 5.8 us
+var1   : integer:=4  ;--продстройка
+var2   : integer:=5   --продстройка
+);
 port(
 p_out_tv_kci   : out std_logic;
 p_out_tv_ssi   : out std_logic;--Синхросмесь. Стандартный TV сигнал
@@ -93,7 +103,7 @@ begin
 
 p_out_tst <= (others => '0');
 
-i_vga_pix_clk <= p_in_clk(0);
+i_vga_pix_clk <= p_in_clk;
 
 m_vga_timegen : vga_gen
 generic map(
@@ -158,10 +168,21 @@ gen_tv : if strcmp(G_VOUT_TYPE, "TV") generate
 begin
 
 p_out_tst(0) <= i_tv_field;
-i_tv_pix_clk <= p_in_clk(1);--p_in_clk(0);--12.5MHz
-i_tv_color_clk <= p_in_clk(1);--PAL =17,734472MHz / NTSC=13,845984MHz
+i_tv_pix_clk <= p_in_clk;--17,734472MHz
+i_tv_color_clk <= p_in_clk;--PAL =17,734472MHz / NTSC=13,845984MHz
 
 m_tv_timegen : tv_gen
+generic map(
+--Все значения относительно p_in_clk=17,734472MHz (Активных строк/пиксел - 574/xxx)
+N_ROW   => 625, --Кол-во строк в кадре. (312.5 строк в одном поле)
+N_H2    => 567, --т.е. 64us/2=32us (удвоеная частота строк)
+W2_32us => 41 , --т.е. 2.32 us
+W4_7us  => 83 , --т.е. 4.7 us
+W1_53us => 27 , --т.е. 1.53 us
+W5_8us  => 102, --т.е. 5.8 us
+var1    => 0  , --продстройка
+var2    => 0    --продстройка
+)
 port map(
 p_out_tv_kci   => open,
 p_out_tv_ssi   => i_tv_ss,

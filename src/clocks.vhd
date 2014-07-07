@@ -44,7 +44,7 @@ signal g_clkin       : std_logic_vector(2 downto 0);
 signal i_clk_fb      : std_logic_vector(2 downto 0);
 signal g_clk_fb      : std_logic_vector(2 downto 0);
 signal i_pll_locked  : std_logic_vector(2 downto 0);
-signal i_clk0_out    : std_logic_vector(3 downto 0);
+signal i_clk0_out    : std_logic_vector(2 downto 0);
 signal i_clk1_out    : std_logic_vector(0 downto 0);
 signal i_clk2_out    : std_logic_vector(0 downto 0);
 
@@ -65,8 +65,7 @@ bufg_clk4: BUFG port map(I => i_clk0_out(0), O => p_out_gclk(4)); --400MHz
 bufg_clk5: BUFG port map(I => g_clkin(0), O => p_out_gclk(5)); --20MHz
 
 gen_tv1 : if strcmp(G_VOUT_TYPE, "TV") generate begin
-bufg_clk2: BUFG port map(I => i_clk0_out(3), O => p_out_gclk(2)); --12,5MHz
-bufg_clk6: BUFG port map(I => i_clk2_out(0), O => p_out_gclk(6)); --17,734472MHz
+bufg_clk6: BUFG port map(I => i_clk2_out(0), O => p_out_gclk(2)); --17,734472MHz
 end generate gen_tv1;
 
 
@@ -132,7 +131,7 @@ CLKOUT1   => i_clk0_out(1),
 CLKOUT1B  => open,
 CLKOUT2   => i_clk0_out(2),
 CLKOUT2B  => open,
-CLKOUT3   => i_clk0_out(3),
+CLKOUT3   => open,--i_clk0_out(3),
 CLKOUT3B  => open,
 CLKOUT4   => open,--i_clk0_out(5),
 CLKOUT5   => open,

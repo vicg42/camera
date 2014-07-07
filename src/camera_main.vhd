@@ -139,7 +139,7 @@ p_out_tst     : out std_logic_vector(31 downto 0);
 p_in_tst      : in  std_logic_vector(31 downto 0);
 
 --System
-p_in_clk      : in   std_logic_vector(1 downto 0);
+p_in_clk      : in   std_logic;
 p_in_rst      : in   std_logic
 );
 end component;
@@ -239,7 +239,7 @@ signal i_vbufo_empty      : std_logic;
 --signal i_mem_ctrl_sysin   : TMEMCTRL_sysin;
 --signal i_mem_ctrl_sysout  : TMEMCTRL_sysout;
 
-signal i_vout_clkin       : std_logic_vector(1 downto 0);
+signal i_vout_clkin       : std_logic;
 
 signal i_test_led         : std_logic_vector(1 downto 0);
 signal i_1ms              : std_logic;
@@ -255,7 +255,6 @@ signal i_ccd_out          : TCCD_pinout;
 
 signal i_video_out       : TVout_pinout;
 signal tst_vout_out       : std_logic_vector(31 downto 0);
-signal tst_vout_in        : std_logic_vector(31 downto 0);
 
 attribute keep : string;
 attribute keep of g_usrclk : signal is "true";
@@ -287,7 +286,7 @@ p_in_clk   => pin_in_refclk
 --i_mem_ctrl_sysin.rst <= i_rst;
 --i_arb_mem_rst <= not OR_reduce(i_mem_ctrl_status.rdy);
 
-i_vout_clkin <= g_usrclk(6) & g_usrclk(2);
+i_vout_clkin <= g_usrclk(2);
 
 --***********************************************************
 --
@@ -337,7 +336,7 @@ p_out_fifo_rd => i_vbufo_rd,
 p_in_fifo_empty => i_vbufo_empty,
 
 p_out_tst     => tst_vout_out,
-p_in_tst      => tst_vout_in,
+p_in_tst      => (others => '0'),
 
 --System
 p_in_clk      => i_vout_clkin,
@@ -563,8 +562,6 @@ end process;
 i_ccd_tst_in(0) <= i_btn_push_edge;
 i_ccd_tst_in(i_ccd_tst_in'length - 1 downto 1) <= (others => '0');
 
-tst_vout_in(0) <= i_btn_push_edge;
-tst_vout_in(1) <= g_usrclk(1);
 
 
 --END MAIN
