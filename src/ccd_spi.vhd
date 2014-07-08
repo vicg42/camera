@@ -105,7 +105,7 @@ signal i_rxd        : std_logic_vector(15 downto 0) := (others => '0');
 
 signal i_regcnt        : unsigned(4 downto 0) := (others => '0');
 signal i_cntdelay      : unsigned(9 downto 0) := (others => '0');
-signal i_ccd_rst_n  : std_logic := '1';
+signal i_ccd_rst_n  : std_logic := '0';
 signal i_init_done  : std_logic := '0';
 
 signal i_start  : std_logic := '0';
@@ -144,7 +144,7 @@ begin
   if rising_edge(p_in_clk) then
     if p_in_rst = '1' then
       i_regcnt <= (others => '0'); i_cntdelay <= (others => '0');
-      i_adr <= (others => '0'); i_ccd_rst_n <= '1';
+      i_adr <= (others => '0'); i_ccd_rst_n <= '0';
       i_txd <= (others => '0');
       i_spi_core_dir <= '0';
       i_spi_core_start <= '0';
