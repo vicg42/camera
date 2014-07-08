@@ -198,7 +198,7 @@ p_out_video.ad723_hsrca <= i_tv_ss;
 p_out_video.ad723_vsrca <= '1';
 p_out_video.ad723_ce    <= '1';
 p_out_video.ad723_sa    <= '0';
-p_out_video.ad723_stnd  <= '0';
+p_out_video.ad723_stnd  <= '0';--0/1 - PAL/NTSC
 p_out_video.ad723_fcs4  <= i_tv_color_clk;
 p_out_video.ad723_term  <= '1';
 
