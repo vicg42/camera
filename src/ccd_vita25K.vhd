@@ -127,7 +127,7 @@ p_out_ccd.clk_p <= i_ccd_out.clk_p;
 p_out_ccd.clk_n <= i_ccd_out.clk_n;
 --deasert reset ccd after input clock ccd enable > 10us
 p_out_ccd.rst_n <= i_ccd_rst_n;
-p_out_ccd.trig <= '1';
+p_out_ccd.trig <= '0';
 
 p_out_ccd.sck  <= i_spi_out.sck;
 p_out_ccd.ss_n <= i_spi_out.ss_n;
