@@ -21,9 +21,10 @@ use work.ccd_vita25K_pkg.all;
 use work.prj_cfg.all;
 use work.spi_pkg.all;
 use work.vicg_common_pkg.all;
+use work.reduce_pack.all;
 
-library unisim;
-use unisim.vcomponents.all;
+--library unisim;
+--use unisim.vcomponents.all;
 
 entity ccd_vita25K is
 generic(
@@ -77,31 +78,31 @@ p_in_rst        : in   std_logic
 );
 end component;
 
---component ccd_deser
---generic(
---G_LVDS_CH_COUNT : integer := 16;
---G_BIT_COUNT     : integer := 10
---);
---port(
---p_in_ccd        : in    TCCD_pinin;
---p_out_ccd       : out   TCCD_pinout;
---
---p_out_video_vs  : out   std_logic;
---p_out_video_hs  : out   std_logic;
---p_out_video_den : out   std_logic;
---p_out_video_d   : out   std_logic_vector((G_LVDS_CH_COUNT * G_BIT_COUNT) - 1 downto 0);
---p_out_video_clk : out   std_logic;
---
---p_out_detect_tr : out   std_logic;
---
---p_out_tst       : out   std_logic_vector(31 downto 0);
---p_in_tst        : in    std_logic_vector(31 downto 0);
---
---p_in_ccdclk     : in    std_logic;
---p_in_refclk     : in    std_logic;
---p_in_rst        : in    std_logic
---);
---end component;
+component ccd_deser
+generic(
+G_LVDS_CH_COUNT : integer := 16;
+G_BIT_COUNT     : integer := 10
+);
+port(
+p_in_ccd        : in    TCCD_pinin;
+p_out_ccd       : out   TCCD_pinout;
+
+p_out_video_vs  : out   std_logic;
+p_out_video_hs  : out   std_logic;
+p_out_video_den : out   std_logic;
+p_out_video_d   : out   std_logic_vector((G_LVDS_CH_COUNT * G_BIT_COUNT) - 1 downto 0);
+p_out_video_clk : out   std_logic;
+
+p_out_detect_tr : out   std_logic;
+
+p_out_tst       : out   std_logic_vector(31 downto 0);
+p_in_tst        : in    std_logic_vector(31 downto 0);
+
+p_in_ccdclk     : in    std_logic;
+p_in_refclk     : in    std_logic;
+p_in_rst        : in    std_logic
+);
+end component;
 
 signal i_ccd_out        : TCCD_pinout;
 signal i_spi_out        : TSPI_pinout;
@@ -116,7 +117,6 @@ signal i_ccd_deser_rst  : std_logic;
 signal i_tst_deser_out  : std_logic_vector(31 downto 0);
 signal i_tst_spi_out    : std_logic_vector(31 downto 0);
 
-signal i_ccd_clkout      : std_logic;
 signal tst_cnt_ccdclkout : unsigned(15 downto 0);
 
 
@@ -124,33 +124,21 @@ signal tst_cnt_ccdclkout : unsigned(15 downto 0);
 --MAIN
 begin
 
-p_out_tst(15 downto 0) <= std_logic_vector(tst_cnt_ccdclkout);--i_tst_deser_out(15 downto 0);
+p_out_tst(0) <= OR_reduce(std_logic_vector(tst_cnt_ccdclkout)) or OR_reduce(i_tst_deser_out(15 downto 0));
+p_out_tst(1) <= i_tst_deser_out(2);
 p_out_tst(31 downto 16) <= i_tst_spi_out(15 downto 0);
 
-p_out_init_done <= i_ccd_init_done;
-
---p_out_ccd.clk_p <= i_ccd_out.clk_p;
---p_out_ccd.clk_n <= i_ccd_out.clk_n;
-m_clk_fpga2ccd : OBUFDS
-port map (
-O  => p_out_ccd.clk_p,
-OB => p_out_ccd.clk_n,
-I  => p_in_ccdclk
-);
-
-m_clk_ccd2fpga : IBUFGDS
-port map (
-I  => p_in_ccd.clk_p,
-IB => p_in_ccd.clk_n,
-O  => i_ccd_clkout
-);
-
-process(i_ccd_clkout)
+process(i_tst_deser_out(1))
 begin
-  if rising_edge(i_ccd_clkout) then
+  if rising_edge(i_tst_deser_out(1)) then
     tst_cnt_ccdclkout <= tst_cnt_ccdclkout + 1;
   end if;
 end process;
+
+p_out_init_done <= i_ccd_init_done;
+
+p_out_ccd.clk_p <= i_ccd_out.clk_p;
+p_out_ccd.clk_n <= i_ccd_out.clk_n;
 
 --deasert reset ccd after input clock ccd enable > 10us
 p_out_ccd.rst_n <= i_ccd_rst_n;
@@ -205,35 +193,35 @@ p_in_clk        => p_in_ccdclk,
 p_in_rst        => p_in_rst
 );
 
------------------------------------------
-----Recieve video data from CCD
------------------------------------------
---m_deser : ccd_deser
---generic map(
---G_LVDS_CH_COUNT => C_PCFG_CCD_LVDS_COUNT,
---G_BIT_COUNT     => C_PCFG_CCD_BIT_PER_PIXEL
---)
---port map(
---p_in_ccd        => p_in_ccd,
---p_out_ccd       => i_ccd_out,
---
---p_out_video_vs  => p_out_video_vs,
---p_out_video_hs  => p_out_video_hs,
---p_out_video_den => p_out_video_den,
---p_out_video_d   => p_out_video_d,
---p_out_video_clk => p_out_video_clk,
---
---p_out_detect_tr => p_out_detect_tr,
---
---p_out_tst       => i_tst_deser_out,
---p_in_tst        => p_in_tst,
---
---p_in_ccdclk     => p_in_ccdclk,
---p_in_refclk     => p_in_refclk,
---p_in_rst        => i_ccd_deser_rst
---);
---
---i_ccd_deser_rst <= not i_ccd_init_done;
+---------------------------------------
+--Recieve video data from CCD
+---------------------------------------
+m_deser : ccd_deser
+generic map(
+G_LVDS_CH_COUNT => C_PCFG_CCD_LVDS_COUNT,
+G_BIT_COUNT     => C_PCFG_CCD_BIT_PER_PIXEL
+)
+port map(
+p_in_ccd        => p_in_ccd,
+p_out_ccd       => i_ccd_out,
+
+p_out_video_vs  => p_out_video_vs,
+p_out_video_hs  => p_out_video_hs,
+p_out_video_den => p_out_video_den,
+p_out_video_d   => p_out_video_d,
+p_out_video_clk => p_out_video_clk,
+
+p_out_detect_tr => p_out_detect_tr,
+
+p_out_tst       => i_tst_deser_out,
+p_in_tst        => p_in_tst,
+
+p_in_ccdclk     => p_in_ccdclk,
+p_in_refclk     => p_in_refclk,
+p_in_rst        => i_ccd_deser_rst
+);
+
+i_ccd_deser_rst <= not i_ccd_init_done;
 
 
 --END MAIN

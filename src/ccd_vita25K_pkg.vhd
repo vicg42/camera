@@ -82,8 +82,8 @@ constant C_CCD_SPI_AWIDTH : integer := 9;
 constant C_CCD_SPI_DWIDTH : integer := 16;
 
 type TCCD_pinin is record
---data_p : std_logic_vector(C_PCFG_CCD_LVDS_COUNT - 1 downto 0);
---data_n : std_logic_vector(C_PCFG_CCD_LVDS_COUNT - 1 downto 0);
+data_p : std_logic_vector(C_PCFG_CCD_LVDS_COUNT - 1 downto 0);
+data_n : std_logic_vector(C_PCFG_CCD_LVDS_COUNT - 1 downto 0);
 
 clk_p : std_logic;
 clk_n : std_logic;

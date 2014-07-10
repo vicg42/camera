@@ -35,10 +35,10 @@ TIMESPEC TS_TV_PIXCLK   = PERIOD TNM_TV_PIXCLK    56.387 ns;#  HIGH 50%; # 17,73
 ################################################################################
 ##
 ################################################################################
-#NET "pin_out_ccd_sck"      LOC = "T20"  | IOSTANDARD = LVCMOS25;
-#NET "pin_out_ccd_ss_n"     LOC = "T25"  | IOSTANDARD = LVCMOS25;
-#NET "pin_out_ccd_mosi"     LOC = "T24"  | IOSTANDARD = LVCMOS25;
-#NET "pin_in_ccd_miso"      LOC = "R23"  | IOSTANDARD = LVCMOS25;
+NET "pin_out_ccd_sck"      LOC = "L25"  | IOSTANDARD = LVCMOS25;#LOC = "T20"  | IOSTANDARD = LVCMOS25;
+NET "pin_out_ccd_ss_n"     LOC = "M16"  | IOSTANDARD = LVCMOS25;#LOC = "T25"  | IOSTANDARD = LVCMOS25;
+NET "pin_out_ccd_mosi"     LOC = "P24"  | IOSTANDARD = LVCMOS25;#LOC = "T24"  | IOSTANDARD = LVCMOS25;
+NET "pin_in_ccd_miso"      LOC = "N16"  | IOSTANDARD = LVCMOS25;#LOC = "R23"  | IOSTANDARD = LVCMOS25;
 
 NET "pin_out_ccd_clk_p"    LOC = "N19"  | IOSTANDARD = LVDS_25; #LOC = "P23"  | IOSTANDARD = LVDS_25;
 NET "pin_out_ccd_clk_n"    LOC = "M20"  | IOSTANDARD = LVDS_25; #LOC = "N23"  | IOSTANDARD = LVDS_25;
@@ -47,9 +47,11 @@ NET "pin_out_ccd_trig"     LOC = "R20"  | IOSTANDARD = LVCMOS25;
 
 NET "pin_in_ccd_clk_p"     LOC = "R25"  | IOSTANDARD = LVDS_25;#LOC = "N21"  | IOSTANDARD = LVDS_25;
 NET "pin_in_ccd_clk_n"     LOC = "P25"  | IOSTANDARD = LVDS_25;#LOC = "N22"  | IOSTANDARD = LVDS_25;
+NET "pin_in_ccd_clk_p" CLOCK_DEDICATED_ROUTE = BACKBONE;
+PIN "m_ccd/m_deser/m_clk_gen/loop8.tx_mmcm_adv_inst.CLKIN1" CLOCK_DEDICATED_ROUTE = BACKBONE;
 
-#NET "pin_in_ccd_data_p<0>"   LOC = "R21"  | IOSTANDARD = LVDS_25; #SYNC #Clock Region Bank 13
-#NET "pin_in_ccd_data_n<0>"   LOC = "P21"  | IOSTANDARD = LVDS_25; #SYNC
+NET "pin_in_ccd_data_p<0>"   LOC = "K25"  | IOSTANDARD = LVDS_25;#LOC = "R21"  | IOSTANDARD = LVDS_25; #SYNC #Clock Region Bank 13
+NET "pin_in_ccd_data_n<0>"   LOC = "K26"  | IOSTANDARD = LVDS_25;#LOC = "P21"  | IOSTANDARD = LVDS_25; #SYNC
 #NET "pin_in_ccd_data_p<1>"   LOC = "R18"  | IOSTANDARD = LVDS_25; #DATA
 #NET "pin_in_ccd_data_n<1>"   LOC = "P18"  | IOSTANDARD = LVDS_25; #...
 #NET "pin_in_ccd_data_p<2>"   LOC = "U24"  | IOSTANDARD = LVDS_25;
@@ -115,9 +117,9 @@ NET "pin_in_ccd_clk_n"     LOC = "P25"  | IOSTANDARD = LVDS_25;#LOC = "N22"  | I
 #NET "pin_in_ccd_data_p<32>"  LOC = "AD23" | IOSTANDARD = LVDS_25;
 #NET "pin_in_ccd_data_n<32>"  LOC = "AD24" | IOSTANDARD = LVDS_25;
 
-INST "m_ccd/m_clk_fpga2ccd"    DIFF_TERM = TRUE;
+INST "m_ccd/m_deser/m_clk_gen/m_ibufds"    DIFF_TERM = TRUE;
 
-#INST "m_ccd/m_deser/gen_lvds_ch[0].m_ibufds"   DIFF_TERM = TRUE;
+INST "m_ccd/m_deser/gen_lvds_ch[0].m_ibufds"   DIFF_TERM = TRUE;
 #INST "m_ccd/m_deser/gen_lvds_ch[1].m_ibufds"   DIFF_TERM = TRUE;
 #INST "m_ccd/m_deser/gen_lvds_ch[2].m_ibufds"   DIFF_TERM = TRUE;
 #INST "m_ccd/m_deser/gen_lvds_ch[3].m_ibufds"   DIFF_TERM = TRUE;
@@ -350,13 +352,5 @@ INST "m_ccd/m_clk_fpga2ccd"    DIFF_TERM = TRUE;
 NET "pin_in_btn"         LOC = "P26"  | IOSTANDARD = LVCMOS25;#׀אחתול X2 pin(5)
 #NET "pin_out_led<0>"     LOC = "P24"  | IOSTANDARD = LVCMOS25;#׀אחתול X2 pin(8)
 #NET "pin_out_led<1>"     LOC = "L25"  | IOSTANDARD = LVCMOS25;#׀אחתול X2 pin(7)  SSN
-
-NET "pin_out_ccd_sck"      LOC = "L25"  | IOSTANDARD = LVCMOS25;
-NET "pin_out_ccd_ss_n"     LOC = "M16"  | IOSTANDARD = LVCMOS25;
-NET "pin_out_ccd_mosi"     LOC = "P24"  | IOSTANDARD = LVCMOS25;
-NET "pin_in_ccd_miso"      LOC = "N16"  | IOSTANDARD = LVCMOS25;
-
-NET "pin_in_ccd_syn_p"   LOC = "K25"  | IOSTANDARD = LVDS_25;
-NET "pin_in_ccd_syn_n"   LOC = "K26"  | IOSTANDARD = LVDS_25;
 
 NET "pin_out_led<0>"     LOC = "R26"  | IOSTANDARD = LVCMOS25;

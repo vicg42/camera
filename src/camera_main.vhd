@@ -39,8 +39,6 @@ port(
 --pin_out_TP2          : out   std_logic_vector(2 downto 0);
 pin_out_led         : out   std_logic_vector(0 downto 0);
 pin_in_btn          : in    std_logic;
-pin_in_ccd_syn_p    : in    std_logic;
-pin_in_ccd_syn_n    : in    std_logic;
 
 --------------------------------------------------
 --CCD
@@ -258,7 +256,7 @@ signal i_ccd_tst_in       : std_logic_vector(31 downto 0);
 signal i_ccd_tst_out      : std_logic_vector(31 downto 0);
 signal i_ccd_out          : TCCD_pinout;
 
-signal i_video_out       : TVout_pinout;
+signal i_video_out        : TVout_pinout;
 signal tst_vout_out       : std_logic_vector(31 downto 0);
 
 signal tst_ccd_syn       : std_logic;
@@ -512,7 +510,7 @@ p_in_rst    => i_rst
 --pin_out_TP2(2) <= i_vbufo_rd;
 --
 --pin_out_led(1) <= i_test_led(0);
-pin_out_led(0) <= i_video_vs or i_video_hs or i_video_den or OR_reduce(i_ccd_tst_out) or i_ccd_init_done or sr_tst_ccd_syn;--OR_reduce(i_mem_ctrl_status.rdy);
+pin_out_led(0) <= i_video_vs or i_video_hs or i_video_den or OR_reduce(i_ccd_tst_out) or i_ccd_init_done;-- or sr_tst_ccd_syn;--OR_reduce(i_mem_ctrl_status.rdy);
 
 
 m_led1_tst: fpga_test_01
@@ -571,22 +569,22 @@ i_ccd_tst_in(0) <= i_btn_push_edge;
 i_ccd_tst_in(i_ccd_tst_in'length - 1 downto 1) <= (others => '0');
 
 
-m_ibufds_sync : IBUFDS
-generic map (
-DIFF_TERM  => TRUE
-)
-port map (
-I   => pin_in_ccd_syn_p,
-IB  => pin_in_ccd_syn_n,
-O   => tst_ccd_syn
-);
-
-process(g_usrclk(1))
-begin
-  if rising_edge(g_usrclk(1)) then
-    sr_tst_ccd_syn <= tst_ccd_syn;
-  end if;
-end process;
+--m_ibufds_sync : IBUFDS
+--generic map (
+--DIFF_TERM  => TRUE
+--)
+--port map (
+--I   => pin_in_ccd_syn_p,
+--IB  => pin_in_ccd_syn_n,
+--O   => tst_ccd_syn
+--);
+--
+--process(g_usrclk(1))
+--begin
+--  if rising_edge(g_usrclk(1)) then
+--    sr_tst_ccd_syn <= i_ccd_tst_out(1);
+--  end if;
+--end process;
 
 
 --END MAIN

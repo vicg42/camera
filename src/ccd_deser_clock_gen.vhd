@@ -45,7 +45,8 @@ txclk     : out std_logic ;     -- CLK for serdes
 pixel_clk : out std_logic ;     -- Pixel clock output
 txclk_div : out std_logic ;     -- CLKDIV for serdes, and gearbox output = pixel clock / 2
 mmcm_lckd : out std_logic ;     -- Locked output from MMCM
-status    : out std_logic_vector(6 downto 0)   -- Status bus
+status    : out std_logic_vector(6 downto 0);   -- Status bus
+p_out_tst : out std_logic_vector(31 downto 0)
 );
 end ccd_deser_clock_gen ;
 
@@ -59,9 +60,11 @@ signal pixel_clk_int : std_logic ;
 
 begin
 
-pixel_clk <= pixel_clk_int ;
+pixel_clk <= pixel_clk_int ; -- p_out_tst(0) <= clkint;
 
-m_diff_clkin : IBUFGDS
+m_bufg : BUFG port map(I => clkint, O =>  p_out_tst(0)) ;
+
+m_ibufds : IBUFGDS
 --generic map(
 --DIFF_TERM => DIFF_TERM
 --)

@@ -20,7 +20,7 @@ constant C_PCFG_SIM : string := "OFF";
 
 --cfg CCD
 constant C_PCFG_CCD_BIT_PER_PIXEL   : integer := 10;
-constant C_PCFG_CCD_DATA_LINE_COUNT : integer := 32;
+constant C_PCFG_CCD_DATA_LINE_COUNT : integer := 0;
 constant C_PCFG_CCD_SYNC_LINE_COUNT : integer := 1;
 
 constant C_PCFG_CCD_LVDS_COUNT : integer := C_PCFG_CCD_DATA_LINE_COUNT

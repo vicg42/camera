@@ -60,7 +60,8 @@ txclk     : out std_logic ;     -- CLK for serdes
 pixel_clk : out std_logic ;     -- Pixel clock output
 txclk_div : out std_logic ;     -- CLKDIV for serdes, and gearbox output = pixel clock / 2
 mmcm_lckd : out std_logic ;     -- Locked output from MMCM
-status    : out std_logic_vector(6 downto 0)   -- Status bus
+status    : out std_logic_vector(6 downto 0);   -- Status bus
+p_out_tst : out std_logic_vector(31 downto 0)
 );
 end component;
 
@@ -108,6 +109,7 @@ signal sr_sync_rst      : std_logic_vector(6 downto 0);
 signal i_idelayctrl_rdy : std_logic;
 signal i_deser_rdy      : std_logic;
 
+signal tst_gen_out      : std_logic_vector(31 downto 0);
 
 begin
 
@@ -145,7 +147,8 @@ txclk     => open,
 pixel_clk => clk_in_int,
 txclk_div => clk_div,
 mmcm_lckd => i_mmcm_lckd,
-status    => open
+status    => open,
+p_out_tst => tst_gen_out
 );
 
 clk_in_int_inv <= not (clk_in_int);
@@ -452,6 +455,8 @@ end if;
 end process;
 
 p_out_tst(0) <= tst_mmcm_lckd;
+p_out_tst(1) <= tst_gen_out(0);
+p_out_tst(2) <= i_ibufds_dout(0);
 
 end xilinx;
 
