@@ -171,9 +171,9 @@ attribute IODELAY_GROUP of m_idelaye2: label is "deser_lvds_ccd_group";
 begin
 
 m_ibufds : IBUFDS
-generic map (
-DIFF_TERM  => FALSE -- Differential termination
-)
+--generic map (
+--DIFF_TERM  => TRUE -- Differential termination
+--)
 port map (
 I   => p_in_ccd.data_p(lvds_ch),
 IB  => p_in_ccd.data_n(lvds_ch),

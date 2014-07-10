@@ -26,16 +26,21 @@ use work.vout_pkg.all;
 --use work.mem_wr_pkg.all;
 --use work.video_ctrl_pkg.all;
 
+library unisim;
+use unisim.vcomponents.all;
+
 entity camera_main is
 port(
 --------------------------------------------------
 --Технологический порт
 --------------------------------------------------
-pin_out_TP          : out std_logic_vector(((C_PCFG_CCD_LVDS_COUNT - 1)
-                                          * C_PCFG_CCD_BIT_PER_PIXEL) - 1 downto 0);
-pin_out_TP2          : out   std_logic_vector(2 downto 0);
-pin_out_led         : out   std_logic_vector(1 downto 0);
+--pin_out_TP          : out std_logic_vector(((C_PCFG_CCD_LVDS_COUNT - 1)
+--                                          * C_PCFG_CCD_BIT_PER_PIXEL) - 1 downto 0);
+--pin_out_TP2          : out   std_logic_vector(2 downto 0);
+pin_out_led         : out   std_logic_vector(0 downto 0);
 pin_in_btn          : in    std_logic;
+pin_in_ccd_syn_p    : in    std_logic;
+pin_in_ccd_syn_n    : in    std_logic;
 
 --------------------------------------------------
 --CCD
@@ -43,10 +48,10 @@ pin_in_btn          : in    std_logic;
 pin_in_ccd          : in   TCCD_pinin;
 pin_out_ccd         : out  TCCD_pinout;
 
---------------------------------------------------
---Video Output
---------------------------------------------------
-pin_out_video       : out  TVout_pinout;
+----------------------------------------------------
+----Video Output
+----------------------------------------------------
+--pin_out_video       : out  TVout_pinout;
 
 ----------------------------------------------------
 ----Memory banks
@@ -256,6 +261,9 @@ signal i_ccd_out          : TCCD_pinout;
 signal i_video_out       : TVout_pinout;
 signal tst_vout_out       : std_logic_vector(31 downto 0);
 
+signal tst_ccd_syn       : std_logic;
+signal sr_tst_ccd_syn    : std_logic;
+
 attribute keep : string;
 attribute keep of g_usrclk : signal is "true";
 attribute keep of g_usr_highclk : signal is "true";
@@ -307,7 +315,7 @@ p_out_video_den => i_video_den,
 p_out_video_d   => i_video_d,
 p_out_video_clk => i_video_d_clk,
 
-p_out_init_done => open,
+p_out_init_done => i_ccd_init_done,
 p_out_detect_tr => open,
 
 p_out_tst   => i_ccd_tst_out,
@@ -319,31 +327,31 @@ p_in_rst    => i_rst
 );
 
 
---***********************************************************
+----***********************************************************
+----
+----***********************************************************
+--m_video_out : vout
+--generic map(
+--G_VOUT_TYPE => C_PCGF_VOUT_TYPE,
+--G_TEST_PATTERN => C_PCGF_VOUT_TEST
+--)
+--port map(
+----PHY
+--p_out_video   => i_video_out,--pin_out_video,
 --
---***********************************************************
-m_video_out : vout
-generic map(
-G_VOUT_TYPE => C_PCGF_VOUT_TYPE,
-G_TEST_PATTERN => C_PCGF_VOUT_TEST
-)
-port map(
---PHY
-p_out_video   => i_video_out,--pin_out_video,
-
-p_in_fifo_do  => i_vbufo_do,
-p_out_fifo_rd => i_vbufo_rd,
-p_in_fifo_empty => i_vbufo_empty,
-
-p_out_tst     => tst_vout_out,
-p_in_tst      => (others => '0'),
-
---System
-p_in_clk      => i_vout_clkin,
-p_in_rst      => i_rst
-);
-
-pin_out_video <= i_video_out;
+--p_in_fifo_do  => i_vbufo_do,
+--p_out_fifo_rd => i_vbufo_rd,
+--p_in_fifo_empty => i_vbufo_empty,
+--
+--p_out_tst     => tst_vout_out,
+--p_in_tst      => (others => '0'),
+--
+----System
+--p_in_clk      => i_vout_clkin,
+--p_in_rst      => i_rst
+--);
+--
+--pin_out_video <= i_video_out;
 
 
 ----***********************************************************
@@ -496,15 +504,15 @@ pin_out_video <= i_video_out;
 --***********************************************************
 --Технологический порт
 --***********************************************************
-gen_tp : for i in 1 to (C_PCFG_CCD_LVDS_COUNT - 1) generate
-pin_out_TP(i - 1) <= OR_reduce(i_video_d((C_PCFG_CCD_BIT_PER_PIXEL * (i + 1)) - 1 downto (C_PCFG_CCD_BIT_PER_PIXEL * i)));
-end generate;
-pin_out_TP2(0) <= tst_vout_out(0);--OR_reduce(i_ccd_tst_out);
-pin_out_TP2(1) <= i_video_out.ad723_hsrca;
-pin_out_TP2(2) <= i_vbufo_rd;
-
-pin_out_led(0) <= i_test_led(0);
-pin_out_led(1) <= i_video_vs or i_video_hs or i_video_den or OR_reduce(i_ccd_tst_out);--OR_reduce(i_mem_ctrl_status.rdy);
+--gen_tp : for i in 1 to (C_PCFG_CCD_LVDS_COUNT - 1) generate
+--pin_out_TP(i - 1) <= OR_reduce(i_video_d((C_PCFG_CCD_BIT_PER_PIXEL * (i + 1)) - 1 downto (C_PCFG_CCD_BIT_PER_PIXEL * i)));
+--end generate;
+--pin_out_TP2(0) <= tst_vout_out(0);--OR_reduce(i_ccd_tst_out);
+--pin_out_TP2(1) <= i_ccd_out.sck;
+--pin_out_TP2(2) <= i_vbufo_rd;
+--
+--pin_out_led(1) <= i_test_led(0);
+pin_out_led(0) <= i_video_vs or i_video_hs or i_video_den or OR_reduce(i_ccd_tst_out) or i_ccd_init_done or sr_tst_ccd_syn;--OR_reduce(i_mem_ctrl_status.rdy);
 
 
 m_led1_tst: fpga_test_01
@@ -562,6 +570,23 @@ end process;
 i_ccd_tst_in(0) <= i_btn_push_edge;
 i_ccd_tst_in(i_ccd_tst_in'length - 1 downto 1) <= (others => '0');
 
+
+m_ibufds_sync : IBUFDS
+generic map (
+DIFF_TERM  => TRUE
+)
+port map (
+I   => pin_in_ccd_syn_p,
+IB  => pin_in_ccd_syn_n,
+O   => tst_ccd_syn
+);
+
+process(g_usrclk(1))
+begin
+  if rising_edge(g_usrclk(1)) then
+    sr_tst_ccd_syn <= tst_ccd_syn;
+  end if;
+end process;
 
 
 --END MAIN

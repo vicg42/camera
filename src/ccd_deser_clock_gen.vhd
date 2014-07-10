@@ -61,10 +61,10 @@ begin
 
 pixel_clk <= pixel_clk_int ;
 
-iob_freqgen_in : IBUFGDS
-generic map(
-DIFF_TERM => DIFF_TERM
-)
+m_diff_clkin : IBUFGDS
+--generic map(
+--DIFF_TERM => DIFF_TERM
+--)
 port map (
 I  => clkin_p,
 IB => clkin_n,
