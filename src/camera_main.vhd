@@ -36,7 +36,7 @@ port(
 --------------------------------------------------
 --pin_out_TP          : out std_logic_vector(((C_PCFG_CCD_LVDS_COUNT - 1)
 --                                          * C_PCFG_CCD_BIT_PER_PIXEL) - 1 downto 0);
---pin_out_TP2          : out   std_logic_vector(2 downto 0);
+pin_out_TP2         : out   std_logic_vector(2 downto 0);
 pin_out_led         : out   std_logic_vector(0 downto 0);
 pin_in_btn          : in    std_logic;
 
@@ -246,10 +246,12 @@ signal i_vout_clkin       : std_logic;
 
 signal i_test_led         : std_logic_vector(1 downto 0);
 signal i_1ms              : std_logic;
-signal i_debcnt           : unsigned(8 downto 0) := (others => '0');
+constant CI_DEBVAL        : integer := 4;
+signal i_debcnt           : unsigned(log2(CI_DEBVAL) downto 0) := (others => '0');
+signal i_btn              : std_logic;
 signal i_btn_push         : std_logic;
-signal sr_btn_push        : std_logic_vector(0 to 1) := (others =>'0');
-signal i_btn_push_edge    : std_logic := '0';
+--signal sr_btn_push        : std_logic_vector(0 to 2) := (others =>'0');
+--signal i_btn_push_edge    : std_logic := '0';
 
 signal i_ccd_init_done    : std_logic;
 signal i_ccd_tst_in       : std_logic_vector(31 downto 0);
@@ -261,6 +263,7 @@ signal tst_vout_out       : std_logic_vector(31 downto 0);
 
 signal tst_ccd_syn       : std_logic;
 signal sr_tst_ccd_syn    : std_logic;
+signal tst_1ms           : std_logic;
 
 attribute keep : string;
 attribute keep of g_usrclk : signal is "true";
@@ -505,10 +508,10 @@ p_in_rst    => i_rst
 --gen_tp : for i in 1 to (C_PCFG_CCD_LVDS_COUNT - 1) generate
 --pin_out_TP(i - 1) <= OR_reduce(i_video_d((C_PCFG_CCD_BIT_PER_PIXEL * (i + 1)) - 1 downto (C_PCFG_CCD_BIT_PER_PIXEL * i)));
 --end generate;
---pin_out_TP2(0) <= tst_vout_out(0);--OR_reduce(i_ccd_tst_out);
---pin_out_TP2(1) <= i_ccd_out.sck;
---pin_out_TP2(2) <= i_vbufo_rd;
---
+pin_out_TP2(0) <= i_ccd_tst_out(16);--spi
+pin_out_TP2(1) <= i_ccd_tst_out(3);--clk:fpga -> ccd
+pin_out_TP2(2) <= i_ccd_tst_out(7);--clk:fpga <- ccd
+
 --pin_out_led(1) <= i_test_led(0);
 pin_out_led(0) <= i_video_vs or i_video_hs or i_video_den or OR_reduce(i_ccd_tst_out) or i_ccd_init_done;-- or sr_tst_ccd_syn;--OR_reduce(i_mem_ctrl_status.rdy);
 
@@ -516,7 +519,7 @@ pin_out_led(0) <= i_video_vs or i_video_hs or i_video_den or OR_reduce(i_ccd_tst
 m_led1_tst: fpga_test_01
 generic map(
 G_BLINK_T05   =>10#250#,
-G_CLK_T05us   =>10#10#
+G_CLK_T05us   =>10#155#
 )
 port map(
 p_out_test_led => i_test_led(0),
@@ -527,31 +530,33 @@ p_out_1ms      => i_1ms,
 -------------------------------
 --System
 -------------------------------
-p_in_clk       => g_usrclk(5),
+p_in_clk       => g_usrclk(1),
 p_in_rst       => i_rst
 );
 
 
-process(i_rst, g_usrclk(5))
+process(i_rst, g_usrclk(1))
 begin
   if i_rst = '1' then
     i_debcnt <= (others => '0');
     i_btn_push <= '0';
+    i_btn <= '1';
 
-  elsif rising_edge(g_usrclk(5)) then
+  elsif rising_edge(g_usrclk(1)) then
 
-    if pin_in_btn = '1' then
-      i_debcnt <= (others => '0');
-      i_btn_push <= '0';
-    else
       if i_1ms = '1' then
-        if i_debcnt = TO_UNSIGNED(80 ,i_debcnt'length) then
-          i_btn_push <= '1';
+        i_btn <= pin_in_btn;
+        if i_btn = '1' then
+          i_debcnt <= (others => '0');
+          i_btn_push <= '0';
         else
-          i_debcnt <= i_debcnt + 1;
+            if i_debcnt = TO_UNSIGNED(CI_DEBVAL ,i_debcnt'length) then
+              i_btn_push <= '1';
+            else
+              i_debcnt <= i_debcnt + 1;
+            end if;
         end if;
       end if;
-    end if;
 
   end if;
 end process;
@@ -560,12 +565,16 @@ end process;
 process(g_usrclk(1))
 begin
   if rising_edge(g_usrclk(1)) then
-    sr_btn_push <= i_btn_push & sr_btn_push(0 to 0);
-    i_btn_push_edge <= sr_btn_push(0) and not sr_btn_push(1);
+--    sr_btn_push <= i_btn_push & sr_btn_push(0 to 1);
+--    i_btn_push_edge <= sr_btn_push(1) and not sr_btn_push(2);
+
+    if i_1ms = '1' then
+    tst_1ms <= not tst_1ms;
+    end if;
   end if;
 end process;
 
-i_ccd_tst_in(0) <= i_btn_push_edge;
+i_ccd_tst_in(0) <= i_btn_push;--i_btn_push_edge;
 i_ccd_tst_in(i_ccd_tst_in'length - 1 downto 1) <= (others => '0');
 
 

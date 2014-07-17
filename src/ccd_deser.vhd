@@ -454,9 +454,8 @@ if rising_edge(p_in_ccdclk) then
 end if;
 end process;
 
-p_out_tst(0) <= tst_mmcm_lckd;
-p_out_tst(1) <= tst_gen_out(0);
-p_out_tst(2) <= i_ibufds_dout(0);
+p_out_tst(3 downto 0) <= tst_gen_out(3 downto 0);
+p_out_tst(4) <= tst_mmcm_lckd;
 
 end xilinx;
 

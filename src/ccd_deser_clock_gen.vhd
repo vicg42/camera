@@ -26,6 +26,9 @@ use IEEE.std_logic_unsigned.all ;
 library unisim ;
 use unisim.vcomponents.all ;
 
+library work;
+use work.reduce_pack.all;
+
 entity ccd_deser_clock_gen is
 generic (
 CLKIN_PERIOD    : real := 6.000 ;     -- clock period (ns) of input clock on clkin_p
@@ -57,22 +60,31 @@ signal mmcmout_xn    : std_logic ;
 signal mmcmout_x1    : std_logic ;
 signal mmcmout_d2    : std_logic ;
 signal pixel_clk_int : std_logic ;
+signal clkint_tmp    : std_logic ;
+signal tst_ccdclkin_cnt: std_logic_vector(3 downto 0) ;
+
 
 begin
 
-pixel_clk <= pixel_clk_int ; -- p_out_tst(0) <= clkint;
+process(clkint)
+begin
+if rising_edge(clkint) then
+tst_ccdclkin_cnt <= tst_ccdclkin_cnt + 1;
+end if;
+end process;
 
-m_bufg : BUFG port map(I => clkint, O =>  p_out_tst(0)) ;
+p_out_tst(3 downto 0) <= tst_ccdclkin_cnt;
 
-m_ibufds : IBUFGDS
---generic map(
---DIFF_TERM => DIFF_TERM
---)
+pixel_clk <= pixel_clk_int ;
+
+m_ibufds : IBUFDS
 port map (
 I  => clkin_p,
 IB => clkin_n,
-O  => clkint
+O  => clkint_tmp
 );
+m_bufg : BUFG port map(I => clkint_tmp, O => clkint) ;
+
 
 --################################
 -- use an MMCM
@@ -86,7 +98,7 @@ status(6) <= '1' ;
 
 tx_mmcm_adv_inst : MMCME2_ADV
 generic map(
-COMPENSATION    => "ZHOLD",      -- "SYSTEM_SYNCHRONOUS", "SOURCE_SYNCHRONOUS", "INTERNAL", "EXTERNAL", "DCM2MMCM", "MMCM2DCM"
+--COMPENSATION    => "ZHOLD",      -- "SYSTEM_SYNCHRONOUS", "SOURCE_SYNCHRONOUS", "INTERNAL", "EXTERNAL", "DCM2MMCM", "MMCM2DCM"
 BANDWIDTH       => "OPTIMIZED",  -- "high", "low" or "optimized"
 
 CLKIN1_PERIOD   => CLKIN_PERIOD, -- clock period (ns) of input clock on clkin1

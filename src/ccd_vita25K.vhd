@@ -117,20 +117,22 @@ signal i_ccd_deser_rst  : std_logic;
 signal i_tst_deser_out  : std_logic_vector(31 downto 0);
 signal i_tst_spi_out    : std_logic_vector(31 downto 0);
 
-signal tst_cnt_ccdclkout : unsigned(15 downto 0);
+signal tst_cnt_ccdclkout : unsigned(3 downto 0);
 
 
 
 --MAIN
 begin
 
-p_out_tst(0) <= OR_reduce(std_logic_vector(tst_cnt_ccdclkout)) or OR_reduce(i_tst_deser_out(15 downto 0));
-p_out_tst(1) <= i_tst_deser_out(2);
+p_out_tst(3 downto 0) <= std_logic_vector(tst_cnt_ccdclkout);
+p_out_tst(7 downto 4) <= i_tst_deser_out(3 downto 0);
+p_out_tst(8) <= i_tst_deser_out(2);
+p_out_tst(9) <= OR_reduce(i_tst_deser_out(15 downto 0)) or OR_reduce(std_logic_vector(tst_cnt_ccdclkout)) or i_ccd_rst_n;
 p_out_tst(31 downto 16) <= i_tst_spi_out(15 downto 0);
 
-process(i_tst_deser_out(1))
+process(p_in_ccdclk)
 begin
-  if rising_edge(i_tst_deser_out(1)) then
+  if rising_edge(p_in_ccdclk) then
     tst_cnt_ccdclkout <= tst_cnt_ccdclkout + 1;
   end if;
 end process;
