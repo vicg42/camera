@@ -49,6 +49,7 @@ architecture behavior of ccd_spi is
 
 component spi_core is
 generic(
+G_DBG : string := "OFF";
 G_AWIDTH : integer := 16;
 G_DWIDTH : integer := 16
 );
@@ -79,6 +80,10 @@ S_INIT_WR,
 S_INIT_WR_1,
 S_INIT_WR_2,
 
+--S_INIT1_WR,
+--S_INIT1_WR_1,
+--S_INIT1_WR_2,
+
 S_INIT_RD,
 S_INIT_RD_1,
 S_INIT_RD_2,
@@ -108,9 +113,9 @@ signal i_adr            : std_logic_vector(C_CCD_SPI_AWIDTH - 1 downto 0) := (ot
 signal i_txd            : std_logic_vector(C_CCD_SPI_DWIDTH - 1 downto 0) := (others => '0');
 signal i_rxd            : std_logic_vector(C_CCD_SPI_DWIDTH - 1 downto 0) := (others => '0');
 
-signal i_regcnt         : unsigned(log2(C_CCD_REGINIT'length) - 1 downto 0) := (others => '0');
+signal i_regcnt         : unsigned(log2(C_CCD_REGINIT2'length) - 1 downto 0) := (others => '0');
 
-signal i_ccd_rst_n      : std_logic := '0';
+signal i_ccd_rst_n      : std_logic := '1';
 signal i_init_done      : std_logic := '0';
 
 signal sr_btn_push      : unsigned(0 to 1) := (others => '0');
@@ -152,7 +157,7 @@ begin
   if rising_edge(p_in_clk) then
     if p_in_rst = '1' then
       i_regcnt <= (others => '0');
-      i_adr <= (others => '0'); i_ccd_rst_n <= '0'; i_id_rd_done <= '0';
+      i_adr <= (others => '0'); i_ccd_rst_n <= '1'; i_id_rd_done <= '0';
       i_txd <= (others => '0');
       i_spi_core_dir <= '0';
       i_spi_core_start <= '0';
@@ -330,6 +335,14 @@ begin
                 i_fsm_spi_cs <= S_INIT_RD;
                 end if;
 
+
+--                if i_init_done = '1' then
+--                i_fsm_spi_cs <= S_REG_USR;
+--                else
+--                i_fsm_spi_cs <= S_INIT1_WR;
+--                end if;
+--                i_regcnt <= (others => '0');
+
               else
 
                 if i_init_done = '0' then
@@ -337,10 +350,46 @@ begin
                 else
                   i_fsm_spi_cs <= S_INIT_RD;
                 end if;
+
                 i_regcnt <= i_regcnt + 1;
 
               end if;
             end if;
+
+
+--          when S_INIT1_WR =>
+--
+--            for i in 0 to C_CCD_REGINIT2'length - 1 loop
+--              if i_regcnt = i then
+--                i_adr <= C_CCD_REGINIT2(i)(24 downto 16) & '1';--RegAdr & CMD(0/1 -Read/Write)
+--                i_txd <= C_CCD_REGINIT2(i)(15 downto 0);
+--              end if;
+--            end loop;
+--
+--            i_spi_core_dir <= C_SPI_WRITE;
+--            i_spi_core_start <= '1';
+--            i_fsm_spi_cs <= S_INIT1_WR_1;
+--
+--          when S_INIT1_WR_1 =>
+--
+--            i_spi_core_start <= '0';
+--            i_fsm_spi_cs <= S_INIT1_WR_2;
+--
+--          when S_INIT1_WR_2 =>
+--
+--            if i_busy = '0' then
+--              if i_regcnt = TO_UNSIGNED(C_CCD_REGINIT2'length - 1, i_regcnt'length) then
+--                i_regcnt <= TO_UNSIGNED(C_CCD_SPI_READ_START_REG, i_regcnt'length);
+--                i_init_done <= '1';
+--
+--                i_fsm_spi_cs <= S_INIT_RD;
+--
+--              else
+--                i_fsm_spi_cs <= S_INIT1_WR;
+--                i_regcnt <= i_regcnt + 1;
+--              end if;
+--            end if;
+
         end case;
 
       end if; --if i_clk_en = '1' then
@@ -351,6 +400,7 @@ end process;
 
 m_spi_core : spi_core
 generic map(
+G_DBG => "ON",
 G_AWIDTH => C_CCD_SPI_AWIDTH,
 G_DWIDTH => C_CCD_SPI_DWIDTH
 )
