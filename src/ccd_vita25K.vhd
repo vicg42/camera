@@ -127,7 +127,7 @@ begin
 p_out_tst(3 downto 0) <= std_logic_vector(tst_cnt_ccdclkout);
 p_out_tst(7 downto 4) <= i_tst_deser_out(3 downto 0);
 p_out_tst(8) <= i_tst_deser_out(2);
-p_out_tst(9) <= OR_reduce(i_tst_deser_out(15 downto 0)) or OR_reduce(std_logic_vector(tst_cnt_ccdclkout)) or i_ccd_rst_n;
+p_out_tst(9) <= OR_reduce(i_tst_deser_out(4 downto 0));-- or OR_reduce(std_logic_vector(tst_cnt_ccdclkout)) or i_ccd_rst_n;
 p_out_tst(31 downto 16) <= i_tst_spi_out(15 downto 0);
 
 process(p_in_ccdclk)
