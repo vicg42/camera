@@ -156,6 +156,8 @@ clk_p : std_logic;
 clk_n : std_logic;
 
 miso  : std_logic;
+
+monitor : std_logic_vector(2 downto 0);
 end record;
 
 type TCCD_pinout is record

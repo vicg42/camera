@@ -49,6 +49,9 @@ NET "pin_in_ccd_clk_p"     LOC = "N21"  | IOSTANDARD = LVDS_25;#LOC = "R25"  | I
 NET "pin_in_ccd_clk_n"     LOC = "N22"  | IOSTANDARD = LVDS_25;#LOC = "P25"  | IOSTANDARD = LVDS_25;#
 #NET "pin_in_ccd_clk_p" CLOCK_DEDICATED_ROUTE = BACKBONE;
 #INST "m_ccd/m_deser/m_clk_gen/loop8.tx_mmcm_adv_inst" LOC=MMCME2_ADV_X0Y1;
+NET "pin_in_ccd_monitor<0>"  LOC = "M21"  | IOSTANDARD = LVCMOS25;
+NET "pin_in_ccd_monitor<1>"  LOC = "M22"  | IOSTANDARD = LVCMOS25;
+NET "pin_in_ccd_monitor<2>"  LOC = "R22"  | IOSTANDARD = LVCMOS25;
 
 NET "pin_in_ccd_data_p<0>"   LOC = "R21"  | IOSTANDARD = LVDS_25;#LOC = "K25"  | IOSTANDARD = LVDS_25;# #SYNC #Clock Region Bank 13
 NET "pin_in_ccd_data_n<0>"   LOC = "P21"  | IOSTANDARD = LVDS_25;#LOC = "K26"  | IOSTANDARD = LVDS_25;# #SYNC
