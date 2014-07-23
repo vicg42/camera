@@ -65,9 +65,10 @@ bufg_clk4: BUFG port map(I => i_clk0_out(0), O => p_out_gclk(4)); --400MHz
 bufg_clk5: BUFG port map(I => g_clkin(0), O => p_out_gclk(5)); --20MHz
 
 gen_tv1 : if strcmp(G_VOUT_TYPE, "TV") generate begin
-bufg_clk6: BUFG port map(I => i_clk2_out(0), O => p_out_gclk(2)); --17,734472MHz
+bufg_clk2: BUFG port map(I => i_clk2_out(0), O => p_out_gclk(2)); --17,734472MHz
 end generate gen_tv1;
 
+p_out_gclk(6) <= g_clkin(2); --62MHz
 
 gen_clkin : for i in 0 to p_in_clk.clk'length - 1 generate
 m_ibufg : IBUFG port map(I  => p_in_clk.clk(i), O => g_clkin(i));
