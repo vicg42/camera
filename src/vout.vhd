@@ -18,6 +18,7 @@ use work.vout_pkg.all;
 
 entity vout is
 generic(
+G_VDWIDTH : integer := 32;
 G_VOUT_TYPE : string := "VGA";
 G_TEST_PATTERN : string := "ON"
 );
@@ -25,7 +26,7 @@ port(
 --PHY
 p_out_video   : out  TVout_pinout;
 
-p_in_fifo_do  : in   std_logic_vector(31 downto 0);
+p_in_fifo_do  : in   std_logic_vector(G_VDWIDTH - 1 downto 0);
 p_out_fifo_rd : out  std_logic;
 p_in_fifo_empty : in  std_logic;
 
@@ -88,8 +89,9 @@ signal i_vga_vs           : std_logic;
 signal i_vga_hs           : std_logic;
 signal i_vga_den          : std_logic;
 signal i_vga_pix_clk      : std_logic;
-signal i_cnt              : unsigned(9 downto 0) := (others => '0');
-
+signal sr_vga_vs          : unsigned(0 to 1) := (others => '0');
+signal i_vga_work         : std_logic;
+signal i_cnt              : unsigned(8 downto 0) := (others => '0');
 
 
 --MAIN
@@ -124,8 +126,9 @@ p_out_video.adv7123_blank_n <= i_vga_den;
 p_out_video.adv7123_sync_n  <= '0';
 p_out_video.adv7123_psave_n <= '1';--Power Down OFF
 p_out_video.adv7123_clk     <= not i_vga_pix_clk;
+p_out_video.ad723_ce <= '0';
 
-p_out_fifo_rd <= i_vga_den;
+p_out_fifo_rd <= i_vga_den and i_vga_work;
 
 p_out_video.vga_hs <= i_vga_hs;
 p_out_video.vga_vs <= i_vga_vs;
@@ -135,15 +138,38 @@ begin
 p_out_video.adv7123_db <= p_in_fifo_do(10 - 1 downto 0);
 p_out_video.adv7123_dg <= p_in_fifo_do(10 - 1 downto 0);
 p_out_video.adv7123_dr <= p_in_fifo_do(10 - 1 downto 0);
+
+
+process(i_vga_pix_clk)
+begin
+if rising_edge(i_vga_pix_clk) then
+  if p_in_rst = '1' then
+    sr_vga_vs <= (others => '0');
+    i_vga_work <= '0';
+  else
+    sr_vga_vs <= i_vga_vs & sr_vga_vs(0 to 0);
+
+    if p_in_fifo_empty = '0' then
+      if sr_vga_vs(0) = '0' and sr_vga_vs(1) = '1' then
+        i_vga_work <= '1';
+      end if;
+    end if;
+  end if;
+end if;
+end process;
+
 end generate gen_tst_off;
 
 gen_tst_on : if strcmp(G_TEST_PATTERN, "ON") generate
 begin
 gen : for i in 0 to p_out_video.adv7123_db'length - 1 generate
-p_out_video.adv7123_db(i) <= i_cnt(7);
-p_out_video.adv7123_dg(i) <= i_cnt(8);
-p_out_video.adv7123_dr(i) <= i_cnt(9);
+p_out_video.adv7123_db(i) <= i_cnt(6);
+p_out_video.adv7123_dg(i) <= i_cnt(7);
+p_out_video.adv7123_dr(i) <= i_cnt(8);
 end generate;
+--p_out_video.adv7123_db <= i_cnt(6) & i_cnt(3) & i_cnt(0) & "0000000";
+--p_out_video.adv7123_dg <= i_cnt(7) & i_cnt(4) & i_cnt(1) & "0000000";
+--p_out_video.adv7123_dr <= i_cnt(8) & i_cnt(5) & i_cnt(2) & "0000000";
 
 process(i_vga_pix_clk)
 begin
@@ -162,7 +188,7 @@ end generate gen_vga;
 
 
 --################################
---TV
+--TV (896pix x 625line) pixclk 17,734472MHz
 --################################
 gen_tv : if strcmp(G_VOUT_TYPE, "TV") generate
 begin
@@ -180,8 +206,8 @@ W2_32us => 41 , --т.е. 2.32 us
 W4_7us  => 83 , --т.е. 4.7 us
 W1_53us => 27 , --т.е. 1.53 us
 W5_8us  => 102, --т.е. 5.8 us
-var1    => 0  , --продстройка
-var2    => 0    --продстройка
+var1    => 13  , --продстройка
+var2    => 14    --продстройка
 )
 port map(
 p_out_tv_kci   => open,
@@ -199,13 +225,13 @@ p_out_video.ad723_vsrca <= '1';
 p_out_video.ad723_ce    <= '1';
 p_out_video.ad723_sa    <= '0';
 p_out_video.ad723_stnd  <= '0';--0/1 - PAL/NTSC
-p_out_video.ad723_fcs4  <= i_tv_color_clk;
+p_out_video.ad723_fcs4  <= not i_tv_color_clk;
 p_out_video.ad723_term  <= '1';
 
 p_out_video.adv7123_blank_n <= i_tv_den;
 p_out_video.adv7123_sync_n  <= '0';
 p_out_video.adv7123_psave_n <= '1';--Power Down OFF
-p_out_video.adv7123_clk     <= i_tv_pix_clk;
+p_out_video.adv7123_clk     <= not i_tv_pix_clk;
 
 p_out_fifo_rd <= i_tv_den;
 
@@ -226,6 +252,10 @@ p_out_video.adv7123_db(i) <= i_cnt(6);
 p_out_video.adv7123_dg(i) <= i_cnt(7);
 p_out_video.adv7123_dr(i) <= i_cnt(8);
 end generate;
+--p_out_video.adv7123_db <= i_cnt(6) & i_cnt(3) & i_cnt(0) & "0000000";
+--p_out_video.adv7123_dg <= i_cnt(7) & i_cnt(4) & i_cnt(1) & "0000000";
+--p_out_video.adv7123_dr <= i_cnt(8) & i_cnt(5) & i_cnt(2) & "0000000";
+
 
 process(i_tv_pix_clk)
 begin
@@ -244,44 +274,3 @@ end generate gen_tv;
 
 --END MAIN
 end architecture;
-
-
---component monvctv is
---port(
---clk13m,clk17m : in std_logic;
---monvc_en : in std_logic;
---clk17_out,clk13_out : out std_logic;
---csync_out,ce_out,term_out,sa_out,stnd_out,sync_out,psave_out,blank_out : out std_logic;
---tvdet_in : in std_logic;
---r_out,g_out,b_out : out std_logic_vector(9 downto 0)
---);
---end component;
-
-----// Видеоконтроллер TV 886H x 625V x 50Hz x 13.846MHz
---i_ad723_ce <= not p_in_rst;
---
---m_tv_timegen : monvctv
---port map(
---clk17m    => p_in_clk(0),--(clk17m),
---clk13m    => p_in_clk(1),--(clk13m),
---monvc_en  => i_ad723_ce,--(monvc_en),
---clk17_out => p_out_video.ad723_fcs4,--(TV4FSC),
---csync_out => p_out_video.ad723_hsrca,--(csync_out),
---ce_out    => p_out_video.ad723_ce,--(CE),
---term_out  => p_out_video.ad723_term,--(TERM),
---sa_out    => p_out_video.ad723_sa,--(SA),
---stnd_out  => p_out_video.ad723_stnd,--(STND),
---tvdet_in  => '0',--(TVDET),
---blank_out => p_out_video.adv7123_blank_n,--(DACBBL),
---sync_out  => p_out_video.adv7123_sync_n,--(DACBSY),
---clk13_out => p_out_video.adv7123_clk,--(DACBCL),
---psave_out => p_out_video.adv7123_psave_n,--(DACBPS),
---r_out     => p_out_video.adv7123_dr,--(DACBR),
---g_out     => p_out_video.adv7123_dg,--(DACBG),
---b_out     => p_out_video.adv7123_db --(DACBB)
---);
---
---p_out_video.ad723_vsrca <= '1';
---
---p_out_video.vga_hs <= '0';
---p_out_video.vga_vs <= '0';
