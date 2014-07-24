@@ -242,6 +242,7 @@ signal i_vbufi_pfull                     : std_logic;
 signal i_vfr_rdy                         : std_logic := '0';
 signal i_vread_en                        : std_logic := '0';
 signal i_vwrite_en                       : std_logic := '0';
+signal sr_vwrite_en                      : std_logic_vector(0 to 1);
 signal i_vreader_dout                    : std_logic_vector(G_MEMRD_DWIDTH - 1 downto 0);
 signal i_vreader_dout_en                 : std_logic;
 
@@ -363,7 +364,10 @@ if rising_edge(p_in_clk) then
       i_vfr_rdy <= '1';
     end if;
 
-    if i_vfr_rdy = '1' then
+    if i_vwrite_en = '0' then
+      i_vread_en <= '0';
+
+    elsif i_vfr_rdy = '1' then
       if i_vwrite_en = '1' then
         i_vread_en <= '1';
       end if;
