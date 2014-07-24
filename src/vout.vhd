@@ -15,6 +15,7 @@ use ieee.numeric_std.all;
 library work;
 use work.vicg_common_pkg.all;
 use work.vout_pkg.all;
+use work.reduce_pack.all;
 
 entity vout is
 generic(
@@ -92,7 +93,10 @@ signal i_vga_pix_clk      : std_logic;
 signal sr_vga_vs          : unsigned(0 to 1) := (others => '0');
 signal i_vga_work         : std_logic;
 signal i_cnt              : unsigned(8 downto 0) := (others => '0');
-
+signal i_fifo_rd          : std_logic;
+signal i_fifo_do          : std_logic_vector(G_VDWIDTH - 1 downto 0);
+signal sr_fifo_rd         : std_logic_vector(0 to 1);
+signal sr_fifo_rd_start   : std_logic;
 
 --MAIN
 begin
@@ -103,7 +107,8 @@ begin
 gen_vga : if strcmp(G_VOUT_TYPE, "VGA") generate
 begin
 
-p_out_tst <= (others => '0');
+p_out_tst(0) <= sr_fifo_rd_start;
+p_out_tst(1) <= OR_reduce(i_fifo_do);
 
 i_vga_pix_clk <= p_in_clk;
 
@@ -128,16 +133,21 @@ p_out_video.adv7123_psave_n <= '1';--Power Down OFF
 p_out_video.adv7123_clk     <= not i_vga_pix_clk;
 p_out_video.ad723_ce <= '0';
 
-p_out_fifo_rd <= i_vga_den and i_vga_work;
+p_out_fifo_rd <= i_fifo_rd; i_fifo_rd <= i_vga_den and i_vga_work;
 
 p_out_video.vga_hs <= i_vga_hs;
 p_out_video.vga_vs <= i_vga_vs;
 
 gen_tst_off : if strcmp(G_TEST_PATTERN, "OFF") generate
 begin
-p_out_video.adv7123_db <= p_in_fifo_do(10 - 1 downto 0);
-p_out_video.adv7123_dg <= p_in_fifo_do(10 - 1 downto 0);
-p_out_video.adv7123_dr <= p_in_fifo_do(10 - 1 downto 0);
+gen : for i in 0 to p_out_video.adv7123_db'length - 1 generate
+p_out_video.adv7123_db(i) <= i_fifo_do(5);
+p_out_video.adv7123_dg(i) <= i_fifo_do(6);
+p_out_video.adv7123_dr(i) <= i_fifo_do(7);
+end generate;
+--p_out_video.adv7123_db <= i_fifo_do(8 - 1 downto 0) & "00";
+--p_out_video.adv7123_dg <= i_fifo_do(8 - 1 downto 0) & "00";
+--p_out_video.adv7123_dr <= i_fifo_do(8 - 1 downto 0) & "00";
 
 
 process(i_vga_pix_clk)
@@ -146,6 +156,8 @@ if rising_edge(i_vga_pix_clk) then
   if p_in_rst = '1' then
     sr_vga_vs <= (others => '0');
     i_vga_work <= '0';
+    sr_fifo_rd <= (others => '0');
+    sr_fifo_rd_start <= '0';
   else
     sr_vga_vs <= i_vga_vs & sr_vga_vs(0 to 0);
 
@@ -154,6 +166,13 @@ if rising_edge(i_vga_pix_clk) then
         i_vga_work <= '1';
       end if;
     end if;
+
+    if i_fifo_rd = '1' then
+      i_fifo_do <= p_in_fifo_do;
+    end if;
+
+    sr_fifo_rd <= i_fifo_rd & sr_fifo_rd(0 to 0);
+    sr_fifo_rd_start <= sr_fifo_rd(0) and not sr_fifo_rd(1);
   end if;
 end if;
 end process;
@@ -225,7 +244,7 @@ p_out_video.ad723_vsrca <= '1';
 p_out_video.ad723_ce    <= '1';
 p_out_video.ad723_sa    <= '0';
 p_out_video.ad723_stnd  <= '0';--0/1 - PAL/NTSC
-p_out_video.ad723_fcs4  <= not i_tv_color_clk;
+p_out_video.ad723_fcs4  <= i_tv_color_clk;
 p_out_video.ad723_term  <= '1';
 
 p_out_video.adv7123_blank_n <= i_tv_den;
@@ -233,29 +252,49 @@ p_out_video.adv7123_sync_n  <= '0';
 p_out_video.adv7123_psave_n <= '1';--Power Down OFF
 p_out_video.adv7123_clk     <= not i_tv_pix_clk;
 
-p_out_fifo_rd <= i_tv_den;
+p_out_fifo_rd <= i_tv_den and i_vga_work;
+
+process(i_tv_pix_clk)
+begin
+if rising_edge(i_tv_pix_clk) then
+  if p_in_rst = '1' then
+    sr_vga_vs <= (others => '0');
+    i_vga_work <= '0';
+  else
+    sr_vga_vs <= i_tv_field & sr_vga_vs(0 to 0);
+
+    if p_in_fifo_empty = '0' then
+      if sr_vga_vs(0) = '0' and sr_vga_vs(1) = '1' then
+        i_vga_work <= '1';
+      end if;
+    end if;
+  end if;
+end if;
+end process;
 
 p_out_video.vga_hs <= '0';
 p_out_video.vga_vs <= '0';
 
 gen_tst_off : if strcmp(G_TEST_PATTERN, "OFF") generate
 begin
-p_out_video.adv7123_db <= p_in_fifo_do(10 - 1 downto 0);
-p_out_video.adv7123_dg <= p_in_fifo_do(10 - 1 downto 0);
-p_out_video.adv7123_dr <= p_in_fifo_do(10 - 1 downto 0);
+p_out_video.adv7123_db <= p_in_fifo_do(8 - 1 downto 0) & "00";
+p_out_video.adv7123_dg <= p_in_fifo_do(8 - 1 downto 0) & "00";
+p_out_video.adv7123_dr <= p_in_fifo_do(8 - 1 downto 0) & "00";
 end generate gen_tst_off;
 
 gen_tst_on : if strcmp(G_TEST_PATTERN, "ON") generate
 begin
-gen : for i in 0 to p_out_video.adv7123_db'length - 1 generate
-p_out_video.adv7123_db(i) <= i_cnt(6);
-p_out_video.adv7123_dg(i) <= i_cnt(7);
-p_out_video.adv7123_dr(i) <= i_cnt(8);
-end generate;
---p_out_video.adv7123_db <= i_cnt(6) & i_cnt(3) & i_cnt(0) & "0000000";
---p_out_video.adv7123_dg <= i_cnt(7) & i_cnt(4) & i_cnt(1) & "0000000";
---p_out_video.adv7123_dr <= i_cnt(8) & i_cnt(5) & i_cnt(2) & "0000000";
-
+--gen : for i in 0 to p_out_video.adv7123_db'length - 1 generate
+--p_out_video.adv7123_db(i) <= i_cnt(6);
+--p_out_video.adv7123_dg(i) <= i_cnt(7);
+--p_out_video.adv7123_dr(i) <= i_cnt(8);
+--end generate;
+----p_out_video.adv7123_db <= i_cnt(6) & i_cnt(3) & i_cnt(0) & "0000000";
+----p_out_video.adv7123_dg <= i_cnt(7) & i_cnt(4) & i_cnt(1) & "0000000";
+----p_out_video.adv7123_dr <= i_cnt(8) & i_cnt(5) & i_cnt(2) & "0000000";
+p_out_video.adv7123_db <= std_logic_vector(i_cnt(7 downto 0)) & "00";
+p_out_video.adv7123_dg <= std_logic_vector(i_cnt(7 downto 0)) & "00";
+p_out_video.adv7123_dr <= std_logic_vector(i_cnt(7 downto 0)) & "00";
 
 process(i_tv_pix_clk)
 begin
