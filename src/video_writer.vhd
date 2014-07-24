@@ -93,7 +93,8 @@ signal i_vfr_rdy                   : std_logic;
 
 signal tst_mem_wr_out              : std_logic_vector(31 downto 0);
 signal tst_fsmstate,tst_fsm_cs_dly : unsigned(3 downto 0) := (others => '0');
-
+signal tst_upp_data                : std_logic_vector(p_in_upp_data'range);
+signal tst_upp_data_rd,i_upp_data_rd : std_logic;
 
 --MAIN
 begin
@@ -104,7 +105,7 @@ begin
 ------------------------------------
 --p_out_tst(31 downto 0) <= (others=>'0');
 p_out_tst(5 downto 0) <= tst_mem_wr_out(5 downto 0);
-p_out_tst(7 downto 6) <= (others=>'0');
+p_out_tst(7 downto 6) <= OR_reduce(tst_upp_data) & tst_upp_data_rd;
 p_out_tst(10 downto 8 )<= std_logic_vector(tst_fsm_cs_dly(2 downto 0));
 p_out_tst(11) <= '0';
 p_out_tst(21 downto 16) <= tst_mem_wr_out(21 downto 16);--i_mem_trn_len(5 downto 0);
@@ -115,6 +116,8 @@ process(p_in_clk)
 begin
   if rising_edge(p_in_clk) then
     tst_fsm_cs_dly <= tst_fsmstate;
+    tst_upp_data <= p_in_upp_data;
+    tst_upp_data_rd <= i_upp_data_rd;
   end if;
 end process;
 tst_fsmstate <= TO_UNSIGNED(16#01#, tst_fsmstate'length) when i_fsm_state_cs = S_MEM_START else
@@ -247,7 +250,7 @@ p_out_cfg_mem_done   => i_mem_done,
 --Связь с пользовательскими буферами
 -------------------------------
 p_in_usr_txbuf_dout  => p_in_upp_data,
-p_out_usr_txbuf_rd   => p_out_upp_data_rd,
+p_out_usr_txbuf_rd   => i_upp_data_rd,
 p_in_usr_txbuf_empty => i_upp_buf_empty,
 
 p_out_usr_rxbuf_din  => open,
@@ -269,7 +272,7 @@ p_out_tst            => tst_mem_wr_out,
 p_in_clk             => p_in_clk,
 p_in_rst             => p_in_rst
 );
-
+p_out_upp_data_rd <= i_upp_data_rd;
 
 --END MAIN
 end behavioral;
