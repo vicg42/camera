@@ -61,7 +61,7 @@ p_in_ccd_dclk         : in    std_logic;
 --VBUFO
 -------------------------------
 p_in_vbufo_rdclk      : in    std_logic;
-p_out_vbufo_do        : out   std_logic_vector(G_MEMRD_DWIDTH - 1 downto 0);
+p_out_vbufo_do        : out   std_logic_vector(8 - 1 downto 0);
 p_in_vbufo_rd         : in    std_logic;
 p_out_vbufo_empty     : out   std_logic;
 
@@ -115,7 +115,7 @@ din         : IN  std_logic_vector(G_MEMRD_DWIDTH - 1 downto 0);
 wr_en       : IN  std_logic;
 wr_clk      : IN  std_logic;
 
-dout        : OUT std_logic_vector(G_MEMRD_DWIDTH - 1 downto 0);
+dout        : OUT std_logic_vector(8 - 1 downto 0);
 rd_en       : IN  std_logic;
 rd_clk      : IN  std_logic;
 
@@ -144,7 +144,7 @@ p_in_work_en          : in    std_logic;
 p_in_vfr_buf          : in    TVfrBufs;
 
 --Статусы
-p_out_vfr_rdy         : out   std_logic_vector(C_VCTRL_VCH_COUNT - 1 downto 0);
+p_out_vfr_rdy         : out   std_logic;--_vector(C_VCTRL_VCH_COUNT - 1 downto 0);
 
 ----------------------------
 --Upstream Port
@@ -230,7 +230,7 @@ end component;
 
 signal i_vbuf_wr                         : TVfrBufs;
 signal i_vbuf_rd                         : TVfrBufs;
-signal i_vwrite_vfr_rdy                  : std_logic_vector(C_VCTRL_VCH_COUNT - 1 downto 0);
+signal i_vwrite_vfr_rdy                  : std_logic;--_vector(C_VCTRL_VCH_COUNT - 1 downto 0);
 signal i_vbufo_full                      : std_logic;
 signal i_vbufo_rst                       : std_logic;
 
@@ -239,8 +239,9 @@ signal i_vbufi_rd                        : std_logic;
 signal i_vbufi_empty                     : std_logic;
 signal i_vbufi_full                      : std_logic;
 signal i_vbufi_pfull                     : std_logic;
-
-signal i_vread_en                        : std_logic;
+signal i_vfr_rdy                         : std_logic := '0';
+signal i_vread_en                        : std_logic := '0';
+signal i_vwrite_en                       : std_logic := '0';
 signal i_vreader_dout                    : std_logic_vector(G_MEMRD_DWIDTH - 1 downto 0);
 signal i_vreader_dout_en                 : std_logic;
 
@@ -313,7 +314,7 @@ port map(
 -------------------------------
 p_in_mem_trn_len      => p_in_memtrn_lenwr,
 p_in_prm_vch          => p_in_vwrite_prm,
-p_in_work_en          => p_in_vwrite_en,
+p_in_work_en          => i_vwrite_en,
 p_in_vfr_buf          => i_vbuf_wr,
 
 --Статусы
@@ -350,15 +351,26 @@ p_in_rst              => p_in_rst
 
 process(p_in_clk)
 begin
-  if rising_edge(p_in_clk) then
-    if p_in_vwrite_en = '1' then
-      if i_vwrite_vfr_rdy(0) = '1' then
+if rising_edge(p_in_clk) then
+  if p_in_rst = '1' then
+    i_vfr_rdy <= '0';
+    i_vread_en <= '0';
+
+  else
+    i_vwrite_en <= p_in_vwrite_en;
+
+    if i_vwrite_vfr_rdy = '1' then
+      i_vfr_rdy <= '1';
+    end if;
+
+    if i_vfr_rdy = '1' then
+      if i_vwrite_en = '1' then
         i_vread_en <= '1';
       end if;
-    else
-      i_vread_en <= '0';
     end if;
+
   end if;
+end if;
 end process;
 
 

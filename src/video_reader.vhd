@@ -11,11 +11,10 @@
 -------------------------------------------------------------------------
 library ieee;
 use ieee.std_logic_1164.all;
-use ieee.std_logic_arith.all;
-use ieee.std_logic_misc.all;
-use ieee.std_logic_unsigned.all;
+use ieee.numeric_std.all;
 
 library work;
+use work.reduce_pack.all;
 use work.vicg_common_pkg.all;
 use work.video_ctrl_pkg.all;
 use work.mem_wr_pkg.all;
@@ -78,29 +77,28 @@ architecture behavioral of video_reader is
 --Small delay for simulation purposes.
 constant dly : time := 1 ps;
 
-type fsm_state is (
+type TFsm_state is (
 S_IDLE,
 S_MEM_START,
 S_MEM_RD
 );
-signal fsm_state_cs: fsm_state;
+signal i_fsm_state_cs              : TFsm_state;
 
-signal i_data_null                   : std_logic_vector(G_MEM_DWIDTH - 1 downto 0);
+signal i_mem_adr                   : unsigned(31 downto 0) := (others => '0');
+signal i_mem_trn_len               : unsigned(15 downto 0) := (others => '0');
+signal i_mem_dlen_rq               : unsigned(15 downto 0) := (others => '0');
+signal i_mem_start                 : std_logic;
+signal i_mem_dir                   : std_logic;
+signal i_mem_done                  : std_logic;
+signal i_pix_count_byte            : unsigned(C_VCTRL_MEM_VLINE_L_BIT - 1 downto 0) := (others => '0');
+signal i_vfr_rowcnt                : unsigned(C_VCTRL_MEM_VLINE_M_BIT - C_VCTRL_MEM_VLINE_L_BIT
+                                                                            downto 0) := (others => '0');
+signal i_padding                   : std_logic := '0';
+signal i_upp_buf_full              : std_logic;
+signal i_data_null                 : std_logic_vector(G_MEM_DWIDTH - 1 downto 0);
 
-signal i_mem_adr                     : std_logic_vector(31 downto 0);
-signal i_mem_trn_len                 : std_logic_vector(15 downto 0);
-signal i_mem_dlen_rq                 : std_logic_vector(15 downto 0);
-signal i_mem_start                   : std_logic;
-signal i_mem_dir                     : std_logic;
-signal i_mem_done                    : std_logic;
-signal i_pix_count_byte              : std_logic_vector(15 downto 0);
-signal i_vfr_rowcnt                  : std_logic_vector(C_VCTRL_MEM_VLINE_M_BIT - C_VCTRL_MEM_VLINE_L_BIT downto 0);
-signal i_vfr_done                    : std_logic;
-signal i_padding                     : std_logic;
-signal i_upp_buf_full                : std_logic;
-
-signal tst_mem_wr_out                : std_logic_vector(31 downto 0);
-signal tst_fsmstate,tst_fsm_cs_dly   : std_logic_vector(3 downto 0);
+signal tst_mem_wr_out              : std_logic_vector(31 downto 0);
+signal tst_fsmstate,tst_fsm_cs_dly : unsigned(3 downto 0) := (others => '0');
 
 
 --MAIN
@@ -115,27 +113,27 @@ i_data_null <= (others=>'0');
 --p_out_tst(31 downto 0) <= (others=>'0');
 p_out_tst(5 downto 0) <= tst_mem_wr_out(5 downto 0);
 p_out_tst(7 downto 6) <= (others=>'0');
-p_out_tst(10 downto 8) <= tst_fsm_cs_dly(2 downto 0);
+p_out_tst(10 downto 8) <= std_logic_vector(tst_fsm_cs_dly(2 downto 0));
 p_out_tst(11) <= '0';
 p_out_tst(31 downto 12) <= (others=>'0');
 
 
 process(p_in_clk)
 begin
-  if p_in_clk'event and p_in_clk='1' then
+  if rising_edge(p_in_clk) then
     tst_fsm_cs_dly <= tst_fsmstate;
   end if;
 end process;
-tst_fsmstate <= CONV_STD_LOGIC_VECTOR(16#01#,tst_fsmstate'length) when fsm_state_cs = S_MEM_START       else
-                CONV_STD_LOGIC_VECTOR(16#02#,tst_fsmstate'length) when fsm_state_cs = S_MEM_RD          else
-                CONV_STD_LOGIC_VECTOR(16#00#,tst_fsmstate'length); --fsm_state_cs = S_IDLE              else
+tst_fsmstate <= TO_UNSIGNED(16#01#,tst_fsmstate'length) when i_fsm_state_cs = S_MEM_START       else
+                TO_UNSIGNED(16#02#,tst_fsmstate'length) when i_fsm_state_cs = S_MEM_RD          else
+                TO_UNSIGNED(16#00#,tst_fsmstate'length); --i_fsm_state_cs = S_IDLE              else
 
 
 ------------------------------------------------
 --Статусы
 ------------------------------------------------
 p_out_vch_fr_new <= '0';
-p_out_vch_rd_done <= i_vfr_done;
+p_out_vch_rd_done <= '0';
 p_out_vch <= (others=>'0');
 p_out_vch_active_pix <= (others=>'0');
 p_out_vch_active_row <= (others=>'0');
@@ -145,37 +143,36 @@ p_out_vch_mirx  <= '0';
 ------------------------------------------------
 --Автомат Чтения видео кадра
 ------------------------------------------------
-i_pix_count_byte <= p_in_prm_vch(0)
-                      .fr_size.activ
-                      .pix(p_in_prm_vch(0).fr_size.activ.pix'length - 1 downto 0);
+i_pix_count_byte <= UNSIGNED(p_in_prm_vch(0).fr_size.activ.pix(i_pix_count_byte'range));
 
-process(p_in_rst,p_in_clk)
+process(p_in_clk)
 begin
-  if p_in_rst='1' then
+if rising_edge(p_in_clk) then
+  if p_in_rst = '1' then
 
-    fsm_state_cs <= S_IDLE;
-    i_vfr_done <= '0';
-    i_vfr_rowcnt <= (others=>'0');
-    i_padding <= '0';
+    i_fsm_state_cs <= S_IDLE;
     i_mem_adr <= (others=>'0');
-    i_mem_trn_len <= (others=>'0');
     i_mem_dlen_rq <= (others=>'0');
+    i_mem_trn_len <= (others=>'0');
     i_mem_dir <= '0';
     i_mem_start <= '0';
+    i_vfr_rowcnt <= (others=>'0');
+    i_padding <= '0';
 
-  elsif rising_edge(p_in_clk) then
+  else
 
-    case fsm_state_cs is
+    case i_fsm_state_cs is
 
       --------------------------------------
       --Исходное состояние
       --------------------------------------
       when S_IDLE =>
 
-        i_vfr_done <= '0';
+        i_padding <= '0';
         i_vfr_rowcnt <= (others=>'0');
+
         if p_in_work_en = '1' then
-          fsm_state_cs <= S_MEM_START;
+          i_fsm_state_cs <= S_MEM_START;
         end if;
 
       --------------------------------------
@@ -183,29 +180,26 @@ begin
       --------------------------------------
       when S_MEM_START =>
 
-        if p_in_work_en = '1' then
-
-          fsm_state_cs <= S_IDLE;
+        if p_in_work_en = '0' then
+          i_fsm_state_cs <= S_IDLE;
 
         else
+          i_mem_adr(C_VCTRL_MEM_VLINE_M_BIT downto C_VCTRL_MEM_VLINE_L_BIT)
+              <= UNSIGNED(p_in_prm_vch(0).fr_size.skip.row(i_vfr_rowcnt'range)) + i_vfr_rowcnt;
 
-          i_mem_adr(C_VCTRL_MEM_VLINE_M_BIT
-                      downto C_VCTRL_MEM_VLINE_L_BIT) <= p_in_prm_vch(0)
-                                                          .fr_size.skip
-                                                          .row(i_vfr_rowcnt'range) + i_vfr_rowcnt;
+          i_mem_adr(C_VCTRL_MEM_VLINE_L_BIT - 1 downto 0)
+              <= UNSIGNED(p_in_prm_vch(0).fr_size.skip.pix(C_VCTRL_MEM_VLINE_L_BIT - 1 downto 0));
 
-          i_mem_adr(C_VCTRL_MEM_VLINE_L_BIT - 1
-                      downto 0) <= p_in_prm_vch(0)
-                                    .fr_size.skip.pix(C_VCTRL_MEM_VLINE_L_BIT - 1 downto 0);
+          i_mem_dlen_rq <= RESIZE(i_pix_count_byte(i_pix_count_byte'high downto log2(G_MEM_DWIDTH / 8))
+                                                                                , i_mem_dlen_rq'length)
+                           + (TO_UNSIGNED(0, i_mem_dlen_rq'length - 2)
+                              & OR_reduce(i_pix_count_byte(log2(G_MEM_DWIDTH / 8) - 1 downto 0)));
 
-          i_mem_dlen_rq <= EXT(i_pix_count_byte(i_pix_count_byte'high
-                                  downto log2(G_MEM_DWIDTH/8)), i_mem_dlen_rq'length)
-                           + OR_reduce(i_pix_count_byte(log2(G_MEM_DWIDTH/8) - 1 downto 0));
-          i_mem_trn_len <= EXT(p_in_mem_trn_len, i_mem_trn_len'length);
+          i_mem_trn_len <= RESIZE(UNSIGNED(p_in_mem_trn_len), i_mem_trn_len'length);
+
           i_mem_dir <= C_MEMWR_READ;
           i_mem_start <= '1';
-
-          fsm_state_cs <= S_MEM_RD;
+          i_fsm_state_cs <= S_MEM_RD;
 
         end if;
 
@@ -214,26 +208,26 @@ begin
       ------------------------------------------------
       when S_MEM_RD =>
 
-        if p_in_work_en = '1' then
+        if p_in_work_en = '0' then
           i_padding <= '1';
         end if;
 
         i_mem_start <= '0';
         if i_mem_done = '1' then
-          if (i_vfr_rowcnt = p_in_prm_vch(0)
-                              .fr_size.activ.row(i_vfr_rowcnt'range) - 1) or i_padding = '1' then
+          if i_vfr_rowcnt = (UNSIGNED(p_in_prm_vch(0).fr_size.activ.row(i_vfr_rowcnt'range)) - 1)
+              or i_padding = '1' then
 
-            fsm_state_cs <= S_IDLE;
-
+            i_fsm_state_cs <= S_IDLE;
           else
             i_vfr_rowcnt <= i_vfr_rowcnt + 1;
-            fsm_state_cs <= S_MEM_START;
+            i_fsm_state_cs <= S_MEM_START;
           end if;
         end if;
 
     end case;
 
   end if;
+end if;
 end process;
 
 
@@ -255,9 +249,9 @@ port map
 -------------------------------
 --Конфигурирование
 -------------------------------
-p_in_cfg_mem_adr     => i_mem_adr,
-p_in_cfg_mem_trn_len => i_mem_trn_len,
-p_in_cfg_mem_dlen_rq => i_mem_dlen_rq,
+p_in_cfg_mem_adr     => std_logic_vector(i_mem_adr)    ,
+p_in_cfg_mem_trn_len => std_logic_vector(i_mem_trn_len),
+p_in_cfg_mem_dlen_rq => std_logic_vector(i_mem_dlen_rq),
 p_in_cfg_mem_wr      => i_mem_dir,
 p_in_cfg_mem_start   => i_mem_start,
 p_out_cfg_mem_done   => i_mem_done,
