@@ -29,11 +29,11 @@ constant C_PCFG_CCD_LVDS_COUNT : integer := C_PCFG_CCD_DATA_LINE_COUNT
 --cfg Memory Controller
 constant C_PCGF_MEMCTRL_DWIDTH      : integer := 128;
 constant C_PCFG_MEMCTRL_BANK_COUNT  : integer := 1;
-constant C_PCFG_MEMARB_CH_COUNT     : integer := 3;
+constant C_PCFG_MEMARB_CH_COUNT     : integer := 2;
 
 --cfg VIDEO OUT
-constant C_PCGF_VOUT_TYPE  : string := "TV";--"VGA"/"TV"
-constant C_PCGF_VOUT_TEST  : string := "ON";--"ON"/"OFF"
+constant C_PCGF_VOUT_TYPE  : string := "VGA";--"VGA"/"TV"
+constant C_PCGF_VOUT_TEST  : string := "OFF";--"ON"/"OFF"
 
 end prj_cfg;
 
