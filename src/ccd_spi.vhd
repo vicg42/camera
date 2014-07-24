@@ -128,7 +128,7 @@ signal i_id_rd_done       : std_logic := '0';
 --MAIN
 begin
 
-p_out_tst(0) <= i_clkcnt(5);
+p_out_tst(0) <= i_clkcnt(i_clkcnt'high);
 p_out_tst(1) <= OR_reduce(tst_fsmstate_dly);
 p_out_tst(2) <= i_spi_core_tst_out(1);
 p_out_tst(3) <= OR_reduce(i_rxd);
