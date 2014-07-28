@@ -34,8 +34,11 @@ constant C_PCFG_MEMCTRL_BANK_COUNT  : integer := 1;
 constant C_PCFG_MEMARB_CH_COUNT     : integer := 2;
 
 --cfg VIDEO OUT
-constant C_PCGF_VOUT_TYPE  : string := "VGA";--"VGA"/"TV"
+constant C_PCGF_VOUT_TYPE  : string := "TV";--"VGA"/"TV"
 constant C_PCGF_VOUT_TEST  : string := "OFF";--"ON"/"OFF"
+
+constant C_PCFG_VOUT_START_X  : integer := 64;
+constant C_PCFG_VOUT_START_Y  : integer := 300;
 
 end prj_cfg;
 

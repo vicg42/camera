@@ -429,15 +429,15 @@ i_vctrl_vwrite_prm(0).fr_size.activ.pix <= std_logic_vector(TO_UNSIGNED(C_PCFG_C
 i_vctrl_vwrite_prm(0).fr_size.activ.row <= std_logic_vector(TO_UNSIGNED(C_PCFG_CCD_FULL_Y, 16));
 
 gen_tv1 : if strcmp(C_PCGF_VOUT_TYPE, "TV") generate begin
-i_vctrl_vread_prm(0).fr_size.skip.pix  <= std_logic_vector(TO_UNSIGNED(10#00#, 16));
-i_vctrl_vread_prm(0).fr_size.skip.row  <= std_logic_vector(TO_UNSIGNED(10#00#, 16));
+i_vctrl_vread_prm(0).fr_size.skip.pix  <= std_logic_vector(TO_UNSIGNED(C_PCFG_VOUT_START_X, 16));
+i_vctrl_vread_prm(0).fr_size.skip.row  <= std_logic_vector(TO_UNSIGNED(C_PCFG_VOUT_START_Y, 16));
 i_vctrl_vread_prm(0).fr_size.activ.pix <= std_logic_vector(TO_UNSIGNED(10#896#, 16));
 i_vctrl_vread_prm(0).fr_size.activ.row <= std_logic_vector(TO_UNSIGNED(10#625#, 16));
 end generate gen_tv1;
 
 gen_vga : if strcmp(C_PCGF_VOUT_TYPE, "VGA") generate begin
-i_vctrl_vread_prm(0).fr_size.skip.pix  <= std_logic_vector(TO_UNSIGNED(10#00#, 16));
-i_vctrl_vread_prm(0).fr_size.skip.row  <= std_logic_vector(TO_UNSIGNED(10#00#, 16));
+i_vctrl_vread_prm(0).fr_size.skip.pix  <= std_logic_vector(TO_UNSIGNED(C_PCFG_VOUT_START_X, 16));
+i_vctrl_vread_prm(0).fr_size.skip.row  <= std_logic_vector(TO_UNSIGNED(C_PCFG_VOUT_START_Y, 16));
 i_vctrl_vread_prm(0).fr_size.activ.pix <= std_logic_vector(TO_UNSIGNED(10#1280#, 16));
 i_vctrl_vread_prm(0).fr_size.activ.row <= std_logic_vector(TO_UNSIGNED(10#1024#, 16));
 end generate gen_vga;
@@ -627,15 +627,15 @@ i_ccd_tst_in(i_ccd_tst_in'length - 1 downto 1) <= (others => '0');
 
 
 
-tst_vfr_pixcount <= TO_UNSIGNED(C_PCFG_CCD_FULL_X / (i_video_d'length), tst_vfr_pixcount'length);
+tst_vfr_pixcount <= TO_UNSIGNED(C_PCFG_CCD_FULL_X / (i_video_d'length / 8), tst_vfr_pixcount'length);
 tst_vfr_rowcount <= TO_UNSIGNED(C_PCFG_CCD_FULL_Y, tst_vfr_rowcount'length);
 
 --3..0 --0/1/2/3/4 - 30fps/60fps/120fps/240fps/480fps/
 --7..4 --0/1/2/    - Test picture: V+H Counter/ V Counter/ H Counter/
 tst_vfr_cfg <= TO_UNSIGNED(16#00#, tst_vfr_cfg'length);
 
---tst_vfr_synwidth <= TO_UNSIGNED(384, tst_vfr_synwidth'length);-- for 30fps (dwith 256)
-tst_vfr_synwidth <= TO_UNSIGNED(244, tst_vfr_synwidth'length);-- for 30fps (dwith 256)
+--tst_vfr_synwidth <= TO_UNSIGNED(384, tst_vfr_synwidth'length);-- for 30fps (dwitdh 256)
+tst_vfr_synwidth <= TO_UNSIGNED(1278, tst_vfr_synwidth'length);-- for 30fps (for dwidth=32bit, frame:1280x1024)
 
 m_vtest_gen : vtest_gen
 generic map(
@@ -690,7 +690,6 @@ begin
 
   end if;
 end process;
-
 
 
 --process(g_usrclk(2))

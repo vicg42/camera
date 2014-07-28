@@ -245,7 +245,7 @@ signal i_vwrite_en                       : std_logic := '0';
 signal sr_vwrite_en                      : std_logic_vector(0 to 1);
 signal i_vreader_dout                    : std_logic_vector(G_MEMRD_DWIDTH - 1 downto 0);
 signal i_vreader_dout_en                 : std_logic;
-
+signal i_vreader_dout_swap               : std_logic_vector(G_MEMRD_DWIDTH - 1 downto 0);
 signal tst_vwriter_out                   : std_logic_vector(31 downto 0);
 signal tst_vreader_out                   : std_logic_vector(31 downto 0);
 signal tst_ctrl                          : std_logic_vector(31 downto 0);
@@ -437,9 +437,15 @@ p_in_rst              => p_in_rst
 ----------------------------------------------------
 --Выходной видеобуфер
 ----------------------------------------------------
+gen_swap : for i in 0 to (G_MEMRD_DWIDTH / 8) - 1 generate begin
+i_vreader_dout_swap((i_vreader_dout_swap'length - (8 * i)) - 1 downto
+                              (i_vreader_dout_swap'length - (8 * (i + 1)) ))
+                                      <= i_vreader_dout(8 * (i + 1) - 1 downto (8 * i));
+end generate gen_swap;
+
 m_bufo : vbufo
 port map(
-din         => i_vreader_dout,
+din         => i_vreader_dout_swap,
 wr_en       => i_vreader_dout_en,
 wr_clk      => p_in_clk,
 

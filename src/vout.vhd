@@ -91,12 +91,16 @@ signal i_vga_hs           : std_logic;
 signal i_vga_den          : std_logic;
 signal i_vga_pix_clk      : std_logic;
 signal sr_vga_vs          : unsigned(0 to 1) := (others => '0');
+signal sr_vga_den          : unsigned(0 to 1) := (others => '0');
 signal i_vga_work         : std_logic;
 signal i_cnt              : unsigned(8 downto 0) := (others => '0');
 signal i_fifo_rd          : std_logic;
 signal i_fifo_do          : std_logic_vector(G_VDWIDTH - 1 downto 0);
 signal sr_fifo_rd         : std_logic_vector(0 to 1);
 signal sr_fifo_rd_start   : std_logic;
+signal tst_linecnt        : unsigned(10 downto 0) := (others => '0');
+
+
 
 --MAIN
 begin
@@ -108,7 +112,7 @@ gen_vga : if strcmp(G_VOUT_TYPE, "VGA") generate
 begin
 
 p_out_tst(0) <= sr_fifo_rd_start;
-p_out_tst(1) <= OR_reduce(i_fifo_do);
+p_out_tst(1) <= OR_reduce(i_fifo_do) or OR_reduce(tst_linecnt);
 
 i_vga_pix_clk <= p_in_clk;
 
@@ -141,9 +145,9 @@ p_out_video.vga_vs <= i_vga_vs;
 gen_tst_off : if strcmp(G_TEST_PATTERN, "OFF") generate
 begin
 gen : for i in 0 to p_out_video.adv7123_db'length - 1 generate
-p_out_video.adv7123_db(i) <= i_fifo_do(5);
-p_out_video.adv7123_dg(i) <= i_fifo_do(6);
-p_out_video.adv7123_dr(i) <= i_fifo_do(7);
+p_out_video.adv7123_db(i) <= p_in_fifo_do(5);
+p_out_video.adv7123_dg(i) <= p_in_fifo_do(6);
+p_out_video.adv7123_dr(i) <= p_in_fifo_do(7);
 end generate;
 --p_out_video.adv7123_db <= i_fifo_do(8 - 1 downto 0) & "00";
 --p_out_video.adv7123_dg <= i_fifo_do(8 - 1 downto 0) & "00";
@@ -155,11 +159,14 @@ begin
 if rising_edge(i_vga_pix_clk) then
   if p_in_rst = '1' then
     sr_vga_vs <= (others => '0');
+    sr_vga_den <= (others => '0');
     i_vga_work <= '0';
     sr_fifo_rd <= (others => '0');
     sr_fifo_rd_start <= '0';
+    tst_linecnt <= (others => '0');
   else
     sr_vga_vs <= i_vga_vs & sr_vga_vs(0 to 0);
+    sr_vga_den <= i_vga_den & sr_vga_den(0 to 0);
 
     if p_in_fifo_empty = '0' then
       if sr_vga_vs(0) = '0' and sr_vga_vs(1) = '1' then
@@ -173,6 +180,12 @@ if rising_edge(i_vga_pix_clk) then
 
     sr_fifo_rd <= i_fifo_rd & sr_fifo_rd(0 to 0);
     sr_fifo_rd_start <= sr_fifo_rd(0) and not sr_fifo_rd(1);
+
+    if i_vga_vs = '0' then
+      tst_linecnt <= (others => '0');
+    elsif sr_vga_den(0) = '1' and sr_vga_den(1) = '0' then
+      tst_linecnt <= tst_linecnt + 1;
+    end if;
   end if;
 end if;
 end process;
