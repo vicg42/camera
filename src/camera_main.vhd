@@ -197,7 +197,7 @@ component video_ctrl is
 generic(
 G_USR_OPT : std_logic_vector(7 downto 0) := (others=>'0');
 G_DBGCS  : string:="OFF";
-G_CCD_DWIDTH : integer := 256;
+--G_CCD_DWIDTH : integer := 256;
 G_MEM_AWIDTH : integer:=32;
 G_MEMWR_DWIDTH : integer:=32;
 G_MEMRD_DWIDTH : integer:=32
@@ -215,7 +215,7 @@ p_in_vread_prm        : in   TReaderVCHParams;
 -------------------------------
 --CCD
 -------------------------------
-p_in_ccd_d            : in    std_logic_vector(G_CCD_DWIDTH - 1 downto 0);
+p_in_ccd_d            : in    std_logic_vector(G_MEMWR_DWIDTH - 1 downto 0);
 p_in_ccd_den          : in    std_logic;
 p_in_ccd_hs           : in    std_logic;
 p_in_ccd_vs           : in    std_logic;
@@ -258,7 +258,7 @@ signal g_usrclk           : std_logic_vector(6 downto 0);
 signal g_usr_highclk      : std_logic;
 --signal i_video_d          : std_logic_vector((C_PCFG_CCD_LVDS_COUNT
 --                                               * C_PCFG_CCD_BIT_PER_PIXEL) - 1 downto 0);
-signal i_video_d          : std_logic_vector(32 - 1 downto 0);
+signal i_video_d          : std_logic_vector(256 - 1 downto 0);
 signal i_video_d_clk      : std_logic;
 signal i_video_vs         : std_logic;
 signal i_video_hs         : std_logic;
@@ -420,8 +420,8 @@ pin_out_video <= i_video_out;
 --
 --***********************************************************
 i_vctrl_vwrite_en    <= tst_vtest_en;
-i_vctrl_memtrn_lenwr <= std_logic_vector(TO_UNSIGNED(16#40#, 8));
-i_vctrl_memtrn_lenrd <= std_logic_vector(TO_UNSIGNED(16#40#, 8));
+i_vctrl_memtrn_lenwr <= std_logic_vector(TO_UNSIGNED(16#E0#, 8));
+i_vctrl_memtrn_lenrd <= std_logic_vector(TO_UNSIGNED(16#80#, 8));
 
 i_vctrl_vwrite_prm(0).fr_size.skip.pix  <= std_logic_vector(TO_UNSIGNED(10#00#, 16));
 i_vctrl_vwrite_prm(0).fr_size.skip.row  <= std_logic_vector(TO_UNSIGNED(10#00#, 16));
@@ -432,7 +432,7 @@ gen_tv1 : if strcmp(C_PCGF_VOUT_TYPE, "TV") generate begin
 i_vctrl_vread_prm(0).fr_size.skip.pix  <= std_logic_vector(TO_UNSIGNED(C_PCFG_VOUT_START_X, 16));
 i_vctrl_vread_prm(0).fr_size.skip.row  <= std_logic_vector(TO_UNSIGNED(C_PCFG_VOUT_START_Y, 16));
 i_vctrl_vread_prm(0).fr_size.activ.pix <= std_logic_vector(TO_UNSIGNED(10#896#, 16));
-i_vctrl_vread_prm(0).fr_size.activ.row <= std_logic_vector(TO_UNSIGNED(10#625#, 16));
+i_vctrl_vread_prm(0).fr_size.activ.row <= std_logic_vector(TO_UNSIGNED(10#576#, 16));
 end generate gen_tv1;
 
 gen_vga : if strcmp(C_PCGF_VOUT_TYPE, "VGA") generate begin
@@ -446,7 +446,7 @@ m_vctrl : video_ctrl
 generic map(
 G_USR_OPT => (others=>'0'),
 G_DBGCS  => "ON",
-G_CCD_DWIDTH => i_video_d'length,
+--G_CCD_DWIDTH => i_video_d'length,
 G_MEM_AWIDTH => C_AXI_AWIDTH,
 G_MEMWR_DWIDTH => C_AXIS_DWIDTH(0),
 G_MEMRD_DWIDTH => C_AXIS_DWIDTH(1)
@@ -587,7 +587,7 @@ p_in_sys        => i_mem_ctrl_sysin
 pin_out_led(0) <= OR_reduce(tst_vctrl_out) or OR_reduce(i_video_d);--OR_reduce(tst_vbufo_do) or
 
 pin_out_TP2(0) <= OR_reduce(tst_vout_out(1 downto 0));
-pin_out_TP2(1) <= '0';--i_video_vs;
+pin_out_TP2(1) <= i_video_vs;
 pin_out_TP2(2) <= '0';
 
 m_led1_tst: fpga_test_01
@@ -634,8 +634,9 @@ tst_vfr_rowcount <= TO_UNSIGNED(C_PCFG_CCD_FULL_Y, tst_vfr_rowcount'length);
 --7..4 --0/1/2/    - Test picture: V+H Counter/ V Counter/ H Counter/
 tst_vfr_cfg <= TO_UNSIGNED(16#00#, tst_vfr_cfg'length);
 
---tst_vfr_synwidth <= TO_UNSIGNED(384, tst_vfr_synwidth'length);-- for 30fps (dwitdh 256)
-tst_vfr_synwidth <= TO_UNSIGNED(1278, tst_vfr_synwidth'length);-- for 30fps (for dwidth=32bit, frame:1280x1024)
+tst_vfr_synwidth <= TO_UNSIGNED(372, tst_vfr_synwidth'length);-- for 30fps (for dwidth=256bit, frame:4096x4096)
+--tst_vfr_synwidth <= TO_UNSIGNED(240, tst_vfr_synwidth'length);-- for 30fps (for dwidth=256bit, frame:5120x5120)
+--tst_vfr_synwidth <= TO_UNSIGNED(1278, tst_vfr_synwidth'length);-- for 30fps (for dwidth=32bit, frame:1280x1024)
 
 m_vtest_gen : vtest_gen
 generic map(
@@ -691,19 +692,6 @@ begin
   end if;
 end process;
 
-
---process(g_usrclk(2))
---begin
---  if rising_edge(g_usrclk(2)) then
---    i_vbufo_rd <= not i_vbufo_empty;
---
---    if i_vbufo_rd = '1' then
---      tst_vbufo_do <= i_vbufo_do;
---    end if;
---
---    tst_mem_ctrl_rdy <= OR_reduce(i_mem_ctrl_status.rdy);
---  end if;
---end process;
 
 
 --END MAIN

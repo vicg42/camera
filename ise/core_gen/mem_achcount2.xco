@@ -1,7 +1,7 @@
 ##############################################################
 #
 # Xilinx Core Generator version 14.6
-# Date: Tue Jun 24 08:12:37 2014
+# Date: Tue Jul 29 11:22:20 2014
 #
 ##############################################################
 #
@@ -42,7 +42,7 @@ SELECT AXI_Interconnect xilinx.com:ip:axi_interconnect:1.06.a
 CSET aclk_period=0
 CSET axi_addr_width=32
 CSET component_name=mem_achcount2
-CSET interconnect_data_width=128
+CSET interconnect_data_width=256
 CSET m00_axi_aclk_ratio=1:1
 CSET m00_axi_data_width=128
 CSET m00_axi_is_aclk_async=false
@@ -56,7 +56,7 @@ CSET m00_axi_write_issuing=4
 CSET num_slave_ports=2
 CSET s00_axi_aclk_ratio=1:1
 CSET s00_axi_arb_priority=0_(Round-Robin)
-CSET s00_axi_data_width=128
+CSET s00_axi_data_width=256
 CSET s00_axi_is_aclk_async=false
 CSET s00_axi_read_acceptance=1
 CSET s00_axi_read_fifo_delay=false
@@ -68,11 +68,11 @@ CSET s00_axi_write_fifo_delay=false
 CSET s00_axi_write_fifo_depth=0_(none)
 CSET s01_axi_aclk_ratio=1:1
 CSET s01_axi_arb_priority=0_(Round-Robin)
-CSET s01_axi_data_width=32
+CSET s01_axi_data_width=64
 CSET s01_axi_is_aclk_async=false
 CSET s01_axi_read_acceptance=4
 CSET s01_axi_read_fifo_delay=false
-CSET s01_axi_read_fifo_depth=512_(BRAM)
+CSET s01_axi_read_fifo_depth=0_(none)
 CSET s01_axi_read_write_support=READ-ONLY
 CSET s01_axi_register=false
 CSET s01_axi_write_acceptance=1
@@ -252,4 +252,4 @@ CSET thread_id_width=4
 MISC pkg_timestamp=2013-05-16T18:37:17Z
 # END Extra information
 GENERATE
-# CRC: ba228a43
+# CRC: 3fa18c31

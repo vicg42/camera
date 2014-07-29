@@ -35,8 +35,8 @@ type TAXIS_DWIDTH is array (0 to C_MEMCH_COUNT_MAX - 1) of integer;
 --                              slave num   | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10| 11| 12| 13| 14| 15|
 ------------------------------------------------------------------------------------------------------------
 constant C_AXIS_DWIDTH     : TAXIS_DWIDTH := (
-C_PCGF_MEMCTRL_DWIDTH,
-32,
+256,
+64,
 C_PCGF_MEMCTRL_DWIDTH,
 C_PCGF_MEMCTRL_DWIDTH,
 C_PCGF_MEMCTRL_DWIDTH,

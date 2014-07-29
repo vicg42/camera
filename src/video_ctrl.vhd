@@ -24,7 +24,7 @@ entity video_ctrl is
 generic(
 G_USR_OPT : std_logic_vector(7 downto 0) := (others=>'0');
 G_DBGCS  : string := "OFF";
-G_CCD_DWIDTH : integer := 256;
+--G_CCD_DWIDTH : integer := 256;
 G_MEM_AWIDTH : integer := 32;
 G_MEMWR_DWIDTH : integer := 32;
 G_MEMRD_DWIDTH : integer := 32
@@ -42,7 +42,7 @@ p_in_vread_prm        : in   TReaderVCHParams;
 -------------------------------
 --CCD
 -------------------------------
-p_in_ccd_d            : in    std_logic_vector(G_CCD_DWIDTH - 1 downto 0);
+p_in_ccd_d            : in    std_logic_vector(G_MEMWR_DWIDTH - 1 downto 0);
 p_in_ccd_den          : in    std_logic;
 p_in_ccd_hs           : in    std_logic;
 p_in_ccd_vs           : in    std_logic;
@@ -93,7 +93,7 @@ architecture behavioral of video_ctrl is
 
 component vbufi
 port(
-din         : IN  std_logic_vector(G_CCD_DWIDTH - 1 downto 0);
+din         : IN  std_logic_vector(G_MEMWR_DWIDTH - 1 downto 0);
 wr_en       : IN  std_logic;
 wr_clk      : IN  std_logic;
 
@@ -233,7 +233,7 @@ signal i_vbuf_rd                         : TVfrBufs;
 signal i_vwrite_vfr_rdy                  : std_logic;--_vector(C_VCTRL_VCH_COUNT - 1 downto 0);
 signal i_vbufo_full                      : std_logic;
 signal i_vbufo_rst                       : std_logic;
-
+signal i_ccd_d_swap                      : std_logic_vector(p_in_ccd_d'range);
 signal i_vbufi_do                        : std_logic_vector(G_MEMWR_DWIDTH - 1 downto 0);
 signal i_vbufi_rd                        : std_logic;
 signal i_vbufi_empty                     : std_logic;
@@ -249,6 +249,11 @@ signal i_vreader_dout_swap               : std_logic_vector(G_MEMRD_DWIDTH - 1 d
 signal tst_vwriter_out                   : std_logic_vector(31 downto 0);
 signal tst_vreader_out                   : std_logic_vector(31 downto 0);
 signal tst_ctrl                          : std_logic_vector(31 downto 0);
+signal i_vbufo_empty                     : std_logic;
+signal tst_vbufi_empty                   : std_logic;
+signal tst_vbufi_pfull                   : std_logic;
+signal tst_vbufo_empty                   : std_logic;
+signal tst_vbufo_full                    : std_logic;
 
 
 --MAIN
@@ -273,15 +278,37 @@ p_out_tst(0) <= OR_reduce(tst_vwriter_out) or OR_reduce(tst_vreader_out);
 p_out_tst(4 downto 1) <= tst_vwriter_out(3 downto 0);
 p_out_tst(8 downto 5) <= tst_vreader_out(3 downto 0);
 p_out_tst(9)          <= tst_vwriter_out(4);
-p_out_tst(10)         <= tst_vreader_out(4);
+p_out_tst(10)         <= tst_vreader_out(4)
+or tst_vbufi_empty
+or tst_vbufi_pfull
+or tst_vbufo_empty
+or tst_vbufo_full;
+
 p_out_tst(25 downto 11) <= (others=>'0');
 p_out_tst(31 downto 26) <= tst_vwriter_out(31 downto 26);
+
+process(p_in_clk)
+begin
+if rising_edge(p_in_clk) then
+tst_vbufi_empty <= i_vbufi_empty;
+tst_vbufi_pfull <= i_vbufi_pfull;
+tst_vbufo_empty <= i_vbufo_empty;
+tst_vbufo_full  <= i_vbufo_full ;
+end if;
+end process;
+
 end generate gen_dbgcs_on;
 
 
 ----------------------------------------------------
 --Выходной видеобуфер
 ----------------------------------------------------
+--gen_bufi_swap : for i in 0 to (G_MEMWR_DWIDTH / 128) - 1 generate begin
+--i_ccd_d_swap((i_ccd_d_swap'length - (128 * i)) - 1 downto
+--                              (i_ccd_d_swap'length - (128 * (i + 1)) ))
+--                                      <= p_in_ccd_d(128 * (i + 1) - 1 downto (128 * i));
+--end generate gen_bufi_swap;
+
 m_bufi : vbufi
 port map(
 din         => p_in_ccd_d,
@@ -437,11 +464,11 @@ p_in_rst              => p_in_rst
 ----------------------------------------------------
 --Выходной видеобуфер
 ----------------------------------------------------
-gen_swap : for i in 0 to (G_MEMRD_DWIDTH / 8) - 1 generate begin
+gen_bufo_swap : for i in 0 to (G_MEMRD_DWIDTH / 8) - 1 generate begin
 i_vreader_dout_swap((i_vreader_dout_swap'length - (8 * i)) - 1 downto
                               (i_vreader_dout_swap'length - (8 * (i + 1)) ))
                                       <= i_vreader_dout(8 * (i + 1) - 1 downto (8 * i));
-end generate gen_swap;
+end generate gen_bufo_swap;
 
 m_bufo : vbufo
 port map(
@@ -453,7 +480,7 @@ dout        => p_out_vbufo_do,
 rd_en       => p_in_vbufo_rd,
 rd_clk      => p_in_vbufo_rdclk,
 
-empty       => p_out_vbufo_empty,
+empty       => i_vbufo_empty,
 full        => open,
 prog_full   => i_vbufo_full,
 
@@ -462,6 +489,7 @@ rst         => i_vbufo_rst
 
 i_vbufo_rst <= p_in_rst or p_in_tst(0);
 
+p_out_vbufo_empty <= i_vbufo_empty;
 
 
 
