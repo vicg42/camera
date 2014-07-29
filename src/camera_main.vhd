@@ -197,7 +197,6 @@ component video_ctrl is
 generic(
 G_USR_OPT : std_logic_vector(7 downto 0) := (others=>'0');
 G_DBGCS  : string:="OFF";
---G_CCD_DWIDTH : integer := 256;
 G_MEM_AWIDTH : integer:=32;
 G_MEMWR_DWIDTH : integer:=32;
 G_MEMRD_DWIDTH : integer:=32
@@ -446,7 +445,6 @@ m_vctrl : video_ctrl
 generic map(
 G_USR_OPT => (others=>'0'),
 G_DBGCS  => "ON",
---G_CCD_DWIDTH => i_video_d'length,
 G_MEM_AWIDTH => C_AXI_AWIDTH,
 G_MEMWR_DWIDTH => C_AXIS_DWIDTH(0),
 G_MEMRD_DWIDTH => C_AXIS_DWIDTH(1)

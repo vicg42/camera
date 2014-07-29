@@ -24,7 +24,6 @@ entity video_ctrl is
 generic(
 G_USR_OPT : std_logic_vector(7 downto 0) := (others=>'0');
 G_DBGCS  : string := "OFF";
---G_CCD_DWIDTH : integer := 256;
 G_MEM_AWIDTH : integer := 32;
 G_MEMWR_DWIDTH : integer := 32;
 G_MEMRD_DWIDTH : integer := 32
@@ -233,7 +232,7 @@ signal i_vbuf_rd                         : TVfrBufs;
 signal i_vwrite_vfr_rdy                  : std_logic;--_vector(C_VCTRL_VCH_COUNT - 1 downto 0);
 signal i_vbufo_full                      : std_logic;
 signal i_vbufo_rst                       : std_logic;
-signal i_ccd_d_swap                      : std_logic_vector(p_in_ccd_d'range);
+--signal i_ccd_d_swap                      : std_logic_vector(p_in_ccd_d'range);
 signal i_vbufi_do                        : std_logic_vector(G_MEMWR_DWIDTH - 1 downto 0);
 signal i_vbufi_rd                        : std_logic;
 signal i_vbufi_empty                     : std_logic;
