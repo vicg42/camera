@@ -113,7 +113,7 @@ i_vga_pix_clk <= p_in_clk;
 
 m_vga_timegen : vga_gen
 generic map(
-G_SEL => 2
+G_SEL => 1
 )
 port map(
 --SYNC
