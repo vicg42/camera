@@ -188,6 +188,7 @@ p_out_tst     : out std_logic_vector(31 downto 0);
 p_in_tst      : in  std_logic_vector(31 downto 0);
 
 --System
+p_in_rdy      : in   std_logic;
 p_in_clk      : in   std_logic;
 p_in_rst      : in   std_logic
 );
@@ -197,6 +198,7 @@ component video_ctrl is
 generic(
 G_USR_OPT : std_logic_vector(7 downto 0) := (others=>'0');
 G_DBGCS  : string:="OFF";
+G_VBUFO_DWIDTH : integer := 32;
 G_MEM_AWIDTH : integer:=32;
 G_MEMWR_DWIDTH : integer:=32;
 G_MEMRD_DWIDTH : integer:=32
@@ -263,8 +265,7 @@ signal i_video_vs         : std_logic;
 signal i_video_hs         : std_logic;
 signal i_video_den        : std_logic;
 
---signal i_vbufo_do         : std_logic_vector(C_AXIS_DWIDTH(1) - 1 downto 0) := (others => '0');
-signal i_vbufo_do         : std_logic_vector(8 - 1 downto 0) := (others => '0');
+signal i_vbufo_do         : std_logic_vector(C_CGF_VBUFO_DWIDTH - 1 downto 0) := (others => '0');
 signal i_vbufo_rd         : std_logic;
 signal i_vbufo_empty      : std_logic;
 
@@ -392,7 +393,7 @@ i_arb_mem_rst <= not OR_reduce(i_mem_ctrl_status.rdy);
 --***********************************************************
 m_video_out : vout
 generic map(
-G_VDWIDTH => 8,
+G_VDWIDTH => C_CGF_VBUFO_DWIDTH,
 G_VOUT_TYPE => C_PCGF_VOUT_TYPE,
 G_TEST_PATTERN => C_PCGF_VOUT_TEST
 )
@@ -408,6 +409,7 @@ p_out_tst     => tst_vout_out,
 p_in_tst      => (others => '0'),
 
 --System
+p_in_rdy      => tst_vtest_en,
 p_in_clk      => g_usrclk(2),
 p_in_rst      => i_rst
 );
@@ -445,6 +447,7 @@ m_vctrl : video_ctrl
 generic map(
 G_USR_OPT => (others=>'0'),
 G_DBGCS  => "ON",
+G_VBUFO_DWIDTH => C_CGF_VBUFO_DWIDTH,
 G_MEM_AWIDTH => C_AXI_AWIDTH,
 G_MEMWR_DWIDTH => C_AXIS_DWIDTH(0),
 G_MEMRD_DWIDTH => C_AXIS_DWIDTH(1)
@@ -584,7 +587,7 @@ p_in_sys        => i_mem_ctrl_sysin
 --pin_out_led(0) <= OR_reduce(i_video_d) or OR_reduce(i_ccd_tst_out) or i_ccd_init_done;-- or -- or i_video_vs or i_video_hs or i_video_den;-- or sr_tst_ccd_syn;--OR_reduce(i_mem_ctrl_status.rdy);
 pin_out_led(0) <= OR_reduce(tst_vctrl_out) or OR_reduce(i_video_d);--OR_reduce(tst_vbufo_do) or
 
-pin_out_TP2(0) <= OR_reduce(tst_vout_out(1 downto 0));
+pin_out_TP2(0) <= tst_vout_out(0);
 pin_out_TP2(1) <= i_video_vs;
 pin_out_TP2(2) <= '0';
 
