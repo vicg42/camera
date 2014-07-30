@@ -113,7 +113,7 @@ i_vga_pix_clk <= p_in_clk;
 
 m_vga_timegen : vga_gen
 generic map(
-G_SEL => 1
+G_SEL => 0
 )
 port map(
 --SYNC
@@ -139,12 +139,14 @@ p_out_video.vga_vs <= i_vga_vs;
 
 gen_tst_off : if strcmp(G_TEST_PATTERN, "OFF") generate
 begin
-gen : for i in 0 to p_out_video.adv7123_db'length - 1 generate
-p_out_video.adv7123_db(i) <= p_in_fifo_do(5);
-p_out_video.adv7123_dg(i) <= p_in_fifo_do(6);
-p_out_video.adv7123_dr(i) <= p_in_fifo_do(7);
-end generate;
-
+--gen : for i in 0 to p_out_video.adv7123_db'length - 1 generate
+--p_out_video.adv7123_db(i) <= p_in_fifo_do(5);
+--p_out_video.adv7123_dg(i) <= p_in_fifo_do(6);
+--p_out_video.adv7123_dr(i) <= p_in_fifo_do(7);
+--end generate;
+p_out_video.adv7123_db <= p_in_fifo_do((10 * 3) - 1 downto (10 * 2));
+p_out_video.adv7123_dg <= p_in_fifo_do((10 * 2) - 1 downto (10 * 1));
+p_out_video.adv7123_dr <= p_in_fifo_do((10 * 1) - 1 downto (10 * 0));
 
 process(i_vga_pix_clk)
 begin

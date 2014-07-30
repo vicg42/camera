@@ -226,7 +226,7 @@ p_in_ccd_dclk         : in    std_logic;
 --VBUFO
 -------------------------------
 p_in_vbufo_rdclk      : in    std_logic;
-p_out_vbufo_do        : out   std_logic_vector(8 - 1 downto 0);
+p_out_vbufo_do        : out   std_logic_vector(G_VBUFO_DWIDTH - 1 downto 0);
 p_in_vbufo_rd         : in    std_logic;
 p_out_vbufo_empty     : out   std_logic;
 
@@ -439,8 +439,8 @@ end generate gen_tv1;
 gen_vga : if strcmp(C_PCGF_VOUT_TYPE, "VGA") generate begin
 i_vctrl_vread_prm(0).fr_size.skip.pix  <= std_logic_vector(TO_UNSIGNED(C_PCFG_VOUT_START_X, 16));
 i_vctrl_vread_prm(0).fr_size.skip.row  <= std_logic_vector(TO_UNSIGNED(C_PCFG_VOUT_START_Y, 16));
-i_vctrl_vread_prm(0).fr_size.activ.pix <= std_logic_vector(TO_UNSIGNED(10#1024#, 16));
-i_vctrl_vread_prm(0).fr_size.activ.row <= std_logic_vector(TO_UNSIGNED(10#768#, 16));
+i_vctrl_vread_prm(0).fr_size.activ.pix <= std_logic_vector(TO_UNSIGNED(10#640# * 4, 16));
+i_vctrl_vread_prm(0).fr_size.activ.row <= std_logic_vector(TO_UNSIGNED(10#480#, 16));
 end generate gen_vga;
 
 m_vctrl : video_ctrl
