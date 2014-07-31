@@ -90,9 +90,13 @@ signal i_mem_dlen_rq               : unsigned(15 downto 0) := (others => '0');
 signal i_mem_start                 : std_logic;
 signal i_mem_dir                   : std_logic;
 signal i_mem_done                  : std_logic;
-signal i_pix_count_byte            : unsigned(C_VCTRL_MEM_VLINE_L_BIT - 1 downto 0) := (others => '0');
+signal i_vfr_pix_count_byte        : unsigned(C_VCTRL_MEM_VLINE_L_BIT - 1 downto 0) := (others => '0');
 signal i_vfr_rowcnt                : unsigned(C_VCTRL_MEM_VLINE_M_BIT - C_VCTRL_MEM_VLINE_L_BIT
                                                                             downto 0) := (others => '0');
+
+signal i_vfr_skip_row              : unsigned(i_vfr_rowcnt'range) := (others => '0');
+signal i_vfr_skip_pix              : unsigned(i_vfr_pix_count_byte'range) := (others => '0');
+signal i_vfr_row_count             : unsigned(i_vfr_rowcnt'range) := (others => '0');
 signal i_padding                   : std_logic := '0';
 signal i_upp_buf_full              : std_logic;
 signal i_data_null                 : std_logic_vector(G_MEM_DWIDTH - 1 downto 0);
@@ -143,8 +147,6 @@ p_out_vch_mirx  <= '0';
 ------------------------------------------------
 --Автомат Чтения видео кадра
 ------------------------------------------------
-i_pix_count_byte <= UNSIGNED(p_in_prm_vch(0).fr_size.activ.pix(i_pix_count_byte'range));
-
 process(p_in_clk)
 begin
 if rising_edge(p_in_clk) then
@@ -159,6 +161,11 @@ if rising_edge(p_in_clk) then
     i_vfr_rowcnt <= (others=>'0');
     i_padding <= '0';
 
+    i_vfr_skip_row <= (others => '0');
+    i_vfr_skip_pix <= (others => '0');
+    i_vfr_pix_count_byte <= (others => '0');
+    i_vfr_row_count <= (others => '0');
+
   else
 
     case i_fsm_state_cs is
@@ -172,6 +179,11 @@ if rising_edge(p_in_clk) then
         i_vfr_rowcnt <= (others=>'0');
 
         if p_in_work_en = '1' then
+          i_vfr_skip_row <= UNSIGNED(p_in_prm_vch(0).fr_size.skip.row(i_vfr_skip_row'range));
+          i_vfr_skip_pix <= UNSIGNED(p_in_prm_vch(0).fr_size.skip.pix(i_vfr_skip_pix'range));
+          i_vfr_pix_count_byte <= UNSIGNED(p_in_prm_vch(0).fr_size.activ.pix(i_vfr_pix_count_byte'range));
+          i_vfr_row_count <= UNSIGNED(p_in_prm_vch(0).fr_size.activ.row(i_vfr_row_count'range));
+
           i_fsm_state_cs <= S_MEM_START;
         end if;
 
@@ -184,16 +196,14 @@ if rising_edge(p_in_clk) then
           i_fsm_state_cs <= S_IDLE;
 
         else
-          i_mem_adr(C_VCTRL_MEM_VLINE_M_BIT downto C_VCTRL_MEM_VLINE_L_BIT)
-              <= UNSIGNED(p_in_prm_vch(0).fr_size.skip.row(i_vfr_rowcnt'range)) + i_vfr_rowcnt;
+          i_mem_adr(C_VCTRL_MEM_VLINE_M_BIT downto C_VCTRL_MEM_VLINE_L_BIT) <= i_vfr_skip_row + i_vfr_rowcnt;
 
-          i_mem_adr(C_VCTRL_MEM_VLINE_L_BIT - 1 downto 0)
-              <= UNSIGNED(p_in_prm_vch(0).fr_size.skip.pix(C_VCTRL_MEM_VLINE_L_BIT - 1 downto 0));
+          i_mem_adr(C_VCTRL_MEM_VLINE_L_BIT - 1 downto 0) <= i_vfr_skip_pix;
 
-          i_mem_dlen_rq <= RESIZE(i_pix_count_byte(i_pix_count_byte'high downto log2(G_MEM_DWIDTH / 8))
+          i_mem_dlen_rq <= RESIZE(i_vfr_pix_count_byte(i_vfr_pix_count_byte'high downto log2(G_MEM_DWIDTH / 8))
                                                                                 , i_mem_dlen_rq'length)
                            + (TO_UNSIGNED(0, i_mem_dlen_rq'length - 2)
-                              & OR_reduce(i_pix_count_byte(log2(G_MEM_DWIDTH / 8) - 1 downto 0)));
+                              & OR_reduce(i_vfr_pix_count_byte(log2(G_MEM_DWIDTH / 8) - 1 downto 0)));
 
           i_mem_trn_len <= RESIZE(UNSIGNED(p_in_mem_trn_len), i_mem_trn_len'length);
 
@@ -214,8 +224,7 @@ if rising_edge(p_in_clk) then
 
         i_mem_start <= '0';
         if i_mem_done = '1' then
-          if i_vfr_rowcnt = (UNSIGNED(p_in_prm_vch(0).fr_size.activ.row(i_vfr_rowcnt'range)) - 1)
-              or i_padding = '1' then
+          if i_vfr_rowcnt = (i_vfr_row_count - 1) or i_padding = '1' then
 
             i_fsm_state_cs <= S_IDLE;
           else
