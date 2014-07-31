@@ -25,6 +25,7 @@ use work.vout_pkg.all;
 use work.mem_ctrl_pkg.all;
 use work.mem_wr_pkg.all;
 use work.video_ctrl_pkg.all;
+use work.dbg_pkg.all;
 
 library unisim;
 use unisim.vcomponents.all;
@@ -66,6 +67,14 @@ pin_in_refclk       : in    TRefclk_pinin
 end entity;
 
 architecture struct of camera_main is
+
+component dbg_ctrl is
+port(
+p_out_usr     : out  TDGB_ctrl_out;
+
+p_in_clk      : in   std_logic
+);
+end component dbg_ctrl;
 
 component vtest_gen is
 generic(
@@ -323,6 +332,8 @@ signal tst_vbufo_do      : std_logic_vector(31 downto 0);
 signal i_ccd_clkref      : std_logic;
 signal i_ccd_clk         : std_logic;
 
+signal i_dbg_ctrl_out    : TDGB_ctrl_out;
+
 attribute keep : string;
 attribute keep of g_usrclk : signal is "true";
 attribute keep of g_usr_highclk : signal is "true";
@@ -421,8 +432,10 @@ pin_out_video <= i_video_out;
 --
 --***********************************************************
 i_vctrl_vwrite_en    <= tst_vtest_en;
-i_vctrl_memtrn_lenwr <= std_logic_vector(TO_UNSIGNED(16#E0#, 8));
-i_vctrl_memtrn_lenrd <= std_logic_vector(TO_UNSIGNED(16#80#, 8));
+--i_vctrl_memtrn_lenwr <= std_logic_vector(TO_UNSIGNED(16#E0#, 8));
+--i_vctrl_memtrn_lenrd <= std_logic_vector(TO_UNSIGNED(16#80#, 8));
+i_vctrl_memtrn_lenwr <= i_dbg_ctrl_out.vout_memtrn_lenwr;
+i_vctrl_memtrn_lenrd <= i_dbg_ctrl_out.vout_memtrn_lenrd;
 
 i_vctrl_vwrite_prm(0).fr_size.skip.pix  <= std_logic_vector(TO_UNSIGNED(10#00#, 16));
 i_vctrl_vwrite_prm(0).fr_size.skip.row  <= std_logic_vector(TO_UNSIGNED(10#00#, 16));
@@ -437,8 +450,10 @@ i_vctrl_vread_prm(0).fr_size.activ.row <= std_logic_vector(TO_UNSIGNED(10#576#, 
 end generate gen_tv1;
 
 gen_vga : if strcmp(C_PCGF_VOUT_TYPE, "VGA") generate begin
-i_vctrl_vread_prm(0).fr_size.skip.pix  <= std_logic_vector(TO_UNSIGNED(C_PCFG_VOUT_START_X, 16));
-i_vctrl_vread_prm(0).fr_size.skip.row  <= std_logic_vector(TO_UNSIGNED(C_PCFG_VOUT_START_Y, 16));
+i_vctrl_vread_prm(0).fr_size.skip.pix  <= i_dbg_ctrl_out.vout_start_x;
+i_vctrl_vread_prm(0).fr_size.skip.row  <= i_dbg_ctrl_out.vout_start_y;
+--i_vctrl_vread_prm(0).fr_size.skip.pix  <= std_logic_vector(TO_UNSIGNED(C_PCFG_VOUT_START_X, 16));
+--i_vctrl_vread_prm(0).fr_size.skip.row  <= std_logic_vector(TO_UNSIGNED(C_PCFG_VOUT_START_Y, 16));
 i_vctrl_vread_prm(0).fr_size.activ.pix <= std_logic_vector(TO_UNSIGNED(10#640# * 4, 16));
 i_vctrl_vread_prm(0).fr_size.activ.row <= std_logic_vector(TO_UNSIGNED(10#480#, 16));
 end generate gen_vga;
@@ -682,7 +697,7 @@ begin
       i_btn <= not i_btn;
     end if;
 
-    if i_btn = '1' then
+    if  i_dbg_ctrl_out.glob.start_vout = '1' then --if i_btn = '1' then
       if sr_video_vs(0) = '0' and sr_video_vs(1) = '1' then
         tst_vtest_en <= '1';
       end if;
@@ -692,6 +707,14 @@ begin
 
   end if;
 end process;
+
+
+m_dbg_ctrl : dbg_ctrl
+port map(
+p_out_usr => i_dbg_ctrl_out,
+
+p_in_clk => g_usrclk(6)
+);
 
 
 
