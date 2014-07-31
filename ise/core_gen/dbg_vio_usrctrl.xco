@@ -1,7 +1,7 @@
 ##############################################################
 #
 # Xilinx Core Generator version 14.6
-# Date: Thu Jul 31 07:25:19 2014
+# Date: Thu Jul 31 09:26:07 2014
 #
 ##############################################################
 #
@@ -30,7 +30,7 @@ SET foundationsym = false
 SET implementationfiletype = Ngc
 SET package = fbg676
 SET removerpms = false
-SET simulationfiles = Behavioral
+SET simulationfiles = Structural
 SET speedgrade = -2
 SET verilogsim = false
 SET vhdlsim = true
@@ -43,7 +43,7 @@ CSET asynchronous_input_port_width=8
 CSET asynchronous_output_port_width=8
 CSET component_name=dbg_vio_usrctrl
 CSET constraint_type=external
-CSET enable_asynchronous_input_port=false
+CSET enable_asynchronous_input_port=true
 CSET enable_asynchronous_output_port=false
 CSET enable_synchronous_input_port=false
 CSET enable_synchronous_output_port=true
@@ -56,4 +56,4 @@ CSET synchronous_output_port_width=8
 MISC pkg_timestamp=2013-06-08T17:29:43Z
 # END Extra information
 GENERATE
-# CRC: 7045e35b
+# CRC: c0d21434

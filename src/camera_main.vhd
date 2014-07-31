@@ -71,6 +71,7 @@ architecture struct of camera_main is
 component dbg_ctrl is
 port(
 p_out_usr     : out  TDGB_ctrl_out;
+p_in_usr      : in   TDGB_ctrl_in;
 
 p_in_clk      : in   std_logic
 );
@@ -333,6 +334,7 @@ signal i_ccd_clkref      : std_logic;
 signal i_ccd_clk         : std_logic;
 
 signal i_dbg_ctrl_out    : TDGB_ctrl_out;
+signal i_dbg_ctrl_in     : TDGB_ctrl_in;
 
 attribute keep : string;
 attribute keep of g_usrclk : signal is "true";
@@ -604,7 +606,7 @@ pin_out_led(0) <= OR_reduce(tst_vctrl_out) or OR_reduce(i_video_d);--OR_reduce(t
 
 pin_out_TP2(0) <= tst_vout_out(0);
 pin_out_TP2(1) <= i_video_vs;
-pin_out_TP2(2) <= '0';
+pin_out_TP2(2) <= i_dbg_ctrl_out.glob.start_vout;
 
 m_led1_tst: fpga_test_01
 generic map(
@@ -697,7 +699,7 @@ begin
       i_btn <= not i_btn;
     end if;
 
-    if  i_dbg_ctrl_out.glob.start_vout = '1' then --if i_btn = '1' then
+    if i_btn = '1' or i_dbg_ctrl_out.glob.start_vout = '1' then
       if sr_video_vs(0) = '0' and sr_video_vs(1) = '1' then
         tst_vtest_en <= '1';
       end if;
@@ -712,10 +714,12 @@ end process;
 m_dbg_ctrl : dbg_ctrl
 port map(
 p_out_usr => i_dbg_ctrl_out,
+p_in_usr  => i_dbg_ctrl_in,
 
 p_in_clk => g_usrclk(6)
 );
 
+i_dbg_ctrl_in.tv_detect <= pin_in_tv_det;
 
 
 --END MAIN

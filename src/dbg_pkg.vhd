@@ -28,5 +28,9 @@ vout_memtrn_lenwr: std_logic_vector(7 downto 0);
 vout_memtrn_lenrd: std_logic_vector(7 downto 0);
 end record;
 
+type TDGB_ctrl_in is record
+tv_detect : std_logic;
+end record;
+
 end dbg_pkg;
 

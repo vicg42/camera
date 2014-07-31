@@ -217,6 +217,7 @@ NET "pin_out_video_ad723_stnd"      LOC = "L17" | IOSTANDARD = LVCMOS33;
 NET "pin_out_video_ad723_fcs4"      LOC = "J19" | IOSTANDARD = LVCMOS33;
 NET "pin_out_video_ad723_term"      LOC = "K17" | IOSTANDARD = LVCMOS33;
 NET "pin_in_tv_det"                 LOC = "M17" | IOSTANDARD = LVCMOS33;
+NET "pin_in_tv_det" CLOCK_DEDICATED_ROUTE = FALSE;
 
 
 ##################################################################################
