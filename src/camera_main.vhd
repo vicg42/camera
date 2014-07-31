@@ -68,6 +68,26 @@ end entity;
 
 architecture struct of camera_main is
 
+component system is
+port (
+p_in_rst : in std_logic;
+p_out_gpio0 : out std_logic_vector(7 downto 0);
+p_in_clk : in std_logic;
+p_in_osdvin_s_axis_tvalid : in std_logic;
+p_in_osdvin_s_axis_tlast : in std_logic;
+p_in_osdvin_s_axis_tuser : in std_logic;
+p_in_osdvin_s_axis_tdata : in std_logic_vector(31 downto 0);
+p_in_osdvin_s_axis_tready : out std_logic;
+p_in_osd_aclk : in std_logic;
+p_in_osd_aresetn : in std_logic;
+p_out_osdvout_m_axis_tvalid : out std_logic;
+p_out_osdvout_m_axis_tlast : out std_logic;
+p_out_osdvout_m_axis_tuser : out std_logic;
+p_out_osdvout_m_axis_tdata : out std_logic_vector(31 downto 0);
+p_out_osdvout_m_axis_tready : in std_logic
+);
+end component system;
+
 component dbg_ctrl is
 port(
 p_out_usr     : out  TDGB_ctrl_out;
@@ -335,6 +355,13 @@ signal i_ccd_clk         : std_logic;
 
 signal i_dbg_ctrl_out    : TDGB_ctrl_out;
 signal i_dbg_ctrl_in     : TDGB_ctrl_in;
+
+signal i_xps_led          : std_logic_vector(7 downto 0);
+
+signal i_xps_osd_vout_den : std_logic;
+signal i_xps_osd_vout_eol : std_logic;
+signal i_xps_osd_vout_sof : std_logic;
+signal i_xps_osd_vout_d   : std_logic_vector(31 downto 0);
 
 attribute keep : string;
 attribute keep of g_usrclk : signal is "true";
@@ -604,9 +631,13 @@ p_in_sys        => i_mem_ctrl_sysin
 --pin_out_led(0) <= OR_reduce(i_video_d) or OR_reduce(i_ccd_tst_out) or i_ccd_init_done;-- or -- or i_video_vs or i_video_hs or i_video_den;-- or sr_tst_ccd_syn;--OR_reduce(i_mem_ctrl_status.rdy);
 pin_out_led(0) <= OR_reduce(tst_vctrl_out) or OR_reduce(i_video_d);--OR_reduce(tst_vbufo_do) or
 
-pin_out_TP2(0) <= tst_vout_out(0);
-pin_out_TP2(1) <= i_video_vs;
-pin_out_TP2(2) <= i_dbg_ctrl_out.glob.start_vout;
+pin_out_TP2(0) <= i_xps_led(0);--tst_vout_out(0);
+pin_out_TP2(1) <= i_xps_led(1);--i_video_vs;
+pin_out_TP2(2) <= i_xps_osd_vout_den
+or i_xps_osd_vout_eol
+or i_xps_osd_vout_sof
+or OR_reduce(i_xps_osd_vout_d);
+
 
 m_led1_tst: fpga_test_01
 generic map(
@@ -711,16 +742,40 @@ begin
 end process;
 
 
-m_dbg_ctrl : dbg_ctrl
-port map(
-p_out_usr => i_dbg_ctrl_out,
-p_in_usr  => i_dbg_ctrl_in,
+--m_dbg_ctrl : dbg_ctrl
+--port map(
+--p_out_usr => i_dbg_ctrl_out,
+--p_in_usr  => i_dbg_ctrl_in,
+--
+--p_in_clk => g_usrclk(6)
+--);
+--
+--i_dbg_ctrl_in.tv_detect <= pin_in_tv_det;
 
-p_in_clk => g_usrclk(6)
+
+
+m_xps : system
+port map (
+p_in_osdvin_s_axis_tvalid   => '1',
+p_in_osdvin_s_axis_tlast    => '0',
+p_in_osdvin_s_axis_tuser    => '0',
+p_in_osdvin_s_axis_tdata    => (others => '0'),
+p_in_osdvin_s_axis_tready   => open,
+
+p_out_osdvout_m_axis_tvalid => i_xps_osd_vout_den,
+p_out_osdvout_m_axis_tlast  => i_xps_osd_vout_eol,
+p_out_osdvout_m_axis_tuser  => i_xps_osd_vout_sof,
+p_out_osdvout_m_axis_tdata  => i_xps_osd_vout_d,
+p_out_osdvout_m_axis_tready => '1',
+
+p_in_osd_aclk               => g_usr_highclk,
+p_in_osd_aresetn            => '1',
+
+p_out_gpio0 => i_xps_led,
+
+p_in_clk => g_usrclk(5),
+p_in_rst => i_arb_mem_rst
 );
-
-i_dbg_ctrl_in.tv_detect <= pin_in_tv_det;
-
 
 --END MAIN
 end architecture;
