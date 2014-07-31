@@ -11,21 +11,21 @@
  PARAMETER VERSION = 2.1.0
 
 
- PORT p_in_rst = RESET, DIR = I, SIGIS = RST, RST_POLARITY = 1
- PORT LEDs_8Bits_TRI_O = LEDs_8Bits_TRI_O, DIR = O, VEC = [7:0]
- PORT p_in_clk = CLK, DIR = I, SIGIS = CLK, CLK_FREQ = 200000000
- PORT p_in_s_axis_vin_tvalid = p_in_s_axis_vin_tvalid, DIR = I
- PORT p_in_s_axis_vin_tlast = p_in_s_axis_vin_tlast, DIR = I
- PORT p_in_s_axis_vin_tuser = p_in_s_axis_vin_tuser, DIR = I
- PORT p_in_s_axis_vin_tdata = p_in_s_axis_vin_tdata, DIR = I, VEC = [31:0]
- PORT p_in_s_axis_vin_tready = p_in_s_axis_vin_tready, DIR = O
- PORT p_in_aclk = v_osd_0_aclk, DIR = I, SIGIS = CLK
- PORT p_in_aresetnn = v_osd_0_aresetn, DIR = I, SIGIS = RST
- PORT p_out_m_axis_vout_tvalid = p_out_m_axis_vout_tvalid, DIR = O
- PORT p_out_m_axis_vout_tlast = p_out_m_axis_vout_tlast, DIR = O
- PORT p_out_m_axis_vout_tuser = p_out_m_axis_vout_tuser, DIR = O
- PORT p_out_m_axis_vout_tdata = p_out_m_axis_vout_tdata, DIR = O, VEC = [31:0]
- PORT p_out_m_axis_vout_tready = p_out_m_axis_vout_tready, DIR = I
+ PORT p_in_rst = RESET_IN, DIR = I, SIGIS = RST, RST_POLARITY = 1
+ PORT p_out_gpio0 = axi_gpio0_out, DIR = O, VEC = [7:0]
+ PORT p_in_clk = CLK_IN, DIR = I, SIGIS = CLK, CLK_FREQ = 200000000
+ PORT p_in_osdvin_s_axis_tvalid = v_osd_0_s_axis_tvalid, DIR = I
+ PORT p_in_osdvin_s_axis_tlast = v_osd_0_s_axis_tlast, DIR = I
+ PORT p_in_osdvin_s_axis_tuser = v_osd_0_s_axis_tuser, DIR = I
+ PORT p_in_osdvin_s_axis_tdata = v_osd_0_s_axis_tdata, DIR = I, VEC = [31:0]
+ PORT p_in_osdvin_s_axis_tready = v_osd_0_s_axis_tready, DIR = O
+ PORT p_in_osd_aclk = v_osd_0_aclk, DIR = I, SIGIS = CLK
+ PORT p_in_osd_aresetn = v_osd_0_aresetn, DIR = I, SIGIS = RST
+ PORT p_out_osdvout_m_axis_tvalid = v_osd_0_m_axis_tvalid, DIR = O
+ PORT p_out_osdvout_m_axis_tlast = v_osd_0_m_axis_tlast, DIR = O
+ PORT p_out_osdvout_m_axis_tuser = v_osd_0_m_axis_tuser, DIR = O
+ PORT p_out_osdvout_m_axis_tdata = v_osd_0_m_axis_tdata, DIR = O, VEC = [31:0]
+ PORT p_out_osdvout_m_axis_tready = v_osd_0_m_axis_tready, DIR = I
 
 
 BEGIN proc_sys_reset
@@ -37,7 +37,7 @@ BEGIN proc_sys_reset
  PORT MB_Reset = proc_sys_reset_0_MB_Reset
  PORT Slowest_sync_clk = clk_100_0000MHz
  PORT Interconnect_aresetn = proc_sys_reset_0_Interconnect_aresetn
- PORT Ext_Reset_In = RESET
+ PORT Ext_Reset_In = RESET_IN
  PORT BUS_STRUCT_RESET = proc_sys_reset_0_BUS_STRUCT_RESET
 END
 
@@ -124,8 +124,8 @@ BEGIN clock_generator
  PARAMETER C_CLKOUT0_GROUP = NONE
  PORT LOCKED = proc_sys_reset_0_Dcm_locked
  PORT CLKOUT0 = clk_100_0000MHz
- PORT RST = RESET
- PORT CLKIN = CLK
+ PORT RST = RESET_IN
+ PORT CLKIN = CLK_IN
 END
 
 BEGIN axi_interconnect
@@ -147,7 +147,7 @@ BEGIN axi_gpio
  PARAMETER C_HIGHADDR = 0x4000ffff
  BUS_INTERFACE S_AXI = axi4lite_0
  PORT S_AXI_ACLK = clk_100_0000MHz
- PORT GPIO_IO_O = LEDs_8Bits_TRI_O
+ PORT GPIO_IO_O = axi_gpio0_out
 END
 
 BEGIN v_osd
@@ -162,17 +162,17 @@ BEGIN v_osd
  PARAMETER C_LAYER0_CLUT_MEMTYPE = 1
  BUS_INTERFACE S_AXI = axi4lite_0
  PORT s_axi_aclk = clk_100_0000MHz
- PORT s_axis_video1_tvalid = p_in_s_axis_vin_tvalid
- PORT s_axis_video1_tlast = p_in_s_axis_vin_tlast
- PORT s_axis_video1_tuser = p_in_s_axis_vin_tuser
- PORT s_axis_video1_tdata = p_in_s_axis_vin_tdata
- PORT s_axis_video1_tready = p_in_s_axis_vin_tready
+ PORT s_axis_video1_tvalid = v_osd_0_s_axis_tvalid
+ PORT s_axis_video1_tlast = v_osd_0_s_axis_tlast
+ PORT s_axis_video1_tuser = v_osd_0_s_axis_tuser
+ PORT s_axis_video1_tdata = v_osd_0_s_axis_tdata
+ PORT s_axis_video1_tready = v_osd_0_s_axis_tready
  PORT aclk = v_osd_0_aclk
  PORT aresetn = v_osd_0_aresetn
- PORT m_axis_video_tvalid = p_out_m_axis_vout_tvalid
- PORT m_axis_video_tlast = p_out_m_axis_vout_tlast
- PORT m_axis_video_tuser = p_out_m_axis_vout_tuser
- PORT m_axis_video_tdata = p_out_m_axis_vout_tdata
- PORT m_axis_video_tready = p_out_m_axis_vout_tready
+ PORT m_axis_video_tvalid = v_osd_0_m_axis_tvalid
+ PORT m_axis_video_tlast = v_osd_0_m_axis_tlast
+ PORT m_axis_video_tuser = v_osd_0_m_axis_tuser
+ PORT m_axis_video_tdata = v_osd_0_m_axis_tdata
+ PORT m_axis_video_tready = v_osd_0_m_axis_tready
 END
 
