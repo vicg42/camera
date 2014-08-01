@@ -19,14 +19,14 @@
  PORT p_in_osdvin_s_axis_tlast = v_osd_0_s_axis_tlast, DIR = I
  PORT p_in_osdvin_s_axis_tuser = v_osd_0_s_axis_tuser, DIR = I
  PORT p_in_osdvin_s_axis_tdata = v_osd_0_s_axis_tdata, DIR = I, VEC = [31:0]
- PORT p_in_osdvin_s_axis_tready = v_osd_0_s_axis_tready, DIR = O
+ PORT p_out_osdvin_s_axis_tready = v_osd_0_s_axis_tready, DIR = O
  PORT p_in_osd_aclk = v_osd_0_aclk, DIR = I, SIGIS = CLK
  PORT p_in_osd_aresetn = v_osd_0_aresetn, DIR = I, SIGIS = RST
  PORT p_out_osdvout_m_axis_tvalid = v_osd_0_m_axis_tvalid, DIR = O
  PORT p_out_osdvout_m_axis_tlast = v_osd_0_m_axis_tlast, DIR = O
  PORT p_out_osdvout_m_axis_tuser = v_osd_0_m_axis_tuser, DIR = O
  PORT p_out_osdvout_m_axis_tdata = v_osd_0_m_axis_tdata, DIR = O, VEC = [31:0]
- PORT p_out_osdvout_m_axis_tready = v_osd_0_m_axis_tready, DIR = I
+ PORT p_in_osdvout_m_axis_tready = v_osd_0_m_axis_tready, DIR = I
 
 
 BEGIN proc_sys_reset
@@ -158,9 +158,9 @@ BEGIN v_osd
  PARAMETER C_S_AXIS_VIDEO_DATA_WIDTH = 10
  PARAMETER C_SCREEN_WIDTH = 640
  PARAMETER C_LAYER0_TYPE = 1
- PARAMETER C_LAYER0_CLUT_MEMTYPE = 1
  PARAMETER C_BASEADDR = 0x42000000
  PARAMETER C_HIGHADDR = 0x4200ffff
+ PARAMETER C_LAYER1_TYPE = 2
  BUS_INTERFACE S_AXI = axi4lite_0
  PORT s_axi_aclk = clk_100_0000MHz
  PORT s_axis_video1_tvalid = v_osd_0_s_axis_tvalid
