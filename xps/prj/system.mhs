@@ -11,6 +11,7 @@
  PARAMETER VERSION = 2.1.0
 
 
+ PORT p_in_irq = EXT_IRQ, DIR = I
  PORT p_in_rst = RESET_IN, DIR = I, SIGIS = RST, RST_POLARITY = 1
  PORT p_out_gpio0 = axi_gpio0_out, DIR = O, VEC = [7:0]
  PORT p_in_clk = CLK_IN, DIR = I, SIGIS = CLK, CLK_FREQ = 200000000
@@ -42,42 +43,42 @@ BEGIN proc_sys_reset
 END
 
 BEGIN lmb_v10
- PARAMETER INSTANCE = microblaze_0_ilmb
+ PARAMETER INSTANCE = mb_0_ilmb
  PARAMETER HW_VER = 2.00.b
  PORT SYS_RST = proc_sys_reset_0_BUS_STRUCT_RESET
  PORT LMB_CLK = clk_100_0000MHz
 END
 
 BEGIN lmb_bram_if_cntlr
- PARAMETER INSTANCE = microblaze_0_i_bram_ctrl
+ PARAMETER INSTANCE = mb_0_bram_ctrl_instruc
  PARAMETER HW_VER = 3.10.c
  PARAMETER C_BASEADDR = 0x00000000
- PARAMETER C_HIGHADDR = 0x00001fff
- BUS_INTERFACE SLMB = microblaze_0_ilmb
- BUS_INTERFACE BRAM_PORT = microblaze_0_i_bram_ctrl_2_microblaze_0_bram_block
+ PARAMETER C_HIGHADDR = 0x00007FFF
+ BUS_INTERFACE SLMB = mb_0_ilmb
+ BUS_INTERFACE BRAM_PORT = mb_0_bram_ctrl_i
 END
 
 BEGIN lmb_v10
- PARAMETER INSTANCE = microblaze_0_dlmb
+ PARAMETER INSTANCE = mb_0_dlmb
  PARAMETER HW_VER = 2.00.b
  PORT SYS_RST = proc_sys_reset_0_BUS_STRUCT_RESET
  PORT LMB_CLK = clk_100_0000MHz
 END
 
 BEGIN lmb_bram_if_cntlr
- PARAMETER INSTANCE = microblaze_0_d_bram_ctrl
+ PARAMETER INSTANCE = mb_0_bram_ctrl_data
  PARAMETER HW_VER = 3.10.c
  PARAMETER C_BASEADDR = 0x00000000
- PARAMETER C_HIGHADDR = 0x00001fff
- BUS_INTERFACE SLMB = microblaze_0_dlmb
- BUS_INTERFACE BRAM_PORT = microblaze_0_d_bram_ctrl_2_microblaze_0_bram_block
+ PARAMETER C_HIGHADDR = 0x00007FFF
+ BUS_INTERFACE SLMB = mb_0_dlmb
+ BUS_INTERFACE BRAM_PORT = mb_0_bram_ctrl_d
 END
 
 BEGIN bram_block
- PARAMETER INSTANCE = microblaze_0_bram_block
+ PARAMETER INSTANCE = mb_0_bram_block
  PARAMETER HW_VER = 1.00.a
- BUS_INTERFACE PORTA = microblaze_0_i_bram_ctrl_2_microblaze_0_bram_block
- BUS_INTERFACE PORTB = microblaze_0_d_bram_ctrl_2_microblaze_0_bram_block
+ BUS_INTERFACE PORTA = mb_0_bram_ctrl_i
+ BUS_INTERFACE PORTB = mb_0_bram_ctrl_d
 END
 
 BEGIN microblaze
@@ -95,23 +96,23 @@ BEGIN microblaze
  PARAMETER C_DCACHE_HIGHADDR = 0X3FFFFFFF
  PARAMETER C_USE_DCACHE = 0
  PARAMETER C_DCACHE_ALWAYS_USED = 0
- BUS_INTERFACE ILMB = microblaze_0_ilmb
- BUS_INTERFACE DLMB = microblaze_0_dlmb
+ BUS_INTERFACE ILMB = mb_0_ilmb
+ BUS_INTERFACE DLMB = mb_0_dlmb
  BUS_INTERFACE M_AXI_DP = axi4lite_0
- BUS_INTERFACE DEBUG = microblaze_0_debug
+ BUS_INTERFACE DEBUG = mb_0_debug
  PORT MB_RESET = proc_sys_reset_0_MB_Reset
  PORT CLK = clk_100_0000MHz
 END
 
 BEGIN mdm
- PARAMETER INSTANCE = debug_module
+ PARAMETER INSTANCE = dbg_module
  PARAMETER HW_VER = 2.10.a
  PARAMETER C_INTERCONNECT = 2
  PARAMETER C_USE_UART = 1
  PARAMETER C_BASEADDR = 0x41400000
  PARAMETER C_HIGHADDR = 0x4140ffff
  BUS_INTERFACE S_AXI = axi4lite_0
- BUS_INTERFACE MBDEBUG_0 = microblaze_0_debug
+ BUS_INTERFACE MBDEBUG_0 = mb_0_debug
  PORT Debug_SYS_Rst = proc_sys_reset_0_MB_Debug_Sys_Rst
  PORT S_AXI_ACLK = clk_100_0000MHz
 END
@@ -137,7 +138,7 @@ BEGIN axi_interconnect
 END
 
 BEGIN axi_gpio
- PARAMETER INSTANCE = LEDs_8Bits
+ PARAMETER INSTANCE = gpio_0
  PARAMETER HW_VER = 1.01.b
  PARAMETER C_GPIO_WIDTH = 8
  PARAMETER C_ALL_INPUTS = 0
@@ -153,13 +154,13 @@ END
 BEGIN v_osd
  PARAMETER INSTANCE = v_osd_0
  PARAMETER HW_VER = 5.01.a
- PARAMETER C_BASEADDR = 0x42000000
- PARAMETER C_HIGHADDR = 0x4200FFFF
  PARAMETER C_S_AXIS_VIDEO_FORMAT = 2
  PARAMETER C_S_AXIS_VIDEO_DATA_WIDTH = 10
  PARAMETER C_SCREEN_WIDTH = 640
  PARAMETER C_LAYER0_TYPE = 1
  PARAMETER C_LAYER0_CLUT_MEMTYPE = 1
+ PARAMETER C_BASEADDR = 0x42000000
+ PARAMETER C_HIGHADDR = 0x4200ffff
  BUS_INTERFACE S_AXI = axi4lite_0
  PORT s_axi_aclk = clk_100_0000MHz
  PORT s_axis_video1_tvalid = v_osd_0_s_axis_tvalid
@@ -174,5 +175,25 @@ BEGIN v_osd
  PORT m_axis_video_tuser = v_osd_0_m_axis_tuser
  PORT m_axis_video_tdata = v_osd_0_m_axis_tdata
  PORT m_axis_video_tready = v_osd_0_m_axis_tready
+END
+
+BEGIN axi_timer
+ PARAMETER INSTANCE = axi_timer_0
+ PARAMETER HW_VER = 1.03.a
+ PARAMETER C_BASEADDR = 0x41c00000
+ PARAMETER C_HIGHADDR = 0x41c0ffff
+ BUS_INTERFACE S_AXI = axi4lite_0
+ PORT S_AXI_ACLK = clk_100_0000MHz
+ PORT Interrupt = axi_timer_0_Interrupt
+END
+
+BEGIN axi_intc
+ PARAMETER INSTANCE = axi_intc_0
+ PARAMETER HW_VER = 1.04.a
+ PARAMETER C_BASEADDR = 0x41200000
+ PARAMETER C_HIGHADDR = 0x4120ffff
+ BUS_INTERFACE S_AXI = axi4lite_0
+ PORT S_AXI_ACLK = clk_100_0000MHz
+ PORT Intr = axi_timer_0_Interrupt
 END
 

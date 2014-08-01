@@ -70,6 +70,7 @@ architecture struct of camera_main is
 
 component system is
 port (
+p_in_irq : in std_logic;
 p_in_rst : in std_logic;
 p_out_gpio0 : out std_logic_vector(7 downto 0);
 p_in_clk : in std_logic;
@@ -461,10 +462,10 @@ pin_out_video <= i_video_out;
 --
 --***********************************************************
 i_vctrl_vwrite_en    <= tst_vtest_en;
---i_vctrl_memtrn_lenwr <= std_logic_vector(TO_UNSIGNED(16#E0#, 8));
---i_vctrl_memtrn_lenrd <= std_logic_vector(TO_UNSIGNED(16#80#, 8));
-i_vctrl_memtrn_lenwr <= i_dbg_ctrl_out.vout_memtrn_lenwr;
-i_vctrl_memtrn_lenrd <= i_dbg_ctrl_out.vout_memtrn_lenrd;
+i_vctrl_memtrn_lenwr <= std_logic_vector(TO_UNSIGNED(16#E0#, 8));
+i_vctrl_memtrn_lenrd <= std_logic_vector(TO_UNSIGNED(16#80#, 8));
+--i_vctrl_memtrn_lenwr <= i_dbg_ctrl_out.vout_memtrn_lenwr;
+--i_vctrl_memtrn_lenrd <= i_dbg_ctrl_out.vout_memtrn_lenrd;
 
 i_vctrl_vwrite_prm(0).fr_size.skip.pix  <= std_logic_vector(TO_UNSIGNED(10#00#, 16));
 i_vctrl_vwrite_prm(0).fr_size.skip.row  <= std_logic_vector(TO_UNSIGNED(10#00#, 16));
@@ -479,10 +480,10 @@ i_vctrl_vread_prm(0).fr_size.activ.row <= std_logic_vector(TO_UNSIGNED(10#576#, 
 end generate gen_tv1;
 
 gen_vga : if strcmp(C_PCGF_VOUT_TYPE, "VGA") generate begin
-i_vctrl_vread_prm(0).fr_size.skip.pix  <= i_dbg_ctrl_out.vout_start_x;
-i_vctrl_vread_prm(0).fr_size.skip.row  <= i_dbg_ctrl_out.vout_start_y;
---i_vctrl_vread_prm(0).fr_size.skip.pix  <= std_logic_vector(TO_UNSIGNED(C_PCFG_VOUT_START_X, 16));
---i_vctrl_vread_prm(0).fr_size.skip.row  <= std_logic_vector(TO_UNSIGNED(C_PCFG_VOUT_START_Y, 16));
+--i_vctrl_vread_prm(0).fr_size.skip.pix  <= i_dbg_ctrl_out.vout_start_x;
+--i_vctrl_vread_prm(0).fr_size.skip.row  <= i_dbg_ctrl_out.vout_start_y;
+i_vctrl_vread_prm(0).fr_size.skip.pix  <= std_logic_vector(TO_UNSIGNED(C_PCFG_VOUT_START_X, 16));
+i_vctrl_vread_prm(0).fr_size.skip.row  <= std_logic_vector(TO_UNSIGNED(C_PCFG_VOUT_START_Y, 16));
 i_vctrl_vread_prm(0).fr_size.activ.pix <= std_logic_vector(TO_UNSIGNED(10#640# * 4, 16));
 i_vctrl_vread_prm(0).fr_size.activ.row <= std_logic_vector(TO_UNSIGNED(10#480#, 16));
 end generate gen_vga;
@@ -629,14 +630,16 @@ p_in_sys        => i_mem_ctrl_sysin
 
 --pin_out_led(1) <= i_test_led(0);
 --pin_out_led(0) <= OR_reduce(i_video_d) or OR_reduce(i_ccd_tst_out) or i_ccd_init_done;-- or -- or i_video_vs or i_video_hs or i_video_den;-- or sr_tst_ccd_syn;--OR_reduce(i_mem_ctrl_status.rdy);
-pin_out_led(0) <= OR_reduce(tst_vctrl_out) or OR_reduce(i_video_d);--OR_reduce(tst_vbufo_do) or
-
-pin_out_TP2(0) <= i_xps_led(0);--tst_vout_out(0);
-pin_out_TP2(1) <= i_xps_led(1);--i_video_vs;
-pin_out_TP2(2) <= i_xps_osd_vout_den
+pin_out_led(0) <= OR_reduce(tst_vctrl_out) or OR_reduce(i_video_d) --;--OR_reduce(tst_vbufo_do) or
+or i_xps_osd_vout_den
 or i_xps_osd_vout_eol
 or i_xps_osd_vout_sof
 or OR_reduce(i_xps_osd_vout_d);
+
+pin_out_TP2(0) <= i_xps_led(0);--tst_vout_out(0);
+pin_out_TP2(1) <= i_xps_led(1);--i_video_vs;
+pin_out_TP2(2) <= tst_vtest_en;--
+
 
 
 m_led1_tst: fpga_test_01
@@ -730,7 +733,7 @@ begin
       i_btn <= not i_btn;
     end if;
 
-    if i_btn = '1' or i_dbg_ctrl_out.glob.start_vout = '1' then
+    if i_btn = '1' then --or i_dbg_ctrl_out.glob.start_vout = '1'
       if sr_video_vs(0) = '0' and sr_video_vs(1) = '1' then
         tst_vtest_en <= '1';
       end if;
@@ -772,6 +775,8 @@ p_in_osd_aclk               => g_usr_highclk,
 p_in_osd_aresetn            => '1',
 
 p_out_gpio0 => i_xps_led,
+
+p_in_irq => '0',
 
 p_in_clk => g_usrclk(5),
 p_in_rst => i_arb_mem_rst
