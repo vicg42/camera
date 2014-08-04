@@ -5,9 +5,16 @@
 -- Create Date : 01.08.2014 15:18:58
 -- Module Name : data2axistream
 --
--- Назначение/Описание :
---  Запись/Чтение данных ОЗУ
+-- Description : pg010_v_osd_v5.pdf (page 26)
 --
+-- Video DATA - RGB :
+--  p_out_axi_stream_tdata   = R & B & G;
+--
+-- Video DATA - YCbCr(4:4:4)
+--  p_out_axi_stream_tdata   = Cr & Cb & Y;
+--
+-- Video DATA - YCbCr(4:2:2)
+--  p_out_axi_stream_tdata   = Cb/Cr & Y;
 --
 -- Revision:
 -- Revision 0.01 - File Created
