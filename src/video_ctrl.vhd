@@ -276,7 +276,7 @@ gen_dbgcs_on : if strcmp(G_DBGCS,"ON") generate
 p_out_tst(0) <= OR_reduce(tst_vwriter_out) or OR_reduce(tst_vreader_out);
 p_out_tst(4 downto 1) <= tst_vwriter_out(3 downto 0);
 p_out_tst(8 downto 5) <= tst_vreader_out(3 downto 0);
-p_out_tst(9)          <= tst_vwriter_out(4);
+p_out_tst(9)          <= i_vread_en;
 p_out_tst(10)         <= tst_vreader_out(4)
 or tst_vbufi_empty
 or tst_vbufi_pfull
