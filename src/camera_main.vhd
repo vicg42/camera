@@ -68,66 +68,43 @@ end entity;
 
 architecture struct of camera_main is
 
-component data2axistream is
+component vga_gen is
 generic(
-G_VFR_PIX_COUNT : integer := 8;
-G_VFR_ROW_COUNT : integer := 8;
-G_BUFI_DWIDTH   : integer := 8;
-G_AXI_DWIDTH    : integer := 8
+G_SEL : integer := 0 --Resolution select
 );
 port(
----------------------------------
-----
----------------------------------
---p_in_vfr_pix     : in    std_logic_vector(15 downto 0);
---p_in_vfr_row     : in    std_logic_vector(15 downto 0);
-p_in_work       : in    std_logic;
+--SYNC
+p_out_vsync   : out  std_logic; --Vertical Sync
+p_out_hsync   : out  std_logic; --Horizontal Sync
+p_out_den     : out  std_logic; --Pixels
 
--------------------------------
---
--------------------------------
-p_in_bufi_dout  : in    std_logic_vector(G_BUFI_DWIDTH - 1 downto 0);
-p_out_bufi_rd   : out   std_logic;
-p_in_bufi_empty : in    std_logic;
-
-p_out_axi_stream_tdata  : out   std_logic_vector(G_AXI_DWIDTH - 1 downto 0);
-p_out_axi_stream_tvalid : out   std_logic;
-p_out_axi_stream_tuser  : out   std_logic; --SOF (start of frame)
-p_out_axi_stream_tlast  : out   std_logic; --EOL (End of line)
-p_in_axi_stream_tready  : in    std_logic;
-
--------------------------------
---Технологические сигналы
--------------------------------
-p_in_tst             : in    std_logic_vector(31 downto 0);
-p_out_tst            : out   std_logic_vector(31 downto 0);
-
--------------------------------
 --System
--------------------------------
-p_in_clk             : in    std_logic;
-p_in_rst             : in    std_logic
+p_in_clk      : in   std_logic;
+p_in_rst      : in   std_logic
 );
-end component data2axistream;
+end component;
 
 component system is
 port (
+axi2vout_0_locked_pin : out std_logic;
 p_in_irq : in std_logic;
 p_in_rst : in std_logic;
 p_out_gpio0 : out std_logic_vector(7 downto 0);
 p_in_clk : in std_logic;
-p_in_osdvin_s_axis_tvalid : in std_logic;
-p_in_osdvin_s_axis_tlast : in std_logic;
-p_in_osdvin_s_axis_tuser : in std_logic;
-p_in_osdvin_s_axis_tdata : in std_logic_vector(31 downto 0);
-p_out_osdvin_s_axis_tready : out std_logic;
-p_in_osd_aclk : in std_logic;
-p_in_osd_aresetn : in std_logic;
-p_out_osdvout_m_axis_tvalid : out std_logic;
-p_out_osdvout_m_axis_tlast : out std_logic;
-p_out_osdvout_m_axis_tuser : out std_logic;
-p_out_osdvout_m_axis_tdata : out std_logic_vector(31 downto 0);
-p_in_osdvout_m_axis_tready : in std_logic
+p_in_axi2vout_vclk : in std_logic;
+p_out_axi2vout_de : out std_logic;
+p_out_axi2vout_vsync : out std_logic;
+p_out_axi2vout_hsync : out std_logic;
+p_out_axi2vout_vdata : out std_logic_vector(29 downto 0);
+p_out_axi2vout_vblank : out std_logic;
+p_out_axi2vout_hblank : out std_logic;
+p_in_vin2axi_vclk : in std_logic;
+p_in_vin2axi_de : in std_logic;
+p_in_vin2axi_vblank : in std_logic;
+p_in_vin2axi_hblank : in std_logic;
+p_in_vin2axi_vsync : in std_logic;
+p_in_vin2axi_hsync : in std_logic;
+p_in_vin2axi_vdata : in std_logic_vector(29 downto 0)
 );
 end component system;
 
@@ -425,10 +402,38 @@ signal tst_xps_osdout_axi_tuser  : std_logic;
 signal tst_xps_osdout_axi_tvalid : std_logic;
 signal tst_xps_osdout_axi_tready : std_logic;
 
+signal i_xps_clk      : std_logic;
+signal i_xps_rstn,i_xps_rst   : std_logic;
+
+signal i_vbufc_di      : std_logic_vector(31 downto 0);
+signal i_vbufc_wr      : std_logic;
+signal i_vbufc_do      : std_logic_vector(31 downto 0);
+signal i_vbufc_rd      : std_logic;
+signal i_vbufc_empty   : std_logic;
+signal i_vbufc_rst     : std_logic;
 
 signal tmp_vbufo_do    : std_logic_vector(C_CGF_VBUFO_DWIDTH - 1 downto 0);
 signal tmp_vbufo_rd    : std_logic;
 signal tmp_vbufo_empty : std_logic;
+
+
+signal i_vga_pix_clk  : std_logic;
+signal i_vga_vs       : std_logic;
+signal i_vga_hs       : std_logic;
+signal i_pix_den      : std_logic;
+
+signal i_vout_data    : std_logic_vector(31 downto 0);
+signal i_vout_de      : std_logic;
+
+signal i_rdy          : std_logic := '0';
+signal sr_vfr_start   : std_logic_vector(0 to 1) := (others => '0');
+signal i_vout_work    : std_logic := '0';
+signal sr_fifo_empty  : std_logic := '1';
+
+
+signal tst_vout_de    : std_logic;
+signal tst_vout_vs    : std_logic;
+signal tst_vout_hs    : std_logic;
 
 attribute keep : string;
 attribute keep of g_usrclk : signal is "true";
@@ -496,35 +501,35 @@ i_arb_mem_rst_n <= OR_reduce(i_mem_ctrl_status.rdy);
 --);
 
 
---***********************************************************
+----***********************************************************
+----
+----***********************************************************
+--m_video_out : vout
+--generic map(
+--G_VDWIDTH => C_CGF_VBUFO_DWIDTH,
+--G_VOUT_TYPE => C_PCGF_VOUT_TYPE,
+--G_TEST_PATTERN => C_PCGF_VOUT_TEST
+--)
+--port map(
+----PHY
+--p_out_video   => i_video_out,--pin_out_video,
 --
---***********************************************************
-m_video_out : vout
-generic map(
-G_VDWIDTH => C_CGF_VBUFO_DWIDTH,
-G_VOUT_TYPE => C_PCGF_VOUT_TYPE,
-G_TEST_PATTERN => C_PCGF_VOUT_TEST
-)
-port map(
---PHY
-p_out_video   => i_video_out,--pin_out_video,
-
-p_in_fifo_do    => i_xps_osdout_axi_tdata   ,--i_vbufo_do   ,--
-p_out_fifo_rd   => i_xps_osdout_axi_tready   ,--i_vbufo_rd   ,--
-p_in_fifo_empty => tmp_vbufo_empty,--i_vbufo_empty,--
-
-p_out_tst     => tst_vout_out,
-p_in_tst      => (others => '0'),
-
---System
-p_in_rdy      => tst_vtest_en,
-p_in_clk      => g_usrclk(2),
-p_in_rst      => i_rst
-);
+--p_in_fifo_do    => i_vbufc_do   ,   --i_xps_osdout_axi_tdata   ,--i_vbufo_do   ,--
+--p_out_fifo_rd   => i_vbufc_rd   ,   --i_xps_osdout_axi_tready   ,--i_vbufo_rd   ,--
+--p_in_fifo_empty => i_vbufc_empty,   --tmp_vbufo_empty,--i_vbufo_empty,--
+--
+--p_out_tst     => tst_vout_out,
+--p_in_tst      => (others => '0'),
+--
+----System
+--p_in_rdy      => tst_vtest_en,
+--p_in_clk      => g_usrclk(2),
+--p_in_rst      => i_rst
+--);
 
 pin_out_video <= i_video_out;
 
-tmp_vbufo_empty <= not i_xps_osdout_axi_tvalid;
+--tmp_vbufo_empty <= not i_xps_osdout_axi_tvalid;
 
 --***********************************************************
 --
@@ -587,7 +592,7 @@ p_in_ccd_dclk         => i_video_d_clk,
 -------------------------------
 --VBUFO
 -------------------------------
-p_in_vbufo_rdclk      => g_usrclk(2),
+p_in_vbufo_rdclk      => i_vga_pix_clk,
 p_out_vbufo_do        => i_vbufo_do,
 p_in_vbufo_rd         => i_vbufo_rd,
 p_out_vbufo_empty     => i_vbufo_empty,
@@ -698,18 +703,17 @@ p_in_sys        => i_mem_ctrl_sysin
 
 --pin_out_led(1) <= i_test_led(0);
 --pin_out_led(0) <= OR_reduce(i_video_d) or OR_reduce(i_ccd_tst_out) or i_ccd_init_done;-- or -- or i_video_vs or i_video_hs or i_video_den;-- or sr_tst_ccd_syn;--OR_reduce(i_mem_ctrl_status.rdy);
-pin_out_led(0) <= OR_reduce(tst_vctrl_out) or OR_reduce(i_video_d);--OR_reduce(tst_vbufo_do) or
+pin_out_led(0) <= OR_reduce(tst_vctrl_out) or OR_reduce(i_video_d) or i_xps_led(0);--OR_reduce(tst_vbufo_do) or
 
-pin_out_TP2(0) <= i_xps_led(0);--tst_vout_out(0);
+pin_out_TP2(0) <= tst_vtest_en;--tst_vout_out(0);
 pin_out_TP2(1) <= tmp_vbufo_empty;--tst_vctrl_in(0);--i_video_vs;
-pin_out_TP2(2) <= tst_xps_osdin_axi_tlast
-or tst_xps_osdin_axi_tuser
-or tst_xps_osdin_axi_tvalid
-or tst_xps_osdin_axi_tready
-or tst_xps_osdout_axi_tlast
-or tst_xps_osdout_axi_tuser
-or tst_xps_osdout_axi_tvalid
-or tst_xps_osdout_axi_tready;
+pin_out_TP2(2) <= tst_vout_de
+or tst_vout_vs
+or tst_vout_hs;
+
+
+
+
 
 m_led1_tst: fpga_test_01
 generic map(
@@ -743,8 +747,8 @@ p_in_clk_en => i_1ms,
 p_in_clk    => g_usrclk(1)
 );
 
-i_ccd_tst_in(0) <= i_btn_push;
-i_ccd_tst_in(i_ccd_tst_in'length - 1 downto 1) <= (others => '0');
+--i_ccd_tst_in(0) <= i_btn_push;
+--i_ccd_tst_in(i_ccd_tst_in'length - 1 downto 1) <= (others => '0');
 
 
 
@@ -825,88 +829,95 @@ end process;
 --i_dbg_ctrl_in.tv_detect <= pin_in_tv_det;
 
 
-m_d2axistream : data2axistream
-generic map(
-G_VFR_PIX_COUNT => 640,
-G_VFR_ROW_COUNT => 480,
-G_BUFI_DWIDTH => C_CGF_VBUFO_DWIDTH,
-G_AXI_DWIDTH  => C_CGF_VBUFO_DWIDTH
-)
-port map (
----------------------------------
-----
----------------------------------
---p_in_vfr_pix  =>
---p_in_vfr_row  =>
-p_in_work       => tst_vctrl_out(9),--vctrl/i_vread_en
-
--------------------------------
---
--------------------------------
-p_in_bufi_dout  => i_vbufo_do,
-p_out_bufi_rd   => i_vbufo_rd,
-p_in_bufi_empty => i_vbufo_empty,
-
---Data for XPS_OSD (s_axis_* - video input)
-p_out_axi_stream_tdata  => i_xps_osdin_axi_tdata ,
-p_out_axi_stream_tvalid => i_xps_osdin_axi_tvalid,
-p_out_axi_stream_tuser  => i_xps_osdin_axi_tuser ,
-p_out_axi_stream_tlast  => i_xps_osdin_axi_tlast ,
-p_in_axi_stream_tready  => i_xps_osdin_axi_tready,
-
--------------------------------
---Технологические сигналы
--------------------------------
-p_in_tst   => (others => '0'),
-p_out_tst  => open,
-
--------------------------------
---System
--------------------------------
-p_in_clk   => g_usrclk(2),
-p_in_rst   => i_arb_mem_rst
-);
-
-
 m_xps : system
 port map (
-p_in_osdvin_s_axis_tvalid   => i_xps_osdin_axi_tvalid,  --'0',             --
-p_in_osdvin_s_axis_tlast    => i_xps_osdin_axi_tlast ,  --'0',             --
-p_in_osdvin_s_axis_tuser    => i_xps_osdin_axi_tuser ,  --'0',             --
-p_in_osdvin_s_axis_tdata    => i_xps_osdin_axi_tdata ,  --(others => '0'), --
-p_out_osdvin_s_axis_tready  => i_xps_osdin_axi_tready,  --open,            --
-                                                        --
-p_out_osdvout_m_axis_tvalid => i_xps_osdout_axi_tvalid, --open,            --
-p_out_osdvout_m_axis_tlast  => i_xps_osdout_axi_tlast , --open,            --
-p_out_osdvout_m_axis_tuser  => i_xps_osdout_axi_tuser , --open,            --
-p_out_osdvout_m_axis_tdata  => i_xps_osdout_axi_tdata , --open,            --
-p_in_osdvout_m_axis_tready  => i_xps_osdout_axi_tready, --'1',             --
+p_in_vin2axi_vclk     => i_vga_pix_clk,
+p_in_vin2axi_vdata    => i_vbufo_do(29 downto 0),
+p_in_vin2axi_de       => i_vbufo_rd,
+p_in_vin2axi_vblank   => i_vga_vs,
+p_in_vin2axi_hblank   => i_vga_hs,
+p_in_vin2axi_vsync    => i_vga_vs,
+p_in_vin2axi_hsync    => i_vga_hs,
 
-p_in_osd_aclk    => g_usrclk(2),
-p_in_osd_aresetn => i_arb_mem_rst_n,
+p_in_axi2vout_vclk    => i_vga_pix_clk,
+p_out_axi2vout_vdata  => i_vout_data(29 downto 0),
+p_out_axi2vout_de     => i_vout_de,
+p_out_axi2vout_vsync  => i_video_out.vga_vs,
+p_out_axi2vout_hsync  => i_video_out.vga_hs,
+p_out_axi2vout_vblank => open,
+p_out_axi2vout_hblank => open,
 
 p_out_gpio0 => i_xps_led,
 
 p_in_irq => '0',
-
+axi2vout_0_locked_pin => open,
 p_in_clk => g_usrclk(5),
 p_in_rst => i_arb_mem_rst
 );
 
-process(g_usrclk(2))
-begin
-  if rising_edge(g_usrclk(2)) then
-    tst_xps_osdin_axi_tlast  <= i_xps_osdin_axi_tlast ;
-    tst_xps_osdin_axi_tuser  <= i_xps_osdin_axi_tuser ;
-    tst_xps_osdin_axi_tvalid <= i_xps_osdin_axi_tvalid;
-    tst_xps_osdin_axi_tready <= i_xps_osdin_axi_tready;
 
-    tst_xps_osdout_axi_tlast  <= i_xps_osdout_axi_tlast ;
-    tst_xps_osdout_axi_tuser  <= i_xps_osdout_axi_tuser ;
-    tst_xps_osdout_axi_tvalid <= i_xps_osdout_axi_tvalid;
-    tst_xps_osdout_axi_tready <= i_xps_osdout_axi_tready;
+i_vbufo_rd <= i_pix_den and i_vout_work;
+
+i_vga_pix_clk <= g_usrclk(2);
+
+m_vga_timegen : vga_gen
+generic map(
+G_SEL => 0
+)
+port map(
+--SYNC
+p_out_vsync => i_vga_vs,
+p_out_hsync => i_vga_hs,
+p_out_den   => i_pix_den,
+
+--System
+p_in_clk    => i_vga_pix_clk,
+p_in_rst    => i_rst
+);
+
+i_video_out.adv7123_blank_n <= i_vout_de;
+i_video_out.adv7123_sync_n  <= '0';
+i_video_out.adv7123_psave_n <= '1';--Power Down OFF
+i_video_out.adv7123_clk     <= not i_vga_pix_clk;
+i_video_out.ad723_ce <= '0';
+
+i_video_out.adv7123_dr <= i_vout_data((10 * 3) - 1 downto (10 * 2));--"00" &
+i_video_out.adv7123_db <= i_vout_data((10 * 2) - 1 downto (10 * 1));--"00" &
+i_video_out.adv7123_dg <= i_vout_data((10 * 1) - 1 downto (10 * 0));--"00" &
+
+process(i_vga_pix_clk)
+begin
+if rising_edge(i_vga_pix_clk) then
+  if i_rst = '1' then
+    i_rdy <= '0';
+    sr_vfr_start <= (others => '0');
+    i_vout_work <= '0';
+    sr_fifo_empty <= '1';
+
+  else
+    i_rdy <= tst_vctrl_out(9);--vctrl/i_vread_en;
+    sr_vfr_start <= i_vga_vs & sr_vfr_start(0 to 0);
+    sr_fifo_empty <= i_vbufo_empty;
+
+    if i_rdy = '1' then
+      if sr_vfr_start(0) = '0' and sr_vfr_start(1) = '1' and sr_fifo_empty = '0' then
+        i_vout_work <= '1';
+      end if;
+    else
+      i_vout_work <= '0';
+    end if;
 
   end if;
+end if;
+end process;
+
+process(i_vga_pix_clk)
+begin
+if rising_edge(i_vga_pix_clk) then
+tst_vout_de <= i_vout_de         ;
+tst_vout_vs <= i_video_out.vga_vs;
+tst_vout_hs <= i_video_out.vga_hs;
+end if;
 end process;
 
 
