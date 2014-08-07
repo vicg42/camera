@@ -96,18 +96,31 @@ XOSD_Config *OsdCfgPtr;   /* OSD device configuration pointer */
 /*
  * Color table definition
  */
-u32 ColorData[16] = {
-  0x00000000, 0xa0a25f58, 0xa08080ff, 0xa0808010,
-  0xa0ef5a51, 0x00000000, 0xa0465289, 0x00000000,
-  0xa065ba6b, 0x00000000, 0xa09017c5, 0xa0a9c860,
-  0xa0bc3198, 0xa010a5a9, 0xa0808080, 0xa0ada1ab
+u64 ColorData[16] = {
+0x0000000000000000,     //Color 0 – 100% Transparent
+0x00000080000003ff,     //Color 1 – Light Red, 50% transparent
+0x00000080000ffc00,     //Color 2 – Light Green, 50% transparent
+0x000000803ff00000,     //Color 3 – Light Blue, 50% transparent
+0x000000803ffffc00,     //Color 4 – Light Cyan, 50% transparent
+0x00000080000fffff,     //Color 5 – Light Yellow, 50% transparent
+0x000000803ff003ff,     //Color 6 – Light Purple, 50% transparent
+0x00000080ffffffffff,   //Color 7 – White, 50% transparent
+0x0000008000000000,     //Color 8 – Black, 50% transparent
+0x0000008000000200,     //Color 9 – Dark Red, 50% transparent
+0x0000008000080000,     //Color 10 – Dark Green, 50% transparen
+0x0000008020000000,     //Color 11 – Dark Blue, 50% transparent
+0x0000008000000000,     //Color 12 – Black, 50% transparent
+0x0000008020080200,     //Color 13 – Dark Grey – 50% transparent
+0x00000080300c0300,     //Color 14 – Light Grey – 50% transparent
+0x0000000000000000      //Color 15 – 100% Transparent
 };
+
 
 /*
  * Text table definition
  */
 char __attribute__ ((aligned (4))) TextData[8][32] = {
-  "String #1",
+  " !@#$%^&*()_+",
   "String #2",
   "String #3",
   "String #4",
@@ -459,13 +472,13 @@ static void OsdDrawBox(void)
   /* Instruction property definition */
 
   u16 ObjType = XOSD_INS_OPCODE_BOX;  /* A box */
-  u8  ObjSize = 0;    /* Box boarder width */
+  u8  ObjSize = 8;    /* Box boarder width */
   u16 XStart = 100;   /* Horizontal start pixel of the box */
   u16 YStart = 100;   /* Vertical start line of the box */
   u16 XEnd = 200;     /* Horizontal end pixel of the box */
   u16 YEnd = 200;     /* Vertical end line of the box */
   u8 TextIndex = 0;   /* Ignored in box instruction case */
-  u8 ColorIndex = 7;    /* Draw the box w/ the 1st color */
+  u8 ColorIndex = 2;    /* Draw the box w/ the 1st color */
 
   /* Create a box command instruction for GC #0 */
 
