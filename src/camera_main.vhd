@@ -881,9 +881,9 @@ i_video_out.adv7123_psave_n <= '1';--Power Down OFF
 i_video_out.adv7123_clk     <= not i_vga_pix_clk;
 i_video_out.ad723_ce <= '0';
 
-i_video_out.adv7123_dr <= i_vout_data((10 * 3) - 1 downto (10 * 2));--"00" &
-i_video_out.adv7123_db <= i_vout_data((10 * 2) - 1 downto (10 * 1));--"00" &
-i_video_out.adv7123_dg <= i_vout_data((10 * 1) - 1 downto (10 * 0));--"00" &
+i_video_out.adv7123_db <= i_vout_data((10 * 3) - 1 downto (10 * 2));--"00" &
+i_video_out.adv7123_dg <= i_vout_data((10 * 2) - 1 downto (10 * 1));--"00" &
+i_video_out.adv7123_dr <= i_vout_data((10 * 1) - 1 downto (10 * 0));--"00" &
 
 process(i_vga_pix_clk)
 begin
