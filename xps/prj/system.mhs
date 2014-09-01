@@ -14,7 +14,7 @@
  PORT p_in_irq = EXT_IRQ, DIR = I
  PORT p_in_rst = RESET_IN, DIR = I, SIGIS = RST, RST_POLARITY = 1
  PORT p_out_gpio0 = axi_gpio0_out, DIR = O, VEC = [7:0]
- PORT p_in_clk = CLK_IN, DIR = I, SIGIS = CLK, CLK_FREQ = 200000000
+ PORT p_in_clk = CLK_IN, DIR = I, SIGIS = CLK, CLK_FREQ = 20000000
  PORT p_in_axi2vout_vclk = net_axi2vout_0_video_out_clk_pin, DIR = I, SIGIS = CLK
  PORT p_out_axi2vout_de = axi2vout_0_video_de, DIR = O
  PORT p_out_axi2vout_vsync = axi2vout_0_video_vsync, DIR = O
