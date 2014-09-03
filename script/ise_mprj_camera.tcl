@@ -1,4 +1,4 @@
-source "../../common/script/projnav.tcl"
+source "../../../lib/common/script/projnav.tcl"
 #file mkdir "../ise/prj
 cd ../ise/prj
 
@@ -22,14 +22,19 @@ set _VHDPkg $::projNav::VHDPkg
 set _projects [ list \
   [ list \
     $_usrdef_xilinx_family $_usrdef_device $_usrdef_pkg $_usrdef_speed xrc5t1 [ list \
-      [ list "../../../common/hw/lib/vicg/vicg_common_pkg.vhd" $_VHDPkg ] \
-      [ list "../../../common/hw/lib/vicg/reduce_Pack.vhd" $_VHDPkg ] \
-      [ list "../../../common/hw/spi/spi_core_pkg.vhd" $_VHDPkg ] \
-      [ list "../../../common/hw/spi/spi_core.vhd" $_VHDMod ] \
-      [ list "../../../common/hw/video/video_out/vga_gen.vhd" $_VHDMod ] \
-      [ list "../../../common/hw/mem/mem_glob_pkg.vhd" $_VHDPkg ] \
-      [ list "../../../common/hw/mem/xilinx/mem_wr_axi_pkg.vhd" $_VHDPkg ] \
-      [ list "../../../common/hw/mem/xilinx/mem_wr_axi.vhd" $_VHDMod ] \
+      [ list "../../../../lib/common/hw/lib/vicg/vicg_common_pkg.vhd" $_VHDPkg ] \
+      [ list "../../../../lib/common/hw/lib/vicg/reduce_pack.vhd" $_VHDPkg ] \
+      [ list "../../../../lib/common/hw/spi/spi_core_pkg.vhd" $_VHDPkg ] \
+      [ list "../../../../lib/common/hw/spi/spi_core.vhd" $_VHDMod ] \
+      [ list "../../../../lib/common/hw/video/video_out/vtest_gen.vhd" $_VHDMod ] \
+      [ list "../../../../lib/common/hw/video/video_out/vga_gen.vhd" $_VHDMod ] \
+      [ list "../../../../lib/common/hw/video/video_out/tv_gen.vhd" $_VHDMod ] \
+      [ list "../../../../lib/common/hw/testing/fpga_test_01.vhd" $_VHDMod ] \
+      [ list "../../../../lib/common/hw/timer/time_gen.vhd" $_VHDMod ] \
+      [ list "../../../../lib/common/hw/testing/debounce.vhd" $_VHDMod ] \
+      [ list "../../../../lib/common/hw/mem/mem_glob_pkg.vhd" $_VHDPkg ] \
+      [ list "../../../../lib/common/hw/mem/xilinx/mem_wr_axi_pkg.vhd" $_VHDPkg ] \
+      [ list "../../../../lib/common/hw/mem/xilinx/mem_wr_axi.vhd" $_VHDMod ] \
       [ list "../../src/mem_core/rtl/axi/mig_7series_v1_9_axi_ctrl_addr_decode.v" $_VMod ] \
       [ list "../../src/mem_core/rtl/axi/mig_7series_v1_9_axi_ctrl_read.v" $_VMod ] \
       [ list "../../src/mem_core/rtl/axi/mig_7series_v1_9_axi_ctrl_reg.v" $_VMod ] \
@@ -120,13 +125,10 @@ set _projects [ list \
       [ list "../core_gen/vbufi.vhd" $_VHDMod ] \
       [ list "../core_gen/vbufo.vhd" $_VHDMod ] \
       [ list "../core_gen/mem_achcount2_synth.vhd" $_VHDMod ] \
+      [ list "../../src/dbg_pkg.vhd" $_VHDPkg ] \
       [ list "../../src/clocks.vhd" $_VHDMod ] \
       [ list "../../src/clocks_pkg.vhd" $_VHDPkg ] \
       [ list "../../src/ccd_vita25k_pkg.vhd" $_VHDPkg ] \
-      [ list "../../src/ccd_vita25k.vhd" $_VHDMod ] \
-      [ list "../../src/ccd_deser.vhd" $_VHDMod ] \
-      [ list "../../src/ccd_deser_clock_gen.vhd" $_VHDMod ] \
-      [ list "../../src/ccd_spi.vhd" $_VHDMod ] \
       [ list "../../src/vout_pkg.vhd" $_VHDPkg ] \
       [ list "../../src/vout.vhd" $_VHDMod ] \
       [ list "../../src/video_ctrl_pkg.vhd" $_VHDPkg ] \
