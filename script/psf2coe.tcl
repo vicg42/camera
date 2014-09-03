@@ -6,17 +6,21 @@ fconfigure $filefont_id -translation binary
 binary scan [read $filefont_id 2] H4 magic
 
 if {$magic ne "3604"} {
-  puts [format "ERROR : Bad magic numbers. Read %s (not 3604) " $magic]
+  puts [format "ERROR : Only understand PSF1 format file. (Bad magic numbers, read %s, need "3604"" $magic]
   exit 1
 }
 
 binary scan [read $filefont_id 2] H2c* mode charsize
 
 puts "Format : PSF1"
-puts [format "Mode : %s " $mode ]
 puts "Font Width: 8 pix"
 puts [format "Font Hight: %s pix" $charsize ]
-#if $mode = 01 then count char font 512 else 256
+if {$mode == "01"} {
+  puts "Char Count: 512"
+}
+if {$mode ne "01"} {
+  puts "Char Count: 256"
+}
 
 set filecoe_name "font.coe"
 set filecoe_id [open ../ise/core_gen/$filecoe_name w]
