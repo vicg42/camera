@@ -6,7 +6,8 @@ fconfigure $filefont_id -translation binary
 binary scan [read $filefont_id 2] H4 magic
 
 if {$magic ne "3604"} {
-  puts [format "ERROR : Only understand PSF1 format file. (Bad magic numbers, read %s, need "3604"" $magic]
+  puts "ERROR : Only understand PSF1 format file."
+  puts "        Bad magic numbers, read $magic, need 3604"
   exit 1
 }
 
@@ -29,10 +30,8 @@ puts $filecoe_id "memory_initialization_vector ="
 
 for {set i 0} {$i < [expr 256 / 4]} {incr i} {
   for {set j 0} {$j < $charsize} {incr j} {
-    binary scan [read $filefont_id 1] H2 hex0
-    binary scan [read $filefont_id 1] H2 hex1
-    binary scan [read $filefont_id 1] H2 hex2
-    binary scan [read $filefont_id 1] H2 hex3
+    binary scan [read $filefont_id 2] H2H* hex0 hex1
+    binary scan [read $filefont_id 2] H2H* hex2 hex3
     puts $filecoe_id "$hex3$hex2$hex1$hex0,"
   }
 }
