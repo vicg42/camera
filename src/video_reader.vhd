@@ -90,10 +90,11 @@ signal i_mem_dlen_rq               : unsigned(15 downto 0) := (others => '0');
 signal i_mem_start                 : std_logic;
 signal i_mem_dir                   : std_logic;
 signal i_mem_done                  : std_logic;
-signal i_vfr_pix_count_byte        : unsigned(C_VCTRL_MEM_VLINE_L_BIT - 1 downto 0) := (others => '0');
-signal i_vfr_rowcnt                : unsigned(C_VCTRL_MEM_VLINE_M_BIT - C_VCTRL_MEM_VLINE_L_BIT
-                                                                            downto 0) := (others => '0');
-
+signal i_vfr_pix_count_byte        : unsigned(15 downto 0) := (others => '0');
+signal i_vfrw_pix_count_byte       : unsigned(15 downto 0) := (others => '0');
+signal i_vfr_rowcnt                : unsigned(15 downto 0) := (others => '0');
+signal i_vfr_rowcnt_tmp            : unsigned(15 downto 0) := (others => '0');
+signal i_adr_vfr_line              : unsigned((16 * 2) - 1 downto 0) := (others => '0');
 signal i_vfr_skip_row              : unsigned(i_vfr_rowcnt'range) := (others => '0');
 signal i_vfr_skip_pix              : unsigned(i_vfr_pix_count_byte'range) := (others => '0');
 signal i_vfr_row_count             : unsigned(i_vfr_rowcnt'range) := (others => '0');
@@ -147,6 +148,9 @@ p_out_vch_mirx  <= '0';
 ------------------------------------------------
 --Автомат Чтения видео кадра
 ------------------------------------------------
+i_vfr_rowcnt_tmp <= i_vfr_rowcnt + i_vfr_skip_row;
+i_adr_vfr_line <= i_vfrw_pix_count_byte * i_vfr_rowcnt_tmp;
+
 process(p_in_clk)
 begin
 if rising_edge(p_in_clk) then
@@ -165,6 +169,7 @@ if rising_edge(p_in_clk) then
     i_vfr_skip_pix <= (others => '0');
     i_vfr_pix_count_byte <= (others => '0');
     i_vfr_row_count <= (others => '0');
+    i_vfrw_pix_count_byte <= (others => '0');
 
   else
 
@@ -183,6 +188,7 @@ if rising_edge(p_in_clk) then
           i_vfr_skip_pix <= UNSIGNED(p_in_prm_vch(0).fr_size.skip.pix(i_vfr_skip_pix'range));
           i_vfr_pix_count_byte <= UNSIGNED(p_in_prm_vch(0).fr_size.activ.pix(i_vfr_pix_count_byte'range));
           i_vfr_row_count <= UNSIGNED(p_in_prm_vch(0).fr_size.activ.row(i_vfr_row_count'range));
+          i_vfrw_pix_count_byte <= UNSIGNED(p_in_prm_vch(0).frw_size.activ.pix(i_vfrw_pix_count_byte'range));
 
           i_fsm_state_cs <= S_MEM_START;
         end if;
@@ -196,9 +202,8 @@ if rising_edge(p_in_clk) then
           i_fsm_state_cs <= S_IDLE;
 
         else
-          i_mem_adr(C_VCTRL_MEM_VLINE_M_BIT downto C_VCTRL_MEM_VLINE_L_BIT) <= i_vfr_skip_row + i_vfr_rowcnt;
 
-          i_mem_adr(C_VCTRL_MEM_VLINE_L_BIT - 1 downto 0) <= i_vfr_skip_pix;
+          i_mem_adr <= i_adr_vfr_line + RESIZE(UNSIGNED(i_vfr_skip_pix), i_mem_adr'length);
 
           i_mem_dlen_rq <= RESIZE(i_vfr_pix_count_byte(i_vfr_pix_count_byte'high downto log2(G_MEM_DWIDTH / 8))
                                                                                 , i_mem_dlen_rq'length)

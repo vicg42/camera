@@ -43,6 +43,38 @@ end entity;
 
 architecture behavioral of vout is
 
+component char_screen is
+generic(
+G_VDWIDTH    : integer := 32;
+G_COLDWIDTH  : integer := 10;
+G_FONT_SIZEX : integer := 8;
+G_FONT_SIZEY : integer := 10;
+G_SCR_STARTX : integer := 8; --(index pixel)
+G_SCR_STARTY : integer := 8; --(index pixel)
+G_SCR_SIZEX  : integer := 8; --(char count)
+G_SCR_SIZEY  : integer := 8  --(char count)
+);
+port(
+p_in_ram_adr  : in  std_logic_vector(11 downto 0);
+p_in_ram_din  : in  std_logic_vector(31 downto 0);
+
+--SYNC
+p_out_vd      : out  std_logic_vector(G_VDWIDTH - 1 downto 0);
+p_in_vd       : in   std_logic_vector(G_VDWIDTH - 1 downto 0);
+p_in_vsync    : in   std_logic; --Vertical Sync
+p_in_hsync    : in   std_logic; --Horizontal Sync
+p_in_pixen    : in   std_logic;
+p_in_pixcnt   : in   std_logic_vector(15 downto 0);
+p_in_linecnt  : in   std_logic_vector(15 downto 0);
+
+p_out_tst     : out  std_logic_vector(31 downto 0);
+
+--System
+p_in_clk      : in   std_logic;
+p_in_rst      : in   std_logic
+);
+end component char_screen;
+
 component vga_gen is
 generic(
 G_SEL : integer := 0 --Resolution select
@@ -97,7 +129,12 @@ signal sr_vfr_start       : unsigned(0 to 1) := (others => '0');
 signal i_vout_work        : std_logic := '1';
 signal i_cnt              : unsigned(8 downto 0) := (others => '0');
 
-
+signal i_vdin             : std_logic_vector(p_in_fifo_do'range);
+signal i_vdtxt            : std_logic_vector(p_in_fifo_do'range);
+signal i_pixcnt           : std_logic_vector(15 downto 0);
+signal i_linecnt          : std_logic_vector(15 downto 0);
+signal tst_char_screen_out: std_logic_vector(31 downto 0);
+signal tst_vdtxt          : std_logic_vector(p_in_fifo_do'range);
 
 
 --MAIN
@@ -110,6 +147,8 @@ gen_vga : if strcmp(G_VOUT_TYPE, "VGA") generate
 begin
 
 p_out_tst(0) <= i_vga_vs;
+p_out_tst(1) <= '0';--OR_reduce(tst_char_screen_out);
+p_out_tst(2) <= '0';--OR_reduce(tst_vdtxt);
 
 i_vga_pix_clk <= p_in_clk;
 
@@ -122,19 +161,26 @@ port map(
 p_out_vsync => i_vga_vs,
 p_out_hsync => i_vga_hs,
 p_out_pixen => i_pix_den,
-p_out_pixcnt  => open,
-p_out_linecnt => open,
+p_out_pixcnt  => i_pixcnt,
+p_out_linecnt => i_linecnt,
 
 --System
 p_in_clk    => i_vga_pix_clk,
 p_in_rst    => p_in_rst
 );
 
+p_out_video.ad723_hsrca <= '0';
+p_out_video.ad723_vsrca <= '0';
+p_out_video.ad723_ce    <= '1';
+p_out_video.ad723_sa    <= '0';
+p_out_video.ad723_stnd  <= '0';--0/1 - PAL/NTSC
+p_out_video.ad723_fcs4  <= '0';
+p_out_video.ad723_term  <= '1';
+
 p_out_video.adv7123_blank_n <= i_pix_den;
 p_out_video.adv7123_sync_n  <= '0';
 p_out_video.adv7123_psave_n <= '1';--Power Down OFF
 p_out_video.adv7123_clk     <= not i_vga_pix_clk;
-p_out_video.ad723_ce <= '0';
 
 p_out_fifo_rd <= i_pix_den and i_vout_work;
 
@@ -148,9 +194,10 @@ begin
 --p_out_video.adv7123_dg(i) <= p_in_fifo_do(6);
 --p_out_video.adv7123_dr(i) <= p_in_fifo_do(7);
 --end generate;
-p_out_video.adv7123_dr <= p_in_fifo_do((10 * 3) - 1 downto (10 * 2));
-p_out_video.adv7123_db <= p_in_fifo_do((10 * 2) - 1 downto (10 * 1));
-p_out_video.adv7123_dg <= p_in_fifo_do((10 * 1) - 1 downto (10 * 0));
+--p_out_video.adv7123_dr <= p_in_fifo_do((10 * 3) - 1 downto (10 * 2));
+--p_out_video.adv7123_db <= p_in_fifo_do((10 * 2) - 1 downto (10 * 1));
+--p_out_video.adv7123_dg <= p_in_fifo_do((10 * 1) - 1 downto (10 * 0));
+i_vdin <= p_in_fifo_do;
 
 process(i_vga_pix_clk)
 begin
@@ -181,9 +228,12 @@ end generate gen_tst_off;
 gen_tst_on : if strcmp(G_TEST_PATTERN, "ON") generate
 begin
 gen : for i in 0 to p_out_video.adv7123_db'length - 1 generate
-p_out_video.adv7123_db(i) <= i_cnt(6);
-p_out_video.adv7123_dg(i) <= i_cnt(7);
-p_out_video.adv7123_dr(i) <= i_cnt(8);
+--p_out_video.adv7123_db(i) <= i_cnt(6);
+--p_out_video.adv7123_dg(i) <= i_cnt(7);
+--p_out_video.adv7123_dr(i) <= i_cnt(8);
+i_vdin(i + (0 * 0)) <= i_cnt(6);
+i_vdin(i + (10 * 1)) <= i_cnt(7);
+i_vdin(i + (10 * 2)) <= i_cnt(8);
 end generate;
 
 process(i_vga_pix_clk)
@@ -198,6 +248,50 @@ begin
 end process;
 
 end generate gen_tst_on;
+
+
+m_screen_txt : char_screen
+generic map(
+G_VDWIDTH    => 32,
+G_COLDWIDTH  => 10,
+G_FONT_SIZEX => 8,
+G_FONT_SIZEY => 12,
+G_SCR_STARTX => 128,
+G_SCR_STARTY => 128,
+G_SCR_SIZEX  => 32,
+G_SCR_SIZEY  => 1
+)
+port map(
+p_in_ram_adr  => (others => '0'),--std_logic_vector(i_ram_adr(11 downto 0)),
+p_in_ram_din  => (others => '0'),--std_logic_vector(i_ram_din(31 downto 0)),
+
+--SYNC
+p_out_vd      => i_vdtxt,
+p_in_vd       => i_vdin,
+p_in_vsync    => i_vga_vs,
+p_in_hsync    => i_vga_hs,
+p_in_pixen    => i_pix_den,
+p_in_pixcnt   => i_pixcnt,
+p_in_linecnt  => i_linecnt,
+
+p_out_tst     => tst_char_screen_out,
+
+--System
+p_in_clk      => i_vga_pix_clk,
+p_in_rst      => p_in_rst
+);
+
+p_out_video.adv7123_dg <= i_vdtxt((10 * 1) - 1 downto (10 * 0));
+p_out_video.adv7123_db <= i_vdtxt((10 * 2) - 1 downto (10 * 1));
+p_out_video.adv7123_dr <= i_vdtxt((10 * 3) - 1 downto (10 * 2));
+
+process(i_vga_pix_clk)
+begin
+  if rising_edge(i_vga_pix_clk) then
+    tst_vdtxt <= i_vdtxt;
+  end if;
+end process;
+
 end generate gen_vga;
 
 

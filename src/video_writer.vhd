@@ -84,9 +84,8 @@ signal i_mem_dlen_rq               : unsigned(15 downto 0) := (others => '0');
 signal i_mem_start                 : std_logic;
 signal i_mem_dir                   : std_logic;
 signal i_mem_done                  : std_logic;
-signal i_pix_count_byte            : unsigned(C_VCTRL_MEM_VLINE_L_BIT - 1 downto 0) := (others => '0');
-signal i_vfr_rowcnt                : unsigned(C_VCTRL_MEM_VLINE_M_BIT - C_VCTRL_MEM_VLINE_L_BIT
-                                                                              downto 0) := (others => '0');
+signal i_pix_count_byte            : unsigned(15 downto 0) := (others => '0');
+signal i_vfr_rowcnt                : unsigned(15 downto 0) := (others => '0');
 signal i_padding                   : std_logic;
 signal i_upp_buf_empty             : std_logic;
 signal i_vfr_rdy                   : std_logic;
@@ -134,7 +133,7 @@ p_out_vfr_rdy <= i_vfr_rdy;
 ------------------------------------------------
 --Автомат записи видео информации
 ------------------------------------------------
-i_pix_count_byte <= UNSIGNED(p_in_prm_vch(0).fr_size.activ.pix(i_pix_count_byte'range));
+i_pix_count_byte <= UNSIGNED(p_in_prm_vch(0).fr_size.activ.pix);
 
 process(p_in_clk)
 begin
@@ -177,8 +176,8 @@ if rising_edge(p_in_clk) then
           i_fsm_state_cs <= S_IDLE;
 
         else
-          i_mem_adr(C_VCTRL_MEM_VLINE_M_BIT downto C_VCTRL_MEM_VLINE_L_BIT) <= i_vfr_rowcnt;
-          i_mem_adr(C_VCTRL_MEM_VLINE_L_BIT - 1 downto 0) <= (others => '0');
+
+          i_mem_adr <= i_pix_count_byte * i_vfr_rowcnt;
 
           i_mem_dlen_rq <= RESIZE(i_pix_count_byte(i_pix_count_byte'high downto log2(G_MEM_DWIDTH / 8))
                                                                                 , i_mem_dlen_rq'length)
@@ -204,7 +203,7 @@ if rising_edge(p_in_clk) then
 
         i_mem_start <= '0';
         if i_mem_done = '1' then
-          if i_vfr_rowcnt = (UNSIGNED(p_in_prm_vch(0).fr_size.activ.row(i_vfr_rowcnt'range)) - 1)
+          if i_vfr_rowcnt = (UNSIGNED(p_in_prm_vch(0).fr_size.activ.row) - 1)
               or i_padding = '1' then
 
             i_vfr_rdy <= '1';
@@ -220,6 +219,8 @@ if rising_edge(p_in_clk) then
   end if;
 end if;
 end process;
+
+
 
 
 --------------------------------------------------------
