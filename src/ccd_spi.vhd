@@ -29,13 +29,14 @@ G_SIM : string := "OFF"
 port(
 p_out_physpi    : out  TSPI_pinout;
 p_in_physpi     : in   TSPI_pinin;
-p_out_ccdrst_n  : out  std_logic;
+--p_out_ccdrst_n  : out  std_logic;
 
 --p_in_fifo_dout  : in   std_logic_vector(15 downto 0);
 --p_out_fifo_rd   : out  std_logic;
 --p_in_fifo_empty : in   std_logic;
 
 p_out_init_done : out  std_logic;
+p_out_err       : out  std_logic;
 
 p_out_tst       : out  std_logic_vector(31 downto 0);
 p_in_tst        : in   std_logic_vector(31 downto 0);
@@ -76,29 +77,23 @@ end component;
 
 type TFsm_spireg is (
 S_IDLE,
+
+S_RD_CHIPID,
+S_RD_CHIPID_1,
+S_RD_CHIPID_2,
+
 S_INIT_WR,
 S_INIT_WR_1,
 S_INIT_WR_2,
-
---S_INIT1_WR,
---S_INIT1_WR_1,
---S_INIT1_WR_2,
 
 S_INIT_RD,
 S_INIT_RD_1,
 S_INIT_RD_2,
 
-S_REG_USR,
+--S_WAIT2_BTN,
 
---S_RD_CHIPID,
---S_RD_CHIPID_1,
---S_RD_CHIPID_2,
-
---S_ERR,
-S_CCD_RST,
-S_WAIT1_BTN,
-S_WAIT2_BTN,
-S_CCD_RST_1
+S_ERR,
+S_REG_USR
 );
 
 signal i_fsm_spi_cs     : TFsm_spireg;
@@ -115,14 +110,14 @@ signal i_rxd            : std_logic_vector(C_CCD_SPI_DWIDTH - 1 downto 0) := (ot
 
 signal i_regcnt         : unsigned(log2(C_CCD_REGINIT2'length) - 1 downto 0) := (others => '0');
 
-signal i_ccd_rst_n      : std_logic := '1';
+--signal i_ccd_rst_n      : std_logic := '1';
 signal i_init_done      : std_logic := '0';
+signal i_err            : std_logic := '0';
 
 signal sr_btn_push      : unsigned(0 to 1) := (others => '0');
 signal i_btn_push       : std_logic := '0';
 signal tst_fsmstate,tst_fsmstate_dly : std_logic_vector(3 downto 0) := (others => '0');
 signal i_spi_core_tst_out : std_logic_vector(31 downto 0) := (others => '0');
-signal i_id_rd_done       : std_logic := '0';
 
 
 --MAIN
@@ -134,9 +129,10 @@ p_out_tst(2) <= i_spi_core_tst_out(1);
 p_out_tst(3) <= OR_reduce(i_rxd);
 p_out_tst(31 downto 4) <= (others => '0');
 
-p_out_ccdrst_n <= i_ccd_rst_n;
+--p_out_ccdrst_n <= i_ccd_rst_n;
 
 p_out_init_done <= i_init_done;
+p_out_err       <= i_err;
 
 process(p_in_clk)
 begin
@@ -157,11 +153,12 @@ begin
   if rising_edge(p_in_clk) then
     if p_in_rst = '1' then
       i_regcnt <= (others => '0');
-      i_adr <= (others => '0'); i_ccd_rst_n <= '1'; i_id_rd_done <= '0';
+      i_adr <= (others => '0'); --i_ccd_rst_n <= '1';
       i_txd <= (others => '0');
       i_spi_core_dir <= '0';
       i_spi_core_start <= '0';
       i_init_done <= '0';
+      i_err <= '0';
       i_fsm_spi_cs <= S_IDLE;
 
     else
@@ -172,10 +169,35 @@ begin
           when S_IDLE =>
 
             if i_btn_push = '1' then
-              i_ccd_rst_n <= '1';
-              i_regcnt <= (others => '0');
-              i_fsm_spi_cs <= S_CCD_RST;
+              i_regcnt <= (others => '0'); --i_ccd_rst_n <= '1';
+              i_fsm_spi_cs <= S_RD_CHIPID;
             end if;
+
+          --------------------------------
+          --
+          --------------------------------
+          when S_RD_CHIPID =>
+
+            i_adr <= std_logic_vector(TO_UNSIGNED(16#00#, i_adr'length - 1)) & '0';--RegAdr & CMD(0/1 -Read/Write)
+            i_spi_core_dir <= C_SPI_READ;
+            i_spi_core_start <= '1';
+            i_fsm_spi_cs <= S_RD_CHIPID_1;
+
+          when S_RD_CHIPID_1 =>
+
+            i_spi_core_start <= '0';
+            i_fsm_spi_cs <= S_RD_CHIPID_2;
+
+          when S_RD_CHIPID_2 =>
+
+            if i_busy = '0' then
+              if i_rxd /= std_logic_vector(TO_UNSIGNED(16#56FA#, i_rxd'length)) then
+                i_fsm_spi_cs <= S_ERR;
+              else
+                i_fsm_spi_cs <= S_INIT_WR;
+              end if;
+            end if;
+
 
           --------------------------------
           --CCD INIT (Enable clock management)
@@ -201,7 +223,7 @@ begin
           when S_INIT_WR_2 =>
 
             if i_busy = '0' then
-              i_fsm_spi_cs <= S_WAIT2_BTN;
+              i_fsm_spi_cs <= S_INIT_RD;
             end if;
 
           --Check it
@@ -226,129 +248,14 @@ begin
           when S_INIT_RD_2 =>
 
             if i_busy = '0' then
-              i_fsm_spi_cs <= S_WAIT2_BTN;
-            end if;
-
---            if i_busy = '0' then
---
---              if i_rxd /= i_txd then
---                i_fsm_spi_cs <= S_ERR;
---              else
---                i_fsm_spi_cs <= S_WAIT1_BTN;
---              end if;
---
---              i_regcnt <= i_regcnt + 1;
---
---            end if;
-
-          --------------------------------
-          --CCD User Reg Control
-          --------------------------------
-          when S_REG_USR =>
-            i_spi_core_dir <= C_SPI_WRITE;
-            i_spi_core_start <= '0';
-            i_fsm_spi_cs <= S_REG_USR;
-
---          --------------------------------
---          --
---          --------------------------------
---          when S_RD_CHIPID =>
---
---            i_adr <= "0000" & std_logic_vector(i_regcnt) & '0';--RegAdr & CMD(0/1 -Read/Write)
---            i_spi_core_dir <= C_SPI_READ;
---            i_spi_core_start <= '1';
---            i_fsm_spi_cs <= S_RD_CHIPID_1;
---
---          when S_RD_CHIPID_1 =>
---
---            i_spi_core_start <= '0';
---            i_fsm_spi_cs <= S_RD_CHIPID_2;
---
---          when S_RD_CHIPID_2 =>
---
---            if i_busy = '0' then
---              if i_adr(i_adr'length - 1 downto 1) = std_logic_vector(TO_UNSIGNED(10#00#,i_adr'length - 1)) then
---                if i_rxd /= std_logic_vector(TO_UNSIGNED(16#56FA#,i_rxd'length)) then
---                  i_regcnt <= (others => '0');
---                  i_fsm_spi_cs <= S_ERR;
---                else
---                  i_regcnt <= i_regcnt + 1;
---                  i_fsm_spi_cs <= S_RD_CHIPID;--S_WAIT1_BTN;
---                end if;
---
---              elsif i_adr(i_adr'length - 1 downto 1) = std_logic_vector(TO_UNSIGNED(10#01#,i_adr'length - 1)) then
---                i_regcnt <= (others => '0');
---
---                if i_rxd /= std_logic_vector(TO_UNSIGNED(16#01#,i_rxd'length)) then
---                  i_fsm_spi_cs <= S_ERR;
---                else
---                  i_id_rd_done <= '1';
---                  i_fsm_spi_cs <= S_WAIT1_BTN;
---                end if;
---
---              end if;
---            end if;
---
---          when S_ERR =>
---
---            i_fsm_spi_cs <= S_ERR;
-
-          when S_CCD_RST =>
-
-            if i_btn_push = '1' then
-              i_fsm_spi_cs <= S_CCD_RST_1;
-              i_ccd_rst_n <= '0';
-            end if;
-
-          when S_CCD_RST_1 =>
-
-            if i_btn_push = '1' then
-              i_fsm_spi_cs <= S_WAIT1_BTN;
-              i_ccd_rst_n <= '1';
-            end if;
-
-          when S_WAIT1_BTN =>
-
-            if i_btn_push = '1' then
---              if i_regcnt = TO_UNSIGNED(C_CCD_REGINIT'length, i_regcnt'length) then
---                i_init_done <= '1';
---                i_fsm_spi_cs <= S_REG_USR;
---              else
---                if i_id_rd_done = '0' then
---                  i_fsm_spi_cs <= S_RD_CHIPID;
---                else
-                  i_fsm_spi_cs <= S_INIT_WR;
---                end if;
---              end if;
-            end if;
-
-          when S_WAIT2_BTN =>
-
-            if i_btn_push = '1' then
               if i_regcnt = TO_UNSIGNED(C_CCD_REGINIT'length - 1, i_regcnt'length) then
-                i_init_done <= '1';
-                i_regcnt <= TO_UNSIGNED(C_CCD_SPI_READ_START_REG, i_regcnt'length);
-
-                if i_init_done = '1' then
                 i_fsm_spi_cs <= S_REG_USR;
-                else
-                i_fsm_spi_cs <= S_INIT_RD;
-                end if;
-
-
---                if i_init_done = '1' then
---                i_fsm_spi_cs <= S_REG_USR;
---                else
---                i_fsm_spi_cs <= S_INIT1_WR;
---                end if;
---                i_regcnt <= (others => '0');
 
               else
-
-                if i_init_done = '0' then
-                  i_fsm_spi_cs <= S_INIT_WR;
+                if i_rxd /= i_txd then
+                  i_fsm_spi_cs <= S_ERR;
                 else
-                  i_fsm_spi_cs <= S_INIT_RD;
+                  i_fsm_spi_cs <= S_INIT_WR;
                 end if;
 
                 i_regcnt <= i_regcnt + 1;
@@ -356,38 +263,24 @@ begin
               end if;
             end if;
 
+          --------------------------------
+          --CCD User Reg Control
+          --------------------------------
+          when S_REG_USR =>
+            i_init_done <= '1';
+            i_spi_core_dir <= C_SPI_WRITE;
+            i_spi_core_start <= '0';
+            i_fsm_spi_cs <= S_REG_USR;
 
---          when S_INIT1_WR =>
+          when S_ERR =>
+
+            i_err <= '1';
+            i_fsm_spi_cs <= S_ERR;
 --
---            for i in 0 to C_CCD_REGINIT2'length - 1 loop
---              if i_regcnt = i then
---                i_adr <= C_CCD_REGINIT2(i)(24 downto 16) & '1';--RegAdr & CMD(0/1 -Read/Write)
---                i_txd <= C_CCD_REGINIT2(i)(15 downto 0);
---              end if;
---            end loop;
+--          when S_WAIT2_BTN =>
 --
---            i_spi_core_dir <= C_SPI_WRITE;
---            i_spi_core_start <= '1';
---            i_fsm_spi_cs <= S_INIT1_WR_1;
---
---          when S_INIT1_WR_1 =>
---
---            i_spi_core_start <= '0';
---            i_fsm_spi_cs <= S_INIT1_WR_2;
---
---          when S_INIT1_WR_2 =>
---
---            if i_busy = '0' then
---              if i_regcnt = TO_UNSIGNED(C_CCD_REGINIT2'length - 1, i_regcnt'length) then
---                i_regcnt <= TO_UNSIGNED(C_CCD_SPI_READ_START_REG, i_regcnt'length);
---                i_init_done <= '1';
---
---                i_fsm_spi_cs <= S_INIT_RD;
---
---              else
---                i_fsm_spi_cs <= S_INIT1_WR;
---                i_regcnt <= i_regcnt + 1;
---              end if;
+--            if i_btn_push = '1' then
+--              i_fsm_spi_cs <= S_INIT_WR;
 --            end if;
 
         end case;
@@ -439,15 +332,11 @@ begin
 end process;
 
 
-tst_fsmstate <= std_logic_vector(TO_UNSIGNED(16#0F#,tst_fsmstate'length)) when i_fsm_spi_cs = S_CCD_RST_1     else
-                std_logic_vector(TO_UNSIGNED(16#0E#,tst_fsmstate'length)) when i_fsm_spi_cs = S_WAIT2_BTN     else
-                std_logic_vector(TO_UNSIGNED(16#0D#,tst_fsmstate'length)) when i_fsm_spi_cs = S_WAIT1_BTN     else
-                std_logic_vector(TO_UNSIGNED(16#0C#,tst_fsmstate'length)) when i_fsm_spi_cs = S_CCD_RST       else
-                std_logic_vector(TO_UNSIGNED(16#0B#,tst_fsmstate'length)) when i_fsm_spi_cs = S_REG_USR       else
---                std_logic_vector(TO_UNSIGNED(16#0A#,tst_fsmstate'length)) when i_fsm_spi_cs = S_ERR           else
---                std_logic_vector(TO_UNSIGNED(16#09#,tst_fsmstate'length)) when i_fsm_spi_cs = S_RD_CHIPID     else
---                std_logic_vector(TO_UNSIGNED(16#08#,tst_fsmstate'length)) when i_fsm_spi_cs = S_RD_CHIPID_1   else
---                std_logic_vector(TO_UNSIGNED(16#07#,tst_fsmstate'length)) when i_fsm_spi_cs = S_RD_CHIPID_2   else
+tst_fsmstate <= std_logic_vector(TO_UNSIGNED(16#0B#,tst_fsmstate'length)) when i_fsm_spi_cs = S_REG_USR       else
+                std_logic_vector(TO_UNSIGNED(16#0A#,tst_fsmstate'length)) when i_fsm_spi_cs = S_ERR           else
+                std_logic_vector(TO_UNSIGNED(16#09#,tst_fsmstate'length)) when i_fsm_spi_cs = S_RD_CHIPID     else
+                std_logic_vector(TO_UNSIGNED(16#08#,tst_fsmstate'length)) when i_fsm_spi_cs = S_RD_CHIPID_1   else
+                std_logic_vector(TO_UNSIGNED(16#07#,tst_fsmstate'length)) when i_fsm_spi_cs = S_RD_CHIPID_2   else
                 std_logic_vector(TO_UNSIGNED(16#06#,tst_fsmstate'length)) when i_fsm_spi_cs = S_INIT_WR       else
                 std_logic_vector(TO_UNSIGNED(16#05#,tst_fsmstate'length)) when i_fsm_spi_cs = S_INIT_WR_1     else
                 std_logic_vector(TO_UNSIGNED(16#04#,tst_fsmstate'length)) when i_fsm_spi_cs = S_INIT_WR_2     else
@@ -455,6 +344,10 @@ tst_fsmstate <= std_logic_vector(TO_UNSIGNED(16#0F#,tst_fsmstate'length)) when i
                 std_logic_vector(TO_UNSIGNED(16#02#,tst_fsmstate'length)) when i_fsm_spi_cs = S_INIT_RD_1     else
                 std_logic_vector(TO_UNSIGNED(16#01#,tst_fsmstate'length)) when i_fsm_spi_cs = S_INIT_RD_2     else
                 std_logic_vector(TO_UNSIGNED(16#00#,tst_fsmstate'length)); --i_fsm_spi_cs = S_IDLE              else
+--                std_logic_vector(TO_UNSIGNED(16#0E#,tst_fsmstate'length)) when i_fsm_spi_cs = S_WAIT2_BTN     else
+--                std_logic_vector(TO_UNSIGNED(16#0D#,tst_fsmstate'length)) when i_fsm_spi_cs = S_WAIT1_BTN     else
+--                std_logic_vector(TO_UNSIGNED(16#0F#,tst_fsmstate'length)) when i_fsm_spi_cs = S_CCD_RST_1     else
+--                std_logic_vector(TO_UNSIGNED(16#0C#,tst_fsmstate'length)) when i_fsm_spi_cs = S_CCD_RST       else
 
 
 --END MAIN
