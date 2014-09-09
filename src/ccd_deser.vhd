@@ -71,7 +71,7 @@ signal clk_in_int                : std_logic;
 signal clk_in_int_inv            : std_logic;
 signal clk_div                   : std_logic;
 
-signal i_serial_din             : std_logic_vector(G_LVDS_CH_COUNT - 1 downto 0);
+signal i_serial_din              : std_logic_vector(G_LVDS_CH_COUNT - 1 downto 0);
 signal i_idelaye2_dout           : std_logic_vector(G_LVDS_CH_COUNT - 1 downto 0);
 signal in_delay_ce               : std_logic_vector(G_LVDS_CH_COUNT - 1 downto 0);
 signal in_delay_inc_dec          : std_logic_vector(G_LVDS_CH_COUNT - 1 downto 0);
@@ -190,14 +190,23 @@ O   => i_serial_din(lvds_ch)
 
 m_idelaye2 : IDELAYE2
 generic map (
-CINVCTRL_SEL           => "FALSE",    -- TRUE, FALSE
-DELAY_SRC              => "IDATAIN",  -- IDATAIN, DATAIN
-HIGH_PERFORMANCE_MODE  => "FALSE",    -- TRUE, FALSE
-IDELAY_TYPE            => "VAR_LOAD", -- FIXED, VARIABLE, or VAR_LOADABLE
-IDELAY_VALUE           => 1,          -- 0 to 31
-REFCLK_FREQUENCY       => 200.0,
-PIPE_SEL               => "FALSE",
-SIGNAL_PATTERN         => "DATA"      -- CLOCK, DATA
+CINVCTRL_SEL                => "FALSE", -- Dynamic clock inversion
+DELAY_SRC                   => "IDATAIN",
+                            -- Specify which input port to be used
+                            -- "I"=IDATAIN, "O"=ODATAIN, "DATAIN"=DATAIN, "IO"=Bi-directional
+HIGH_PERFORMANCE_MODE       => "TRUE",
+                            -- TRUE specifies lower jitter
+                            -- at expense of more power
+IDELAY_TYPE                 => "VARIABLE",
+                            -- "DEFAULT", "FIXED" or "VARIABLE", or VAR_LOADABLE
+IDELAY_VALUE                => 0,
+                            -- 0 to 63 tap values
+PIPE_SEL                    => "FALSE",
+REFCLK_FREQUENCY            => 200.0,
+                            -- Frequency used for IDELAYCTRL
+                            -- 175.0 to 225.0
+SIGNAL_PATTERN              => "DATA"
+                            -- Input signal type, "CLOCK" or "DATA"
 )
 port map (
 DATAOUT                => i_idelaye2_dout(lvds_ch),
@@ -218,13 +227,23 @@ m_iserdese2_master : ISERDESE2
 generic map (
 DATA_RATE         => "DDR",
 DATA_WIDTH        => 10,
+INIT_Q1           => '0',
+INIT_Q2           => '0',
+INIT_Q3           => '0',
+INIT_Q4           => '0',
 INTERFACE_TYPE    => "NETWORKING",
+NUM_CE            => 2,
+SERDES_MODE       => "MASTER",
+--
 DYN_CLKDIV_INV_EN => "FALSE",
 DYN_CLK_INV_EN    => "FALSE",
-NUM_CE            => 2,
+IOBDELAY          => "IFD",  --Use input at DDLY to output the data on Q1-Q6
 OFB_USED          => "FALSE",
-IOBDELAY          => "IFD",                    -- Use input at DDLY to output the data on Q1-Q6
-SERDES_MODE       => "MASTER")
+SRVAL_Q1          => '0',
+SRVAL_Q2          => '0',
+SRVAL_Q3          => '0',
+SRVAL_Q4          => '0'
+)
 port map (
 Q1                => i_deser_d(lvds_ch)(0),
 Q2                => i_deser_d(lvds_ch)(1),
@@ -262,13 +281,23 @@ m_iserdese2_slave : ISERDESE2
 generic map (
 DATA_RATE         => "DDR",
 DATA_WIDTH        => 10,
+INIT_Q1           => '0',
+INIT_Q2           => '0',
+INIT_Q3           => '0',
+INIT_Q4           => '0',
 INTERFACE_TYPE    => "NETWORKING",
+NUM_CE            => 2,
+SERDES_MODE       => "SLAVE",
+--
 DYN_CLKDIV_INV_EN => "FALSE",
 DYN_CLK_INV_EN    => "FALSE",
-NUM_CE            => 2,
+IOBDELAY          => "NONE",  -- Use input at DDLY to output the data on Q1-Q6
 OFB_USED          => "FALSE",
-IOBDELAY          => "IFD",                    -- Use input at DDLY to output the data on Q1-Q6
-SERDES_MODE       => "SLAVE")
+SRVAL_Q1          => '0',
+SRVAL_Q2          => '0',
+SRVAL_Q3          => '0',
+SRVAL_Q4          => '0'
+)
 port map (
 Q1                => open,
 Q2                => open,
@@ -305,8 +334,8 @@ O                 => open);                    -- unregistered output of ISERDES
 gen_dout : for bitnum in 0 to G_BIT_COUNT - 1 generate
 begin
 
-i_deser_dout((lvds_ch * G_BIT_COUNT) + bitnum) <= i_deser_d(lvds_ch)(G_BIT_COUNT - bitnum - 1);
---i_deser_dout((lvds_ch * G_BIT_COUNT) + bitnum) <= i_deser_d(lvds_ch)(bitnum);
+--i_deser_dout((lvds_ch * G_BIT_COUNT) + bitnum) <= i_deser_d(lvds_ch)(G_BIT_COUNT - bitnum - 1);
+i_deser_dout((lvds_ch * G_BIT_COUNT) + bitnum) <= i_deser_d(lvds_ch)(bitnum);
 
 end generate gen_dout;
 
