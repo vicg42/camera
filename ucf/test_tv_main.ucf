@@ -1,0 +1,95 @@
+###############################################################################
+# Define Device, Package And Speed Grade
+###############################################################################
+CONFIG PART = XC7K410T-FBG676-2;
+
+################################################################################
+##
+################################################################################
+NET "pin_in_refclk_clk<0>"  LOC = "F22" | IOSTANDARD = LVCMOS25; #20MHz
+NET "pin_in_refclk_clk<1>"  LOC = "E23" | IOSTANDARD = LVCMOS25; #54MHz
+NET "pin_in_refclk_clk<2>"  LOC = "G22" | IOSTANDARD = LVCMOS25; #62MHz
+
+NET "pin_in_refclk_clk<0>" CLOCK_DEDICATED_ROUTE = BACKBONE;
+#PIN "m_clocks/m_mmcm_ref_clk0.CLKIN1" CLOCK_DEDICATED_ROUTE = BACKBONE;
+NET "pin_in_refclk_clk<1>" CLOCK_DEDICATED_ROUTE = BACKBONE;
+#PIN "m_clocks/m_mmcm_ref_clk1.CLKIN1" CLOCK_DEDICATED_ROUTE = BACKBONE;
+
+#NET "g_usrclk<2>" TNM_NET = TNM_VGA_PIXCLK ;
+NET "g_usrclk<2>" TNM_NET = TNM_TV_PIXCLK;
+
+#TIMESPEC TS_VGA_CLK     = PERIOD TNM_VGA_CLK      7.407  ns;#  HIGH 50%; # 135MHz
+TIMESPEC TS_TV_PIXCLK   = PERIOD TNM_TV_PIXCLK    56.387 ns;#  HIGH 50%; # 17,734472MHz
+
+
+################################################################################
+## DAC
+################################################################################
+NET "pin_out_video_adv7123_blank_n" LOC = "D20" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_adv7123_sync_n"  LOC = "G19" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_adv7123_psave_n" LOC = "F19" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_adv7123_clk"     LOC = "F20" | IOSTANDARD = LVCMOS33;
+
+NET "pin_out_video_adv7123_dr<0>"   LOC = "C17" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_adv7123_dr<1>"   LOC = "B19" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_adv7123_dr<2>"   LOC = "C19" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_adv7123_dr<3>"   LOC = "A17" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_adv7123_dr<4>"   LOC = "B17" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_adv7123_dr<5>"   LOC = "A19" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_adv7123_dr<6>"   LOC = "A18" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_adv7123_dr<7>"   LOC = "B16" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_adv7123_dr<8>"   LOC = "C16" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_adv7123_dr<9>"   LOC = "K15" | IOSTANDARD = LVCMOS33;
+
+NET "pin_out_video_adv7123_dg<0>"   LOC = "E15" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_adv7123_dg<1>"   LOC = "J16" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_adv7123_dg<2>"   LOC = "J15" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_adv7123_dg<3>"   LOC = "F15" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_adv7123_dg<4>"   LOC = "G15" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_adv7123_dg<5>"   LOC = "G16" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_adv7123_dg<6>"   LOC = "H16" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_adv7123_dg<7>"   LOC = "D16" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_adv7123_dg<8>"   LOC = "D15" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_adv7123_dg<9>"   LOC = "C18" | IOSTANDARD = LVCMOS33;
+
+NET "pin_out_video_adv7123_db<0>"   LOC = "D19" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_adv7123_db<1>"   LOC = "H18" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_adv7123_db<2>"   LOC = "H17" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_adv7123_db<3>"   LOC = "D18" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_adv7123_db<4>"   LOC = "E18" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_adv7123_db<5>"   LOC = "E17" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_adv7123_db<6>"   LOC = "F17" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_adv7123_db<7>"   LOC = "F18" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_adv7123_db<8>"   LOC = "G17" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_adv7123_db<9>"   LOC = "E16" | IOSTANDARD = LVCMOS33;
+
+################################################################################
+## VGA
+################################################################################
+NET "pin_out_video_vga_vs"          LOC = "M16" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_vga_hs"          LOC = "K18" | IOSTANDARD = LVCMOS33;
+
+################################################################################
+## TV
+################################################################################
+NET "pin_out_video_ad723_hsrca"     LOC = "L19" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_ad723_vsrca"     LOC = "L20" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_ad723_ce"        LOC = "K16" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_ad723_sa"        LOC = "L18" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_ad723_stnd"      LOC = "L17" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_ad723_fcs4"      LOC = "J19" | IOSTANDARD = LVCMOS33;
+NET "pin_out_video_ad723_term"      LOC = "K17" | IOSTANDARD = LVCMOS33;
+#NET "pin_in_tv_det"                 LOC = "M17" | IOSTANDARD = LVCMOS33;
+#NET "pin_in_tv_det" CLOCK_DEDICATED_ROUTE = FALSE;
+
+################################################################################
+##
+################################################################################
+#NET "pin_in_btn"       LOC = "P26" | IOSTANDARD = LVCMOS25;#׀אחתול X2 pin(5)
+NET "pin_out_led<0>"   LOC = "P24" | IOSTANDARD = LVCMOS25;#׀אחתול X2 pin(8)
+NET "pin_out_led<1>"   LOC = "L25" | IOSTANDARD = LVCMOS25;#׀אחתול X2 pin(7)
+#
+#NET "pin_out_physpi_sck"      LOC = "N16"  | IOSTANDARD = LVCMOS25;#׀אחתול X2 pin(1)
+#NET "pin_out_physpi_ss_n"     LOC = "K25"  | IOSTANDARD = LVCMOS25;#׀אחתול X2 pin(2)
+#NET "pin_out_physpi_mosi"     LOC = "K26"  | IOSTANDARD = LVCMOS25;#׀אחתול X2 pin(3)
+#NET "pin_in_physpi_miso"      LOC = "R23"  | IOSTANDARD = LVCMOS25;
