@@ -115,40 +115,8 @@ NET "pin_in_ccd_data_p<32>"  LOC = "AD23" | IOSTANDARD = LVDS_25;
 NET "pin_in_ccd_data_n<32>"  LOC = "AD24" | IOSTANDARD = LVDS_25;
 
 INST "m_ccd/m_deser/m_clk_gen/m_ibufds"    DIFF_TERM = TRUE;
-
-INST "m_ccd/m_deser/gen_lvds_ch[0].m_ibufds"   DIFF_TERM = TRUE;
-INST "m_ccd/m_deser/gen_lvds_ch[1].m_ibufds"   DIFF_TERM = TRUE;
-INST "m_ccd/m_deser/gen_lvds_ch[2].m_ibufds"   DIFF_TERM = TRUE;
-INST "m_ccd/m_deser/gen_lvds_ch[3].m_ibufds"   DIFF_TERM = TRUE;
-INST "m_ccd/m_deser/gen_lvds_ch[4].m_ibufds"   DIFF_TERM = TRUE;
-INST "m_ccd/m_deser/gen_lvds_ch[5].m_ibufds"   DIFF_TERM = TRUE;
-INST "m_ccd/m_deser/gen_lvds_ch[6].m_ibufds"   DIFF_TERM = TRUE;
-INST "m_ccd/m_deser/gen_lvds_ch[7].m_ibufds"   DIFF_TERM = TRUE;
-INST "m_ccd/m_deser/gen_lvds_ch[8].m_ibufds"   DIFF_TERM = TRUE;
-INST "m_ccd/m_deser/gen_lvds_ch[9].m_ibufds"   DIFF_TERM = TRUE;
-INST "m_ccd/m_deser/gen_lvds_ch[10].m_ibufds"  DIFF_TERM = TRUE;
-INST "m_ccd/m_deser/gen_lvds_ch[11].m_ibufds"  DIFF_TERM = TRUE;
-INST "m_ccd/m_deser/gen_lvds_ch[12].m_ibufds"  DIFF_TERM = TRUE;
-INST "m_ccd/m_deser/gen_lvds_ch[13].m_ibufds"  DIFF_TERM = TRUE;
-INST "m_ccd/m_deser/gen_lvds_ch[14].m_ibufds"  DIFF_TERM = TRUE;
-INST "m_ccd/m_deser/gen_lvds_ch[15].m_ibufds"  DIFF_TERM = TRUE;
-INST "m_ccd/m_deser/gen_lvds_ch[16].m_ibufds"  DIFF_TERM = TRUE;
-INST "m_ccd/m_deser/gen_lvds_ch[17].m_ibufds"  DIFF_TERM = TRUE;
-INST "m_ccd/m_deser/gen_lvds_ch[18].m_ibufds"  DIFF_TERM = TRUE;
-INST "m_ccd/m_deser/gen_lvds_ch[19].m_ibufds"  DIFF_TERM = TRUE;
-INST "m_ccd/m_deser/gen_lvds_ch[20].m_ibufds"  DIFF_TERM = TRUE;
-INST "m_ccd/m_deser/gen_lvds_ch[21].m_ibufds"  DIFF_TERM = TRUE;
-INST "m_ccd/m_deser/gen_lvds_ch[22].m_ibufds"  DIFF_TERM = TRUE;
-INST "m_ccd/m_deser/gen_lvds_ch[23].m_ibufds"  DIFF_TERM = TRUE;
-INST "m_ccd/m_deser/gen_lvds_ch[24].m_ibufds"  DIFF_TERM = TRUE;
-INST "m_ccd/m_deser/gen_lvds_ch[25].m_ibufds"  DIFF_TERM = TRUE;
-INST "m_ccd/m_deser/gen_lvds_ch[26].m_ibufds"  DIFF_TERM = TRUE;
-INST "m_ccd/m_deser/gen_lvds_ch[27].m_ibufds"  DIFF_TERM = TRUE;
-INST "m_ccd/m_deser/gen_lvds_ch[28].m_ibufds"  DIFF_TERM = TRUE;
-INST "m_ccd/m_deser/gen_lvds_ch[29].m_ibufds"  DIFF_TERM = TRUE;
-INST "m_ccd/m_deser/gen_lvds_ch[30].m_ibufds"  DIFF_TERM = TRUE;
-INST "m_ccd/m_deser/gen_lvds_ch[31].m_ibufds"  DIFF_TERM = TRUE;
-INST "m_ccd/m_deser/gen_lvds_ch[32].m_ibufds"  DIFF_TERM = TRUE;
+INST "m_ccd/m_deser/gen_lvds_ch[*].m_rx/m_ibufds"  DIFF_TERM = TRUE;
+INST "m_ccd/m_deser/gen_lvds_ch[*].m_rx/m_idelaye2"  IODELAY_GROUP = "deser_lvds_ccd_group";
 
 #################################################################################
 ### DAC

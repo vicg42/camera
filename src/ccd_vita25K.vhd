@@ -101,7 +101,8 @@ p_in_tst        : in    std_logic_vector(31 downto 0);
 
 p_in_ccdclk     : in    std_logic;
 p_in_refclk     : in    std_logic;
-p_in_rst        : in    std_logic
+p_in_rst        : in    std_logic;
+p_in_rst2       : in    std_logic
 );
 end component;
 
@@ -223,7 +224,8 @@ p_in_tst        => i_tst_spi_out,
 
 p_in_ccdclk     => p_in_ccdclk,
 p_in_refclk     => p_in_refclk,
-p_in_rst        => i_ccd_deser_rst
+p_in_rst        => i_ccd_deser_rst,
+p_in_rst2       => p_in_rst
 );
 
 i_ccd_deser_rst <= not i_ccd_init_done;
