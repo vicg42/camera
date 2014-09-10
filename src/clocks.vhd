@@ -30,7 +30,7 @@ G_VOUT_TYPE : string := "VGA"
 );
 port(
 p_out_rst  : out   std_logic;
-p_out_gclk : out   std_logic_vector(6 downto 0);
+p_out_gclk : out   std_logic_vector(7 downto 0);
 
 --p_out_clk  : out   TRefClkPinOUT;
 p_in_clk   : in    TRefclk_pinin
@@ -45,7 +45,7 @@ signal i_clk_fb      : std_logic_vector(2 downto 0);
 signal g_clk_fb      : std_logic_vector(2 downto 0);
 signal i_pll_locked  : std_logic_vector(2 downto 0);
 signal i_clk0_out    : std_logic_vector(2 downto 0);
-signal i_clk1_out    : std_logic_vector(0 downto 0);
+signal i_clk1_out    : std_logic_vector(1 downto 0);
 signal i_clk2_out    : std_logic_vector(0 downto 0);
 
 begin
@@ -55,6 +55,7 @@ p_out_rst <= not (AND_reduce(i_pll_locked));
 
 bufg_clk0: BUFG port map(I => i_clk0_out(1), O => p_out_gclk(0)); --200MHz
 bufg_clk1: BUFG port map(I => i_clk1_out(0), O => p_out_gclk(1)); --310MHz (CCD inputclk)
+bufg_clk7: BUFG port map(I => i_clk1_out(1), O => p_out_gclk(7)); --62MHz
 
 gen_vga1 : if strcmp(G_VOUT_TYPE, "VGA") generate begin
 bufg_clk2: BUFG port map(I => i_clk2_out(0), O => p_out_gclk(2)); --135MHz (VGA Pixclk)
@@ -152,9 +153,7 @@ g_clk_fb(0) <= i_clk_fb(0);
 -- CLKOUTn  = (CLKIN1/DIVCLK_DIVIDE) * CLKFBOUT_MULT_F/CLKOUTn_DIVIDE
 -- CLKFvco =  (62 MHz/1) * 10.000      = 620 MHz
 -- CLKOUT0  = (62 MHz/1) * 10.000/2    = 310 MHz
--- CLKOUT1  = (62 MHz/1) * 10.000/2    = 310 MHz
--- CLKOUT2  = (62 MHz/1) * 10.000/2    = 310 MHz
--- CLKOUT3  = (62 MHz/1) * 10.000/2    = 310 MHz
+-- CLKOUT1  = (62 MHz/1) * 10.000/10   = 62 MHz
 
 m_mmcm_clk_62MHz : MMCME2_BASE
 generic map(
@@ -163,9 +162,9 @@ CLKIN1_PERIOD      => 16.129,      -- real := 0.0
 DIVCLK_DIVIDE      => 1,           -- integer := 1 (1 to 128)
 CLKFBOUT_MULT_F    => 10.000,      -- real := 1.0  (5.0 to 64.0)
 CLKOUT0_DIVIDE_F   => 2.000,       -- real := 1.0  (1.0 to 128.0)
-CLKOUT1_DIVIDE     => 2,           -- integer := 1
-CLKOUT2_DIVIDE     => 2,           -- integer := 1
-CLKOUT3_DIVIDE     => 2,           -- integer := 1
+CLKOUT1_DIVIDE     => 10,           -- integer := 1
+CLKOUT2_DIVIDE     => 1,           -- integer := 1
+CLKOUT3_DIVIDE     => 1,           -- integer := 1
 CLKOUT4_DIVIDE     => 1,           -- integer := 1
 CLKOUT5_DIVIDE     => 1,           -- integer := 1
 CLKOUT6_DIVIDE     => 1,           -- integer := 1
@@ -196,7 +195,7 @@ CLKFBOUT  => i_clk_fb(1),
 CLKFBOUTB => open,
 CLKOUT0   => i_clk1_out(0),
 CLKOUT0B  => open,
-CLKOUT1   => open,--i_clk2_out(1),
+CLKOUT1   => i_clk1_out(1),--i_clk2_out(1),
 CLKOUT1B  => open,
 CLKOUT2   => open,--i_clk2_out(2),
 CLKOUT2B  => open,

@@ -33,6 +33,8 @@ p_out_detect_tr : out   std_logic;
 p_out_tst       : out   std_logic_vector(31 downto 0);
 p_in_tst        : in    std_logic_vector(31 downto 0);
 
+p_in_ccdinit    : in    std_logic;
+p_in_ccdclk2    : in    std_logic;
 p_in_ccdclk     : in    std_logic;
 p_in_refclk     : in    std_logic;
 p_in_rst        : in    std_logic;
@@ -51,7 +53,7 @@ p_in_data_p     : in    std_logic;
 p_in_data_n     : in    std_logic;
 
 p_out_rxd       : out   std_logic_vector(G_BIT_COUNT - 1 downto 0);
-p_out_aligen_done: out   std_logic;
+p_out_align_done: out   std_logic;
 
 p_in_clken      : in    std_logic;
 p_in_clkdiv     : in    std_logic;
@@ -122,8 +124,8 @@ signal i_pattern_det_en : std_logic;
 type TCHcount_bus4bit is array (0 to G_LVDS_CH_COUNT - 1) of std_logic_vector(3 downto 0);
 type TCHcount_bus3bit is array (0 to G_LVDS_CH_COUNT - 1) of std_logic_vector(2 downto 0);
 signal i_bitslip_en     : std_logic_vector(G_LVDS_CH_COUNT  - 1 downto 0);
-signal i_sync_tr_det    : std_logic_vector(G_LVDS_CH_COUNT  - 1 downto 0);
-signal i_sync_tr_det_cnt: TCHcount_bus4bit;--std_logic_vector(3 downto 0);
+signal i_align_done    : std_logic_vector(G_LVDS_CH_COUNT  - 1 downto 0);
+signal i_align_done_cnt: TCHcount_bus4bit;--std_logic_vector(3 downto 0);
 signal i_bitslip        : std_logic_vector(G_LVDS_CH_COUNT  - 1 downto 0);
 signal i_bitcnt         : TCHcount_bus3bit;--std_logic_vector(2 downto 0);
 
@@ -224,7 +226,7 @@ p_in_data_p     => p_in_ccd.data_p(lvds_ch),
 p_in_data_n     => p_in_ccd.data_n(lvds_ch),
 
 p_out_rxd       => i_deser_d(lvds_ch)(G_BIT_COUNT - 1 downto 0),
-p_out_aligen_done => i_sync_tr_det(lvds_ch),
+p_out_align_done => i_align_done(lvds_ch),
 
 p_in_clken      => i_clk_en,
 p_in_clkdiv     => clk_div,
@@ -232,7 +234,7 @@ p_in_clk        => clk_in_int,
 p_in_clkinv     => clk_in_int_inv,
 
 p_out_tst       => open,
-p_in_tst        => (others => '0'),
+p_in_tst        => p_in_tst,
 
 p_in_deser_rst  => i_io_reset
 );
@@ -313,7 +315,7 @@ p_out_video_den <= i_video_den;
 p_out_video_d <= i_video_d;
 p_out_video_clk <= clk_div;
 
-p_out_detect_tr <= OR_reduce(i_sync_tr_det);
+p_out_detect_tr <= OR_reduce(i_align_done);
 
 
 

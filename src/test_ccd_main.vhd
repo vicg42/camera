@@ -84,7 +84,7 @@ G_VOUT_TYPE : string := "VGA"
 );
 port(
 p_out_rst  : out   std_logic;
-p_out_gclk : out   std_logic_vector(6 downto 0);
+p_out_gclk : out   std_logic_vector(7 downto 0);
 
 p_in_clk   : in    TRefclk_pinin
 );
@@ -113,13 +113,14 @@ p_in_tst        : in    std_logic_vector(31 downto 0);
 
 p_in_refclk : in   std_logic;
 p_in_ccdclk : in   std_logic;
+p_in_ccdclk2 : in   std_logic;
 p_in_rst    : in   std_logic
 );
 end component;
 
 
 signal i_rst              : std_logic;
-signal g_usrclk           : std_logic_vector(6 downto 0);
+signal g_usrclk           : std_logic_vector(7 downto 0);
 signal g_usr_highclk      : std_logic;
 signal i_video_d          : std_logic_vector((C_PCFG_CCD_LVDS_COUNT
                                                * C_PCFG_CCD_BIT_PER_PIXEL) - 1 downto 0);
@@ -162,7 +163,7 @@ signal tst_video_den     : std_logic;
 
 signal i_ccd_clkref      : std_logic;
 signal i_ccd_clk         : std_logic;
-
+signal i_ccd_clk2        : std_logic;
 
 attribute keep : string;
 attribute keep of g_usrclk : signal is "true";
@@ -187,7 +188,8 @@ p_in_clk   => pin_in_refclk
 );
 
 i_ccd_clkref <= g_usrclk(0);
-i_ccd_clk    <= g_usrclk(1);--g_usrclk(6);
+i_ccd_clk    <= g_usrclk(1);
+i_ccd_clk2   <= g_usrclk(7);
 
 
 
@@ -218,6 +220,7 @@ p_in_tst    => i_ccd_tst_in,
 
 p_in_refclk => i_ccd_clkref,--g_usrclk(0),
 p_in_ccdclk => i_ccd_clk   ,--g_usrclk(1),
+p_in_ccdclk2 => i_ccd_clk2   ,--g_usrclk(1),
 p_in_rst    => i_rst
 );
 
@@ -236,7 +239,7 @@ p_in_rst    => i_rst
 pin_out_led(0) <= OR_reduce(tst_video_d);
 --pin_out_led(1) <= i_test_led(0);
 
-pin_out_TP2(0) <= tst_video_vs  and tst_video_hs  and tst_video_den;
+pin_out_TP2(0) <= '0';--tst_video_vs  and tst_video_hs  and tst_video_den;
 pin_out_TP2(1) <= i_ccd_init_done and i_ccd_detect_tr;
 pin_out_TP2(2) <= OR_reduce(i_ccd_tst_out);
 
@@ -308,9 +311,9 @@ begin
 --    if i_ccd_init_done = '1' and i_ccd_detect_tr = '1' then
 --      if i_video_vs = '1' and i_video_hs = '1' and i_video_den = '1' then
         tst_video_d <= i_video_d;
-        tst_video_vs  <= i_video_vs ;
-        tst_video_hs  <= i_video_hs ;
-        tst_video_den <= i_video_den;
+--        tst_video_vs  <= i_video_vs ;
+--        tst_video_hs  <= i_video_hs ;
+--        tst_video_den <= i_video_den;
 --      end if;
 --    end if;
 

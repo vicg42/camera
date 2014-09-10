@@ -18,7 +18,7 @@ p_in_data_p     : in    std_logic;
 p_in_data_n     : in    std_logic;
 
 p_out_rxd       : out   std_logic_vector(G_BIT_COUNT - 1 downto 0);
-p_out_aligen_done: out   std_logic;
+p_out_align_done: out   std_logic;
 
 p_in_clken      : in    std_logic;
 p_in_clkdiv     : in    std_logic;
@@ -48,19 +48,19 @@ signal i_fsm_aligen_cs       : TFsm_aligen;
 
 signal i_serial_din          : std_logic;
 signal i_idelaye2_dout       : std_logic;
-signal in_delay_ce           : std_logic;
-signal in_delay_inc_dec      : std_logic;
-signal in_delay_tap_in_int   : std_logic_vector(4 downto 0);
-signal in_delay_tap_out_int  : std_logic_vector(4 downto 0);
-signal i_in_delay_reset      : std_logic;
+signal i_idelaye2_inc        : std_logic;
+signal i_idelaye2_inc_cnt    : unsigned(4 downto 0);
+
 signal i_deser_d             : unsigned(13 downto 0);
 signal icascade1             : std_logic;
 signal icascade2             : std_logic;
 
-signal i_aligen_done         : std_logic;
+signal i_align_done         : std_logic;
+signal i_bitslip_cnt         : unsigned(3 downto 0);
 signal i_bitslip             : std_logic;
-signal i_cntok               : unsigned(1 downto 0);
-
+signal i_cntok               : unsigned(10 downto 0);
+signal sr_btn_push           : std_logic_vector(0 to 1);
+signal i_btn_push            : std_logic;
 
 
 
@@ -70,15 +70,10 @@ begin
 p_out_tst <= (others => '0');
 
 
---i_in_delay_reset <= '0';
---in_delay_ce <= '0';
---in_delay_inc_dec <= (others => '0');
---in_delay_tap_in_int <= (others => '0');
-
 
 m_ibufds : IBUFDS
 --generic map (
---DIFF_TERM  => TRUE -- Differential termination
+--DIFF_TERM  => TRUE -- define into ucf file!!!
 --)
 port map (
 I   => p_in_data_p,
@@ -89,36 +84,27 @@ O   => i_serial_din
 
 m_idelaye2 : IDELAYE2
 generic map (
-CINVCTRL_SEL          => "FALSE", -- Dynamic clock inversion
-DELAY_SRC             => "IDATAIN",
-                      -- Specify which input port to be used
-                      -- "I"=IDATAIN, "O"=ODATAIN, "DATAIN"=DATAIN, "IO"=Bi-directional
-HIGH_PERFORMANCE_MODE => "TRUE",
-                      -- TRUE specifies lower jitter
-                      -- at expense of more power
-IDELAY_TYPE           => "VARIABLE",
-                      -- "DEFAULT", "FIXED" or "VARIABLE", or VAR_LOADABLE
-IDELAY_VALUE          => 0,
-                      -- 0 to 63 tap values
-PIPE_SEL              => "FALSE",
-REFCLK_FREQUENCY      => 200.0,
-                      -- Frequency used for IDELAYCTRL
-                      -- 175.0 to 225.0
-SIGNAL_PATTERN        => "DATA"
-                      -- Input signal type, "CLOCK" or "DATA"
+CINVCTRL_SEL          => "FALSE"   ,-- Enable dynamic clock inversion (FALSE, TRUE)
+DELAY_SRC             => "IDATAIN" ,-- Delay input (IDATAIN, DATAIN)
+HIGH_PERFORMANCE_MODE => "TRUE"    ,-- Reduced jitter ("TRUE"), Reduced power ("FALSE")
+IDELAY_TYPE           => "VARIABLE",-- FIXED, VARIABLE, VAR_LOAD, VAR_LOAD_PIPE
+IDELAY_VALUE          => 0         ,-- Input delay tap setting (0-31)
+PIPE_SEL              => "FALSE"   ,-- Select pipelined mode, FALSE, TRUE
+REFCLK_FREQUENCY      => 200.0     ,-- IDELAYCTRL clock input frequency in MHz (190.0-210.0, 290.0-310.0).
+SIGNAL_PATTERN        => "DATA"     -- DATA, CLOCK input signal
 )
 port map (
 DATAOUT           => i_idelaye2_dout,
 DATAIN            => '0',
 C                 => p_in_clkdiv,
-CE                => '0',--in_delay_ce,
-INC               => '0',--in_delay_inc_dec,
+CE                => i_idelaye2_inc,
+INC               => i_idelaye2_inc,
 IDATAIN           => i_serial_din,
-LD                => '0',--i_in_delay_reset,
+LD                => '0',
 REGRST            => p_in_deser_rst,
 LDPIPEEN          => '0',
-CNTVALUEIN        => (others => '0'), --in_delay_tap_in_int,
-CNTVALUEOUT       => open, --in_delay_tap_out_int,
+CNTVALUEIN        => (others => '0'),
+CNTVALUEOUT       => open,
 CINVCTRL          => '0'
 );
 
@@ -154,13 +140,13 @@ Q7                => i_deser_d(6),
 Q8                => i_deser_d(7),
 SHIFTOUT1         => icascade1,       -- Cascade connection to Slave
 SHIFTOUT2         => icascade2,       -- Cascade connection to Slave
-BITSLIP           => i_bitslip,                  -- 1-bit Invoke Bitslip. This can be used with any
-                                               -- DATA_WIDTH, cascaded or not.
+BITSLIP           => i_bitslip,       -- 1-bit Invoke Bitslip. This can be used with any
+                                      -- DATA_WIDTH, cascaded or not.
 CE1               => p_in_clken,
 CE2               => p_in_clken,
-CLK               => p_in_clk,               -- Fast Source Synchronous SERDES clock from BUFIO
-CLKB              => p_in_clkinv,           -- Locally inverted clock
-CLKDIV            => p_in_clkdiv,                  -- Slow clock driven by BUFR
+CLK               => p_in_clk,        -- Fast Source Synchronous SERDES clock from BUFIO
+CLKB              => p_in_clkinv,     -- Locally inverted clock
+CLKDIV            => p_in_clkdiv,     -- Slow clock driven by BUFR
 CLKDIVP           => '0',
 D                 => '0',
 DDLY              => i_idelaye2_dout,
@@ -211,15 +197,15 @@ SHIFTOUT1         => open,
 SHIFTOUT2         => open,
 SHIFTIN1          => icascade1,       -- Cascade connections from Master
 SHIFTIN2          => icascade2,       -- Cascade connections from Master
-BITSLIP           => i_bitslip,                  -- 1-bit Invoke Bitslip. This can be used with any
-                                               -- DATA_WIDTH, cascaded or not.
+BITSLIP           => i_bitslip,       -- 1-bit Invoke Bitslip. This can be used with any
+                                      -- DATA_WIDTH, cascaded or not.
 CE1               => p_in_clken,
 CE2               => p_in_clken,
-CLK               => p_in_clk,               -- Fast source synchronous serdes clock
-CLKB              => p_in_clkinv,           -- locally inverted clock
-CLKDIV            => p_in_clkdiv,                  -- Slow clock sriven by BUFR.
+CLK               => p_in_clk,        -- Fast source synchronous serdes clock
+CLKB              => p_in_clkinv,     -- locally inverted clock
+CLKDIV            => p_in_clkdiv,     -- Slow clock sriven by BUFR.
 CLKDIVP           => '0',
-D                 => '0',                      -- Slave ISERDES module. No need to connect D, DDLY
+D                 => '0',             -- Slave ISERDES module. No need to connect D, DDLY
 DDLY              => '0',
 RST               => p_in_deser_rst,
 -- unused connections
@@ -228,7 +214,7 @@ DYNCLKSEL         => '0',
 OFB               => '0',
 OCLK              => '0',
 OCLKB             => '0',
-O                 => open                    -- unregistered output of ISERDESE1
+O                 => open             -- unregistered output of ISERDESE1
 );
 
 process(p_in_clkdiv)
@@ -236,9 +222,12 @@ begin
 if rising_edge(p_in_clkdiv) then
   if p_in_deser_rst = '1' then
     i_bitslip <= '0';
-    i_aligen_done <= '1';
+    i_align_done <= '0';
     i_fsm_aligen_cs <= S_IDLE;
     i_cntok <= (others => '0');
+    i_bitslip_cnt <= (others => '0');
+    i_idelaye2_inc_cnt <= (others => '0');
+    i_idelaye2_inc <= '0';
 
   else
 
@@ -251,8 +240,21 @@ if rising_edge(p_in_clkdiv) then
 
       when S_BITSLIP_ANLZ =>
 
+          i_cntok <= (others => '0');
+
           if i_deser_d(G_BIT_COUNT - 1 downto 0) /= TO_UNSIGNED(C_CCD_CHSYNC_TRAINING, G_BIT_COUNT) then
+            if i_bitslip_cnt = TO_UNSIGNED(10, G_BIT_COUNT) then
+              i_bitslip_cnt <= (others => '0');
+
+              if i_idelaye2_inc_cnt = TO_UNSIGNED(31, i_idelaye2_inc_cnt'length) then
+                i_idelaye2_inc_cnt <= (others => '0');
+              else
+                i_idelaye2_inc_cnt <= i_idelaye2_inc_cnt + 1;
+                i_idelaye2_inc <= '1';
+              end if;
+            end if;
             i_bitslip <= '1';
+
             i_fsm_aligen_cs <= S_BITSLIP_WAIT0;
           else
             i_fsm_aligen_cs <= S_BITSLIP_ANLZ2;
@@ -260,6 +262,7 @@ if rising_edge(p_in_clkdiv) then
 
       when S_BITSLIP_WAIT0 =>
 
+           i_idelaye2_inc <= '0';
            i_bitslip <= '0';
            i_fsm_aligen_cs <= S_BITSLIP_WAIT1;
 
@@ -269,18 +272,19 @@ if rising_edge(p_in_clkdiv) then
 
       when S_BITSLIP_WAIT2 =>
 
+           i_bitslip_cnt <= i_bitslip_cnt + 1;
            i_fsm_aligen_cs <= S_BITSLIP_ANLZ;
 
       when S_ALIGEN_DONE =>
 
           i_bitslip <= '0';
-          i_aligen_done <= '1';
+          i_align_done <= '1';
           i_fsm_aligen_cs <= S_ALIGEN_DONE;
 
       when S_BITSLIP_ANLZ2 =>
 
           if i_deser_d(G_BIT_COUNT - 1 downto 0) = TO_UNSIGNED(C_CCD_CHSYNC_TRAINING, G_BIT_COUNT) then
-            if i_cntok = TO_UNSIGNED(C_CCD_CHSYNC_TRAINING, i_cntok'length) then
+            if i_cntok = (i_cntok'range => '1') then --TO_UNSIGNED(180, i_cntok'length) then
               i_cntok <= (others => '0');
               i_fsm_aligen_cs <= S_ALIGEN_DONE;
             else
@@ -288,7 +292,9 @@ if rising_edge(p_in_clkdiv) then
               i_fsm_aligen_cs <= S_BITSLIP_ANLZ2;
             end if;
           else
-            i_fsm_aligen_cs <= S_BITSLIP_ANLZ;
+
+          i_fsm_aligen_cs <= S_BITSLIP_ANLZ;
+
           end if;
 
     end case;
@@ -300,7 +306,21 @@ end process;
 
 p_out_rxd <= std_logic_vector(i_deser_d(p_out_rxd'range));
 
-p_out_aligen_done <= i_aligen_done;
+p_out_align_done <= i_align_done;
+
+
+--process(p_in_clkdiv)
+--begin
+--  if rising_edge(p_in_clkdiv) then
+--    if p_in_deser_rst = '1' then
+--      sr_btn_push <= (others => '0');
+--      i_idelaye2_inc <= '0';
+--    else
+--      sr_btn_push <= p_in_tst(4) & sr_btn_push(0 to 0);
+--      i_idelaye2_inc <= sr_btn_push(0) and not sr_btn_push(1);
+--    end if;
+--  end if;
+--end process;
 
 
 end xilinx;

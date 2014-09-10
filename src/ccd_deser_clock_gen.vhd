@@ -62,7 +62,6 @@ signal mmcmout_x1    : std_logic ;
 signal mmcmout_d2    : std_logic ;
 signal pixel_clk_int : std_logic ;
 signal clkint_tmp    : std_logic ;
-signal sr_dcm_rst    : std_logic_vector(0 to 7);
 signal tst_ccdclkin_cnt: std_logic_vector(3 downto 0) ;
 
 
@@ -78,6 +77,9 @@ end process;
 p_out_tst(3 downto 0) <= tst_ccdclkin_cnt;
 
 m_ibufds : IBUFDS
+--generic map (
+--DIFF_TERM  => TRUE -- define into ucf file!!!
+--)
 port map (
 I  => clkin_p,
 IB => clkin_n,
@@ -89,18 +91,6 @@ m_clk_ccd2fpga : BUFG port map(I => clkint_tmp, O => clkint) ;
 --pixel_clk <= clkint;
 --txclk_div <= clkint;
 --mmcm_lckd <= '1';
-
---process(reset, clkint)
---begin
---  if (reset = '1') then
---    sr_dcm_rst <= (others => '1');
---  elsif rising_edge(clkint) then
---    if p_in_tst(4) = '1' then
---    sr_dcm_rst <= '0' & sr_dcm_rst(0 to 6);
---    end if;
---  end if;
---end process;
-
 
 pixel_clk <= pixel_clk_int ;
 
@@ -358,64 +348,3 @@ end generate ;
 end generate ;--loop2 : if USE_PLL = TRUE generate
 
 end xilinx ;
-
-
----- Reference clock MMCM (CLKFBOUT range 600.00 MHz to 1440.00 MHz)
----- CLKvco   = (CLKIN1/DIVCLK_DIVIDE) * CLKFBOUT_MULT_F
----- CLKFBOUT = (CLKIN1/DIVCLK_DIVIDE) * CLKFBOUT_MULT_F
----- CLKOUTn  = (CLKIN1/DIVCLK_DIVIDE) * CLKFBOUT_MULT_F/CLKOUTn_DIVIDE
----- CLKFvco =  (310 MHz/1) * 2.000      = 620 MHz
----- CLKOUT0  = (310 MHz/1) * 2.000/2    = 310 MHz
----- CLKOUT1  = (310 MHz/1) * 2.000/10   = 62 MHz
---
---tx_mmcm_adv_inst : MMCME2_BASE
---generic map(
---BANDWIDTH          => "OPTIMIZED", -- string := "OPTIMIZED"
---CLKIN1_PERIOD      => CLKIN_PERIOD,      -- real := 0.0
---DIVCLK_DIVIDE      => 1,           -- integer := 1 (1 to 128)
---CLKFBOUT_MULT_F    => (2.000 * MMCM_MODE_REAL),      -- real := 1.0  (5.0 to 64.0)
---CLKOUT0_DIVIDE_F   => (2.000 * MMCM_MODE_REAL),       -- real := 1.0  (1.0 to 128.0)
---CLKOUT1_DIVIDE     => (10 * MMCM_MODE),           -- integer := 1
---CLKOUT2_DIVIDE     => 8,           -- integer := 1
---CLKOUT3_DIVIDE     => 8,           -- integer := 1
---CLKOUT4_DIVIDE     => 8,           -- integer := 1
---CLKOUT5_DIVIDE     => 8,           -- integer := 1
---CLKOUT6_DIVIDE     => 8,           -- integer := 1
---CLKFBOUT_PHASE     => 0.000,       -- real := 0.0
---CLKOUT0_PHASE      => 0.000,       -- real := 0.0
---CLKOUT1_PHASE      => 0.000,       -- real := 0.0
---CLKOUT2_PHASE      => 0.000,       -- real := 0.0
---CLKOUT3_PHASE      => 0.000,       -- real := 0.0
---CLKOUT4_PHASE      => 0.000,       -- real := 0.0
---CLKOUT5_PHASE      => 0.000,       -- real := 0.0
---CLKOUT6_PHASE      => 0.000,       -- real := 0.0
---CLKOUT0_DUTY_CYCLE => 0.500,       -- real := 0.5
---CLKOUT1_DUTY_CYCLE => 0.500,       -- real := 0.5
---CLKOUT2_DUTY_CYCLE => 0.500,       -- real := 0.5
---CLKOUT3_DUTY_CYCLE => 0.500,       -- real := 0.5
---CLKOUT4_DUTY_CYCLE => 0.500,       -- real := 0.5
---CLKOUT5_DUTY_CYCLE => 0.500,       -- real := 0.5
---CLKOUT6_DUTY_CYCLE => 0.500,       -- real := 0.5
---CLKOUT4_CASCADE    => FALSE,       -- boolean := FALSE
---REF_JITTER1        => 0.0,         -- real := 0.0
---STARTUP_WAIT       => FALSE)       -- boolean := FALSE
---port map(
---RST       => sr_dcm_rst(sr_dcm_rst'length - 1),
---PWRDWN    => '0',
---CLKIN1    => clkint,
---CLKFBIN   => pixel_clk_int,
---CLKFBOUT  => mmcmout_x1,
---CLKFBOUTB => open,
---CLKOUT0   => mmcmout_xn,
---CLKOUT0B  => open,
---CLKOUT1   => mmcmout_d2,--i_clk2_out(1),
---CLKOUT1B  => open,
---CLKOUT2   => open,--i_clk2_out(2),
---CLKOUT2B  => open,
---CLKOUT3   => open,--i_clk2_out(3),
---CLKOUT3B  => open,
---CLKOUT4   => open,--i_clk2_out(5),
---CLKOUT5   => open,
---CLKOUT6   => open,
---LOCKED    => mmcm_lckd
---);

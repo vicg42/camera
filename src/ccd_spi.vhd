@@ -127,7 +127,8 @@ p_out_tst(0) <= i_clkcnt(i_clkcnt'high);
 p_out_tst(1) <= OR_reduce(tst_fsmstate_dly);
 p_out_tst(2) <= i_spi_core_tst_out(1);
 p_out_tst(3) <= OR_reduce(i_rxd);
-p_out_tst(31 downto 4) <= (others => '0');
+p_out_tst(4) <= p_in_tst(0);
+p_out_tst(31 downto 5) <= (others => '0');
 
 --p_out_ccdrst_n <= i_ccd_rst_n;
 

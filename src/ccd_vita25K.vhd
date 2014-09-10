@@ -49,6 +49,7 @@ p_in_tst        : in    std_logic_vector(31 downto 0);
 
 p_in_refclk : in   std_logic;
 p_in_ccdclk : in   std_logic;
+p_in_ccdclk2 : in   std_logic;
 p_in_rst    : in   std_logic
 );
 end;
@@ -99,6 +100,8 @@ p_out_detect_tr : out   std_logic;
 p_out_tst       : out   std_logic_vector(31 downto 0);
 p_in_tst        : in    std_logic_vector(31 downto 0);
 
+p_in_ccdinit    : in    std_logic;
+p_in_ccdclk2    : in   std_logic;
 p_in_ccdclk     : in    std_logic;
 p_in_refclk     : in    std_logic;
 p_in_rst        : in    std_logic;
@@ -222,6 +225,8 @@ p_out_detect_tr => p_out_detect_tr,
 p_out_tst       => i_tst_deser_out,
 p_in_tst        => i_tst_spi_out,
 
+p_in_ccdinit    => i_ccd_init_done,
+p_in_ccdclk2    => p_in_ccdclk2,
 p_in_ccdclk     => p_in_ccdclk,
 p_in_refclk     => p_in_refclk,
 p_in_rst        => i_ccd_deser_rst,
