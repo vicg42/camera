@@ -116,7 +116,8 @@ signal i_deser_d        : TDeserData := (( others => (others => '0')));
 signal i_align_ok       : std_logic_vector(G_LVDS_CH_COUNT - 1 downto 0);
 
 signal i_rxd            : std_logic_vector((G_LVDS_CH_COUNT * G_BIT_COUNT) - 1 downto 0);
-signal i_rxdout         : std_logic_vector((G_LVDS_CH_COUNT * G_BIT_COUNT) - 1 downto 0);
+type TRxD_sr is array (0 to 1) of std_logic_vector((G_LVDS_CH_COUNT * G_BIT_COUNT) - 1 downto 0);
+signal sr_rxd           : TRxD_sr;
 
 signal i_sync_d         : unsigned(G_BIT_COUNT - 1 downto 0);
 
@@ -220,11 +221,12 @@ end generate gen_lvds_ch;
 process(i_clk_div)
 begin
   if rising_edge(i_clk_div) then
-    i_rxdout <= i_rxd((G_LVDS_CH_COUNT * G_BIT_COUNT) - 1 downto 0);
+    sr_rxd(0) <= i_rxd((G_LVDS_CH_COUNT * G_BIT_COUNT) - 1 downto 0);
+    sr_rxd(1) <= sr_rxd(0);
   end if;
 end process;
 
-i_sync_d <= UNSIGNED(i_rxdout(G_BIT_COUNT - 1 downto 0));
+i_sync_d <= UNSIGNED(sr_rxd(0)(G_BIT_COUNT - 1 downto 0));
 
 
 process(i_clk_div)
@@ -283,7 +285,7 @@ end if;
 end process;
 
 
-p_out_vfr_data <= i_rxdout  ;
+p_out_vfr_data <= sr_rxd(1);
 p_out_vfr_den  <= i_vfr_den;
 p_out_vfr_vs   <= i_vfr_vs ;
 p_out_vfr_hs   <= i_vfr_hs ;
