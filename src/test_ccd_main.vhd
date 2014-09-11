@@ -19,7 +19,7 @@ library work;
 use work.reduce_pack.all;
 use work.vicg_common_pkg.all;
 use work.clocks_pkg.all;
-use work.ccd_vita25K_pkg.all;
+use work.ccd_pkg.all;
 use work.prj_cfg.all;
 
 entity test_ccd_main is
@@ -95,26 +95,23 @@ generic(
 G_SIM : string := "OFF"
 );
 port(
-p_in_ccd   : in   TCCD_pinin;
-p_out_ccd  : out  TCCD_pinout;
+p_in_ccd       : in   TCCD_pinin;
+p_out_ccd      : out  TCCD_pinout;
 
-p_out_video_vs  : out std_logic;
-p_out_video_hs  : out std_logic;
-p_out_video_den : out std_logic;
-p_out_video_d   : out std_logic_vector((C_PCFG_CCD_LVDS_COUNT
-                                          * C_PCFG_CCD_BIT_PER_PIXEL) - 1 downto 0);
-p_out_video_clk : out std_logic;
+p_out_vfr_data : out  std_logic_vector((C_PCFG_CCD_LVDS_COUNT * C_PCFG_CCD_BIT_PER_PIXEL) - 1 downto 0);
+p_out_vfr_den  : out  std_logic;
+p_out_vfr_vs   : out  std_logic;
+p_out_vfr_hs   : out  std_logic;
+p_out_vfr_clk  : out  std_logic;
 
-p_out_init_done : out  std_logic;
-p_out_detect_tr : out  std_logic;
+p_out_status   : out  std_logic_vector(C_CCD_STATUS_LAST_BIT downto 0);
 
-p_out_tst       : out   std_logic_vector(31 downto 0);
-p_in_tst        : in    std_logic_vector(31 downto 0);
+p_out_tst      : out  std_logic_vector(31 downto 0);
+p_in_tst       : in   std_logic_vector(31 downto 0);
 
-p_in_refclk : in   std_logic;
-p_in_ccdclk : in   std_logic;
-p_in_ccdclk2 : in   std_logic;
-p_in_rst    : in   std_logic
+p_in_refclk    : in   std_logic;
+p_in_ccdclk    : in   std_logic;
+p_in_rst       : in   std_logic
 );
 end component;
 
@@ -137,11 +134,10 @@ signal i_btn              : std_logic;
 signal sr_btn_push        : unsigned(0 to 1);
 signal sr_video_vs        : unsigned(0 to 1) := (others => '1');
 
-signal i_ccd_init_done    : std_logic;
+signal i_ccd_status       : std_logic_vector(C_CCD_STATUS_LAST_BIT downto 0);
+signal i_ccd_out          : TCCD_pinout;
 signal i_ccd_tst_in       : std_logic_vector(31 downto 0);
 signal i_ccd_tst_out      : std_logic_vector(31 downto 0);
-signal i_ccd_out          : TCCD_pinout;
-signal i_ccd_detect_tr    : std_logic;
 
 signal tst_ccd_syn       : std_logic;
 signal sr_tst_ccd_syn    : std_logic;
@@ -160,6 +156,7 @@ signal tst_video_d       : std_logic_vector(i_video_d'range);
 signal tst_video_vs      : std_logic;
 signal tst_video_hs      : std_logic;
 signal tst_video_den     : std_logic;
+signal tst_ccd_status    : std_logic_vector(i_ccd_status'range);
 
 signal i_ccd_clkref      : std_logic;
 signal i_ccd_clk         : std_logic;
@@ -203,25 +200,23 @@ generic map(
 G_SIM => C_PCFG_SIM
 )
 port map(
-p_in_ccd   => pin_in_ccd ,
-p_out_ccd  => i_ccd_out,--pin_out_ccd,
+p_in_ccd       => pin_in_ccd ,
+p_out_ccd      => i_ccd_out,--pin_out_ccd,
 
-p_out_video_vs  => i_video_vs,
-p_out_video_hs  => i_video_hs,
-p_out_video_den => i_video_den,
-p_out_video_d   => i_video_d,
-p_out_video_clk => i_video_d_clk,
+p_out_vfr_data => i_video_d,
+p_out_vfr_den  => i_video_den,
+p_out_vfr_vs   => i_video_vs,
+p_out_vfr_hs   => i_video_hs,
+p_out_vfr_clk  => i_video_d_clk,
 
-p_out_init_done => i_ccd_init_done,
-p_out_detect_tr => i_ccd_detect_tr,
+p_out_status   => i_ccd_status,
 
-p_out_tst   => i_ccd_tst_out,
-p_in_tst    => i_ccd_tst_in,
+p_out_tst      => i_ccd_tst_out,
+p_in_tst       => i_ccd_tst_in,
 
-p_in_refclk => i_ccd_clkref,--g_usrclk(0),
-p_in_ccdclk => i_ccd_clk   ,--g_usrclk(1),
-p_in_ccdclk2 => i_ccd_clk2   ,--g_usrclk(1),
-p_in_rst    => i_rst
+p_in_refclk    => i_ccd_clkref,
+p_in_ccdclk    => i_ccd_clk   ,
+p_in_rst       => i_rst
 );
 
 
@@ -239,8 +234,8 @@ p_in_rst    => i_rst
 pin_out_led(0) <= OR_reduce(tst_video_d);
 --pin_out_led(1) <= i_test_led(0);
 
-pin_out_TP2(0) <= '0';--tst_video_vs  and tst_video_hs  and tst_video_den;
-pin_out_TP2(1) <= i_ccd_init_done and i_ccd_detect_tr;
+pin_out_TP2(0) <= tst_video_vs and tst_video_hs and tst_video_den;
+pin_out_TP2(1) <= OR_reduce(tst_ccd_status);
 pin_out_TP2(2) <= OR_reduce(i_ccd_tst_out);
 
 
@@ -311,9 +306,11 @@ begin
 --    if i_ccd_init_done = '1' and i_ccd_detect_tr = '1' then
 --      if i_video_vs = '1' and i_video_hs = '1' and i_video_den = '1' then
         tst_video_d <= i_video_d;
---        tst_video_vs  <= i_video_vs ;
---        tst_video_hs  <= i_video_hs ;
---        tst_video_den <= i_video_den;
+        tst_video_vs  <= i_video_vs ;
+        tst_video_hs  <= i_video_hs ;
+        tst_video_den <= i_video_den;
+
+        tst_ccd_status <= i_ccd_status;
 --      end if;
 --    end if;
 

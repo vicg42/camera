@@ -3,7 +3,7 @@
 -- Engineer    : Golovachenko Victor
 --
 -- Create Date : 13.06.2014 15:09:01
--- Module Name : ccd_vita25K_pkg
+-- Module Name : ccd_pkg
 --
 -- Description :
 --
@@ -14,9 +14,11 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+
+library work;
 use work.prj_cfg.all;
 
-package ccd_vita25K_pkg is
+package ccd_pkg is
 
 --Codes SYNC Channel:
 --10Bit per pix
@@ -24,10 +26,10 @@ constant C_CCD_CHSYNC_TRAINING : integer := 16#3A6#;
 constant C_CCD_CHSYNC_BLACKPIX : integer := 16#015#;
 constant C_CCD_CHSYNC_CRC      : integer := 16#059#;
 constant C_CCD_CHSYNC_IMAGE    : integer := 16#035#;
-constant C_CCD_CHSYNC_FS       : integer := 16#2AA#;-- 10_1|010_1010
-constant C_CCD_CHSYNC_FE       : integer := 16#32A#;-- 11_0|010_1010
-constant C_CCD_CHSYNC_LS       : integer := 16#3AA#;-- 00_1|010_1010
-constant C_CCD_CHSYNC_LE       : integer := 16#22A#;-- 01_0|010_1010
+constant C_CCD_CHSYNC_FS       : integer := 16#2AA#;-- 10_1010_1010
+constant C_CCD_CHSYNC_FE       : integer := 16#32A#;-- 11_0010_1010
+constant C_CCD_CHSYNC_LS       : integer := 16#0AA#;-- 00_1010_1010
+constant C_CCD_CHSYNC_LE       : integer := 16#12A#;-- 01_0010_1010
 
 constant C_CCD_SPI_AWIDTH : integer := 9 + 1;--9 bit - Adress Registers + 1 bit command(write/read)
 constant C_CCD_SPI_DWIDTH : integer := 16;
@@ -59,6 +61,8 @@ std_logic_vector(TO_UNSIGNED(10#048#, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(
 std_logic_vector(TO_UNSIGNED(10#112#, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(16#0007#, C_CCD_SPI_DWIDTH)),
 std_logic_vector(TO_UNSIGNED(10#192#, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(16#0001#, C_CCD_SPI_DWIDTH))  --Reg 192[0]=1 - Start Image Capture CCD
 );
+--std_logic_vector(TO_UNSIGNED(10#144#, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(16#0000#, C_CCD_SPI_DWIDTH)), --Enable test pattern
+
 
 --constant C_CCD_REGINIT : TCCD_RegINIT := (
 --std_logic_vector(TO_UNSIGNED(10#002#, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(16#0001#, C_CCD_SPI_DWIDTH)),
@@ -82,8 +86,6 @@ std_logic_vector(TO_UNSIGNED(10#192#, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(
 --std_logic_vector(TO_UNSIGNED(10#112#, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(16#0007#, C_CCD_SPI_DWIDTH)),
 --std_logic_vector(TO_UNSIGNED(10#192#, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(16#0001#, C_CCD_SPI_DWIDTH))  --Reg 192[0]=1 - Start Image Capture CCD
 --);
-
-constant C_CCD_SPI_READ_START_REG : integer := 0;
 
 
 --From AND9049-D.pdf - VITA Family Global Reset (IMPLEMENTATION FOR VITA25K)
@@ -172,5 +174,23 @@ ss_n : std_logic;
 mosi : std_logic;--Master OUT, Slave IN
 end record;
 
-end ccd_vita25K_pkg;
+
+type TCCD_vout is record
+data : std_logic_vector((C_PCFG_CCD_LVDS_COUNT * C_PCFG_CCD_BIT_PER_PIXEL) - 1 downto 0);
+den  : std_logic;
+vs   : std_logic;
+hs   : std_logic;
+clk  : std_logic;
+end record;
+
+--CCD_FG
+constant C_CCD_FG_STATUS_ALIGN_OK_BIT : integer := 0;
+constant C_CCD_FG_STATUS_LAST_BIT : integer := C_CCD_FG_STATUS_ALIGN_OK_BIT;
+
+--CCD_GLOB
+constant C_CCD_STATUS_INIT_OK_BIT  : integer := 0;
+constant C_CCD_STATUS_ALIGN_OK_BIT : integer := 1;
+constant C_CCD_STATUS_LAST_BIT : integer := C_CCD_STATUS_ALIGN_OK_BIT;
+
+end ccd_pkg;
 

@@ -17,7 +17,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 library work;
-use work.ccd_vita25K_pkg.all;
+use work.ccd_pkg.all;
 use work.spi_pkg.all;
 use work.vicg_common_pkg.all;
 use work.reduce_pack.all;

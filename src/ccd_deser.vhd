@@ -2,7 +2,7 @@
 -- Company     : Yansar
 -- Engineer    : Golovachenko Victor
 --
--- Create Date : 13.06.2014 15:08:42
+-- Create Date : 11.09.2014 10:34:16
 -- Module Name : ccd_deser (deserilazer)
 --
 -- Назначение/Описание :
@@ -20,45 +20,43 @@ library unisim;
 use unisim.vcomponents.all;
 
 library work;
-use work.ccd_vita25K_pkg.all;
-use work.prj_cfg.all;
+use work.ccd_pkg.all;
 
 entity ccd_deser is
 generic(
-G_BIT_COUNT     : integer := 10
+G_BIT_COUNT : integer := 10
 );
 port(
-p_in_data_p     : in    std_logic;
-p_in_data_n     : in    std_logic;
+p_in_data_p    : in    std_logic;
+p_in_data_n    : in    std_logic;
 
-p_out_rxd       : out   std_logic_vector(G_BIT_COUNT - 1 downto 0);
-p_out_align_done: out   std_logic;
+p_out_data     : out   std_logic_vector(G_BIT_COUNT - 1 downto 0);
+p_out_align_ok : out   std_logic;
 
-p_in_clken      : in    std_logic;
-p_in_clkdiv     : in    std_logic;
-p_in_clk        : in    std_logic;
-p_in_clkinv     : in    std_logic;
+p_out_tst      : out   std_logic_vector(31 downto 0);
+p_in_tst       : in    std_logic_vector(31 downto 0);
 
-p_out_tst       : out   std_logic_vector(31 downto 0);
-p_in_tst        : in    std_logic_vector(31 downto 0);
-
-p_in_deser_rst  : in    std_logic
+p_in_clken     : in    std_logic;
+p_in_clkdiv    : in    std_logic;
+p_in_clk       : in    std_logic;
+p_in_clkinv    : in    std_logic;
+p_in_rst       : in    std_logic
 );
 end ccd_deser;
 
 architecture xilinx of ccd_deser is
 
-type TFsm_aligen is (
+type TFsm_align is (
 S_IDLE          ,
+S_DESER_RST     ,
+S_WAIT          ,
 S_BITSLIP_ANLZ  ,
-S_BITSLIP_WAIT0 ,
-S_BITSLIP_WAIT1 ,
-S_BITSLIP_WAIT2 ,
-S_ALIGEN_DONE   ,
-S_BITSLIP_ANLZ2
+S_BITSLIP_WAIT  ,
+S_ALIGN_DONE    ,
+S_ALIGN_ANLZ
 );
 
-signal i_fsm_aligen_cs       : TFsm_aligen;
+signal i_fsm_align_cs        : TFsm_align;
 
 signal i_ser_din             : std_logic;
 
@@ -67,16 +65,17 @@ signal i_idelaye2_ce         : std_logic;
 signal i_idelaye2_inc        : std_logic;
 signal i_idelaye2_tapcnt     : unsigned(5 downto 0);
 
+signal i_deser_rst           : std_logic;
 signal i_deser_d             : unsigned(13 downto 0);
 signal icascade1             : std_logic;
 signal icascade2             : std_logic;
 
-signal i_align_done          : std_logic;
+signal i_align_ok            : std_logic;
 signal i_bitslip_cnt         : unsigned(3 downto 0);
 signal i_bitslip             : std_logic;
 signal i_cntok               : unsigned(10 downto 0);
-signal sr_btn_push           : std_logic_vector(0 to 1);
-signal i_btn_push            : std_logic;
+
+signal i_cntdly              : unsigned(6 downto 0);
 
 
 
@@ -84,7 +83,6 @@ begin
 
 
 p_out_tst <= (others => '0');
-
 
 
 m_ibufds : IBUFDS
@@ -117,12 +115,13 @@ CE                => i_idelaye2_ce,
 INC               => i_idelaye2_inc,
 IDATAIN           => i_ser_din,
 LD                => '0',
-REGRST            => p_in_deser_rst,
+REGRST            => i_deser_rst, --p_in_rst,--
 LDPIPEEN          => '0',
 CNTVALUEIN        => (others => '0'),
 CNTVALUEOUT       => open,
 CINVCTRL          => '0'
 );
+
 
 m_iserdese2_master : ISERDESE2
 generic map (
@@ -166,7 +165,7 @@ CLKDIV            => p_in_clkdiv,     -- Slow clock driven by BUFR
 CLKDIVP           => '0',
 D                 => '0',
 DDLY              => i_idelaye2_dout,
-RST               => p_in_deser_rst,
+RST               => i_deser_rst, --p_in_rst,--
 SHIFTIN1          => '0',
 SHIFTIN2          => '0',
 -- unused connections
@@ -223,7 +222,7 @@ CLKDIV            => p_in_clkdiv,     -- Slow clock sriven by BUFR.
 CLKDIVP           => '0',
 D                 => '0',             -- Slave ISERDES module. No need to connect D, DDLY
 DDLY              => '0',
-RST               => p_in_deser_rst,
+RST               => i_deser_rst, --p_in_rst,--
 -- unused connections
 DYNCLKDIVSEL      => '0',
 DYNCLKSEL         => '0',
@@ -233,82 +232,131 @@ OCLKB             => '0',
 O                 => open             -- unregistered output of ISERDESE1
 );
 
+
+--################################
+--FSM ccd video data align
+--################################
 process(p_in_clkdiv)
 begin
 if rising_edge(p_in_clkdiv) then
-  if p_in_deser_rst = '1' then
+  if p_in_rst = '1' then
+    i_fsm_align_cs <= S_IDLE;
+    i_align_ok <= '0';
+
     i_bitslip <= '0';
-    i_align_done <= '0';
-    i_fsm_aligen_cs <= S_IDLE;
-    i_cntok <= (others => '0');
     i_bitslip_cnt <= (others => '0');
+
     i_idelaye2_tapcnt <= (others => '0');
     i_idelaye2_inc <= '0';
     i_idelaye2_ce <= '0';
 
+    i_cntok <= (others => '0');
+
+    i_cntdly <= (others => '0');
+    i_deser_rst <= '0';
+
   else
 
-    case i_fsm_aligen_cs is
+    case i_fsm_align_cs is
 
       when S_IDLE =>
 
           i_bitslip <= '0';
-          i_fsm_aligen_cs <= S_BITSLIP_ANLZ;
+          i_deser_rst <= '0';
+          i_idelaye2_inc <= '0';
+          i_fsm_align_cs <= S_DESER_RST;
+
+      when S_DESER_RST =>
+
+          if i_cntdly = TO_UNSIGNED(30, i_cntdly'length) then
+            i_deser_rst <= '0';
+            i_cntdly <= (others => '0');
+            i_fsm_align_cs <= S_WAIT;
+          else
+            i_deser_rst <= '1';
+            i_cntdly <= i_cntdly + 1;
+          end if;
+
+      when S_WAIT =>
+
+          if i_cntdly = TO_UNSIGNED(10, i_cntdly'length) then
+            i_cntdly <= (others => '0');
+            i_fsm_align_cs <= S_BITSLIP_ANLZ;
+          else
+            i_cntdly <= i_cntdly + 1;
+          end if;
+
 
       when S_BITSLIP_ANLZ =>
 
           i_cntok <= (others => '0');
 
-          if i_deser_d(G_BIT_COUNT - 1 downto 0) /= TO_UNSIGNED(C_CCD_CHSYNC_TRAINING, G_BIT_COUNT) then
+          if i_deser_d(G_BIT_COUNT - 1 downto 0)
+              /= TO_UNSIGNED(C_CCD_CHSYNC_TRAINING, G_BIT_COUNT) then
+
             if i_bitslip_cnt = TO_UNSIGNED(10, G_BIT_COUNT) then
               i_bitslip_cnt <= (others => '0');
 
+              --idelaye2 adjustment
               i_idelaye2_tapcnt <= i_idelaye2_tapcnt + 1;
               i_idelaye2_inc <= '1';
               i_idelaye2_ce <= not i_idelaye2_tapcnt(5);
 
+              if i_idelaye2_tapcnt = (i_idelaye2_tapcnt'range => '1') then
+                i_fsm_align_cs <= S_IDLE;
+              else
+                i_fsm_align_cs <= S_BITSLIP_WAIT;
+              end if;
+
+            else
+              i_bitslip_cnt <= i_bitslip_cnt + 1;
+              i_fsm_align_cs <= S_BITSLIP_WAIT;
+
             end if;
+
             i_bitslip <= '1';
 
-            i_fsm_aligen_cs <= S_BITSLIP_WAIT0;
           else
-            i_fsm_aligen_cs <= S_BITSLIP_ANLZ2;
+            i_fsm_align_cs <= S_ALIGN_ANLZ;
+
           end if;
 
-      when S_BITSLIP_WAIT0 =>
+      when S_BITSLIP_WAIT =>
 
            i_idelaye2_inc <= '0';
            i_bitslip <= '0';
-           i_fsm_aligen_cs <= S_BITSLIP_WAIT1;
 
-      when S_BITSLIP_WAIT1 =>
+          if i_cntdly = TO_UNSIGNED(2, i_cntdly'length) then
+            i_cntdly <= (others => '0');
+            i_fsm_align_cs <= S_BITSLIP_ANLZ;
+          else
+            i_cntdly <= i_cntdly + 1;
+          end if;
 
-           i_fsm_aligen_cs <= S_BITSLIP_WAIT2;
-
-      when S_BITSLIP_WAIT2 =>
-
-           i_bitslip_cnt <= i_bitslip_cnt + 1;
-           i_fsm_aligen_cs <= S_BITSLIP_ANLZ;
-
-      when S_ALIGEN_DONE =>
+      when S_ALIGN_DONE =>
 
           i_bitslip <= '0';
-          i_align_done <= '1';
-          i_fsm_aligen_cs <= S_ALIGEN_DONE;
+          i_align_ok <= '1';
+          i_fsm_align_cs <= S_ALIGN_DONE;
 
-      when S_BITSLIP_ANLZ2 =>
+      when S_ALIGN_ANLZ =>
 
-          if i_deser_d(G_BIT_COUNT - 1 downto 0) = TO_UNSIGNED(C_CCD_CHSYNC_TRAINING, G_BIT_COUNT) then
-            if i_cntok = (i_cntok'range => '1') then --TO_UNSIGNED(180, i_cntok'length) then
+          if i_deser_d(G_BIT_COUNT - 1 downto 0)
+              = TO_UNSIGNED(C_CCD_CHSYNC_TRAINING, G_BIT_COUNT) then
+
+            if i_cntok = (i_cntok'range => '1') then
               i_cntok <= (others => '0');
-              i_fsm_aligen_cs <= S_ALIGEN_DONE;
+              i_fsm_align_cs <= S_ALIGN_DONE;
+
             else
               i_cntok <= i_cntok + 1;
-              i_fsm_aligen_cs <= S_BITSLIP_ANLZ2;
+              i_fsm_align_cs <= S_ALIGN_ANLZ;
+
             end if;
+
           else
 
-          i_fsm_aligen_cs <= S_BITSLIP_ANLZ;
+            i_fsm_align_cs <= S_BITSLIP_ANLZ;
 
           end if;
 
@@ -319,23 +367,8 @@ end if;
 end process;
 
 
-p_out_rxd <= std_logic_vector(i_deser_d(p_out_rxd'range));
-
-p_out_align_done <= i_align_done;
-
-
---process(p_in_clkdiv)
---begin
---  if rising_edge(p_in_clkdiv) then
---    if p_in_deser_rst = '1' then
---      sr_btn_push <= (others => '0');
---      i_idelaye2_inc <= '0';
---    else
---      sr_btn_push <= p_in_tst(4) & sr_btn_push(0 to 0);
---      i_idelaye2_inc <= sr_btn_push(0) and not sr_btn_push(1);
---    end if;
---  end if;
---end process;
+p_out_data <= std_logic_vector(i_deser_d(p_out_data'range));
+p_out_align_ok <= i_align_ok;
 
 
 end xilinx;

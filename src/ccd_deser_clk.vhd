@@ -29,7 +29,7 @@ use unisim.vcomponents.all ;
 library work;
 use work.reduce_pack.all;
 
-entity ccd_deser_clock_gen is
+entity ccd_deser_clk is
 generic (
 CLKIN_PERIOD    : real := 6.000 ;     -- clock period (ns) of input clock on clkin_p
 MMCM_MODE       : integer := 1 ;      -- Parameter to set multiplier for MMCM either 1 or 2 to get VCO in correct operating range. 1 multiplies clock by 7, 2 multiplies clock by 14
@@ -52,9 +52,9 @@ status    : out std_logic_vector(6 downto 0);   -- Status bus
 p_in_tst  : in  std_logic_vector(31 downto 0);
 p_out_tst : out std_logic_vector(31 downto 0)
 );
-end entity ccd_deser_clock_gen ;
+end entity ccd_deser_clk ;
 
-architecture xilinx of ccd_deser_clock_gen is
+architecture xilinx of ccd_deser_clk is
 
 signal clkint        : std_logic ;
 signal mmcmout_xn    : std_logic ;
@@ -62,19 +62,16 @@ signal mmcmout_x1    : std_logic ;
 signal mmcmout_d2    : std_logic ;
 signal pixel_clk_int : std_logic ;
 signal clkint_tmp    : std_logic ;
-signal tst_ccdclkin_cnt: std_logic_vector(3 downto 0) ;
 
 
 begin
 
-process(clkint)
-begin
-if rising_edge(clkint) then
-tst_ccdclkin_cnt <= tst_ccdclkin_cnt + 1;
-end if;
-end process;
 
-p_out_tst(3 downto 0) <= tst_ccdclkin_cnt;
+p_out_tst <= (others => '0');
+--txclk     <= clkint;
+--pixel_clk <= clkint;
+--txclk_div <= clkint;
+--mmcm_lckd <= '1';
 
 m_ibufds : IBUFDS
 --generic map (
@@ -87,10 +84,6 @@ O  => clkint_tmp
 );
 m_clk_ccd2fpga : BUFG port map(I => clkint_tmp, O => clkint) ;
 
---txclk     <= clkint;
---pixel_clk <= clkint;
---txclk_div <= clkint;
---mmcm_lckd <= '1';
 
 pixel_clk <= pixel_clk_int ;
 
