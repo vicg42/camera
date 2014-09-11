@@ -19,9 +19,6 @@ use ieee.std_logic_arith.all;
 use ieee.std_logic_misc.all;
 use ieee.numeric_std.all;
 
-library unisim;
-use unisim.vcomponents.all;
-
 library work;
 use work.ccd_vita25K_pkg.all;
 use work.prj_cfg.all;
@@ -57,7 +54,7 @@ end ccd_fg;
 
 architecture xilinx of ccd_fg is
 
-component ccd_fg_rx is
+component ccd_deser is
 generic(
 G_BIT_COUNT     : integer := 10
 );
@@ -78,9 +75,9 @@ p_in_tst        : in    std_logic_vector(31 downto 0);
 
 p_in_deser_rst  : in    std_logic
 );
-end component ccd_fg_rx;
+end component ccd_deser;
 
-component ccd_fg_clock_gen is
+component ccd_deser_clock_gen is
 generic (
 CLKIN_PERIOD    : real := 6.000 ;     -- clock period (ns) of input clock on clkin_p
 MMCM_MODE       : integer := 1 ;      -- Parameter to set multiplier for MMCM either 1 or 2 to get VCO in correct operating range. 1 multiplies clock by 7, 2 multiplies clock by 14
@@ -183,7 +180,7 @@ OB => p_out_ccd.clk_n,
 I  => p_in_ccdclk
 );
 
-m_clk_gen : ccd_fg_clock_gen
+m_clk_gen : ccd_deser_clock_gen
 generic map(
 CLKIN_PERIOD    => 3.225  , -- clock period (ns) of input clock on clkin_p
 MMCM_MODE       => 1      ,
@@ -230,7 +227,7 @@ end process;
 gen_lvds_ch: for lvds_ch in 0 to G_LVDS_CH_COUNT - 1 generate
 begin
 
-m_rx : ccd_fg_rx
+m_deser : ccd_deser
 generic map(
 G_BIT_COUNT => G_BIT_COUNT
 )

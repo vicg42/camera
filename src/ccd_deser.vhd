@@ -1,3 +1,17 @@
+-------------------------------------------------------------------------
+-- Company     : Yansar
+-- Engineer    : Golovachenko Victor
+--
+-- Create Date : 13.06.2014 15:08:42
+-- Module Name : ccd_deser (deserilazer)
+--
+-- Назначение/Описание :
+--
+--
+-- Revision:
+-- Revision 0.01 - File Created
+--
+-------------------------------------------------------------------------
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -9,7 +23,7 @@ library work;
 use work.ccd_vita25K_pkg.all;
 use work.prj_cfg.all;
 
-entity ccd_deser_rx is
+entity ccd_deser is
 generic(
 G_BIT_COUNT     : integer := 10
 );
@@ -30,9 +44,9 @@ p_in_tst        : in    std_logic_vector(31 downto 0);
 
 p_in_deser_rst  : in    std_logic
 );
-end ccd_deser_rx;
+end ccd_deser;
 
-architecture xilinx of ccd_deser_rx is
+architecture xilinx of ccd_deser is
 
 type TFsm_aligen is (
 S_IDLE          ,
