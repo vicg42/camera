@@ -46,16 +46,18 @@ S_BITSLIP_ANLZ2
 
 signal i_fsm_aligen_cs       : TFsm_aligen;
 
-signal i_serial_din          : std_logic;
+signal i_ser_din             : std_logic;
+
 signal i_idelaye2_dout       : std_logic;
+signal i_idelaye2_ce         : std_logic;
 signal i_idelaye2_inc        : std_logic;
-signal i_idelaye2_inc_cnt    : unsigned(4 downto 0);
+signal i_idelaye2_tapcnt     : unsigned(5 downto 0);
 
 signal i_deser_d             : unsigned(13 downto 0);
 signal icascade1             : std_logic;
 signal icascade2             : std_logic;
 
-signal i_align_done         : std_logic;
+signal i_align_done          : std_logic;
 signal i_bitslip_cnt         : unsigned(3 downto 0);
 signal i_bitslip             : std_logic;
 signal i_cntok               : unsigned(10 downto 0);
@@ -78,7 +80,7 @@ m_ibufds : IBUFDS
 port map (
 I   => p_in_data_p,
 IB  => p_in_data_n,
-O   => i_serial_din
+O   => i_ser_din
 );
 
 
@@ -97,9 +99,9 @@ port map (
 DATAOUT           => i_idelaye2_dout,
 DATAIN            => '0',
 C                 => p_in_clkdiv,
-CE                => i_idelaye2_inc,
+CE                => i_idelaye2_ce,
 INC               => i_idelaye2_inc,
-IDATAIN           => i_serial_din,
+IDATAIN           => i_ser_din,
 LD                => '0',
 REGRST            => p_in_deser_rst,
 LDPIPEEN          => '0',
@@ -226,8 +228,9 @@ if rising_edge(p_in_clkdiv) then
     i_fsm_aligen_cs <= S_IDLE;
     i_cntok <= (others => '0');
     i_bitslip_cnt <= (others => '0');
-    i_idelaye2_inc_cnt <= (others => '0');
+    i_idelaye2_tapcnt <= (others => '0');
     i_idelaye2_inc <= '0';
+    i_idelaye2_ce <= '0';
 
   else
 
@@ -246,12 +249,10 @@ if rising_edge(p_in_clkdiv) then
             if i_bitslip_cnt = TO_UNSIGNED(10, G_BIT_COUNT) then
               i_bitslip_cnt <= (others => '0');
 
-              if i_idelaye2_inc_cnt = TO_UNSIGNED(31, i_idelaye2_inc_cnt'length) then
-                i_idelaye2_inc_cnt <= (others => '0');
-              else
-                i_idelaye2_inc_cnt <= i_idelaye2_inc_cnt + 1;
-                i_idelaye2_inc <= '1';
-              end if;
+              i_idelaye2_tapcnt <= i_idelaye2_tapcnt + 1;
+              i_idelaye2_inc <= '1';
+              i_idelaye2_ce <= not i_idelaye2_tapcnt(5);
+
             end if;
             i_bitslip <= '1';
 
