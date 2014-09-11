@@ -1,4 +1,17 @@
-
+-------------------------------------------------------------------------
+-- Company     : Yansar
+-- Engineer    : Golovachenko Victor
+--
+-- Create Date : 13.06.2014 15:08:42
+-- Module Name : ccd_fg (frame grabber)
+--
+-- Назначение/Описание :
+--
+--
+-- Revision:
+-- Revision 0.01 - File Created
+--
+-------------------------------------------------------------------------
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
@@ -13,7 +26,7 @@ library work;
 use work.ccd_vita25K_pkg.all;
 use work.prj_cfg.all;
 
-entity ccd_deser is
+entity ccd_fg is
 generic(
 G_LVDS_CH_COUNT : integer := 16;
 G_BIT_COUNT     : integer := 10
@@ -40,11 +53,11 @@ p_in_refclk     : in    std_logic;
 p_in_rst        : in    std_logic;
 p_in_rst2       : in    std_logic
 );
-end ccd_deser;
+end ccd_fg;
 
-architecture xilinx of ccd_deser is
+architecture xilinx of ccd_fg is
 
-component ccd_deser_rx is
+component ccd_fg_rx is
 generic(
 G_BIT_COUNT     : integer := 10
 );
@@ -65,9 +78,9 @@ p_in_tst        : in    std_logic_vector(31 downto 0);
 
 p_in_deser_rst  : in    std_logic
 );
-end component ccd_deser_rx;
+end component ccd_fg_rx;
 
-component ccd_deser_clock_gen is
+component ccd_fg_clock_gen is
 generic (
 CLKIN_PERIOD    : real := 6.000 ;     -- clock period (ns) of input clock on clkin_p
 MMCM_MODE       : integer := 1 ;      -- Parameter to set multiplier for MMCM either 1 or 2 to get VCO in correct operating range. 1 multiplies clock by 7, 2 multiplies clock by 14
@@ -170,7 +183,7 @@ OB => p_out_ccd.clk_n,
 I  => p_in_ccdclk
 );
 
-m_clk_gen : ccd_deser_clock_gen
+m_clk_gen : ccd_fg_clock_gen
 generic map(
 CLKIN_PERIOD    => 3.225  , -- clock period (ns) of input clock on clkin_p
 MMCM_MODE       => 1      ,
@@ -217,7 +230,7 @@ end process;
 gen_lvds_ch: for lvds_ch in 0 to G_LVDS_CH_COUNT - 1 generate
 begin
 
-m_rx : ccd_deser_rx
+m_rx : ccd_fg_rx
 generic map(
 G_BIT_COUNT => G_BIT_COUNT
 )
