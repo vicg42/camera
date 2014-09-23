@@ -47,7 +47,7 @@ G_VOUT_TYPE : string := "VGA"
 );
 port(
 p_out_rst  : out   std_logic;
-p_out_gclk : out   std_logic_vector(6 downto 0);
+p_out_gclk : out   std_logic_vector(7 downto 0);
 
 p_in_clk   : in    TRefclk_pinin
 );
@@ -98,7 +98,7 @@ p_in_rst      : in   std_logic
 end component;
 
 signal i_rst              : std_logic;
-signal g_usrclk           : std_logic_vector(6 downto 0);
+signal g_usrclk           : std_logic_vector(7 downto 0);
 signal i_test_led         : std_logic_vector(1 downto 0);
 signal i_1ms              : std_logic;
 
