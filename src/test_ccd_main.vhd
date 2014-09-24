@@ -43,6 +43,22 @@ end entity;
 
 architecture struct of test_ccd_main is
 
+component ccd_fifo_tmp is
+port (
+din    : in std_logic_vector(1023 downto 0);
+wr_en  : in std_logic;
+wr_clk : in std_logic;
+
+dout   : out std_logic_vector(127 downto 0);
+rd_en  : in std_logic;
+rd_clk : in std_logic;
+
+full   : out std_logic;
+empty  : out std_logic;
+
+rst    : in std_logic
+);
+end component ccd_fifo_tmp;
 
 component debounce is
 generic(
@@ -98,7 +114,7 @@ port(
 p_in_ccd       : in   TCCD_pinin;
 p_out_ccd      : out  TCCD_pinout;
 
-p_out_vfr_data : out  std_logic_vector((C_PCFG_CCD_LVDS_COUNT * C_PCFG_CCD_BIT_PER_PIXEL) - 1 downto 0);
+p_out_vfr_data : out  std_logic_vector(((C_PCFG_CCD_LVDS_COUNT - C_PCFG_CCD_SYNC_LINE_COUNT) * selval(16, 32, C_PCFG_VD_BIT_PER_PIXEL = 8)) - 1 downto 0);
 p_out_vfr_den  : out  std_logic;
 p_out_vfr_vs   : out  std_logic;
 p_out_vfr_hs   : out  std_logic;
@@ -119,8 +135,9 @@ end component;
 signal i_rst              : std_logic;
 signal g_usrclk           : std_logic_vector(7 downto 0);
 signal g_usr_highclk      : std_logic;
-signal i_video_d          : std_logic_vector((C_PCFG_CCD_LVDS_COUNT
-                                               * C_PCFG_CCD_BIT_PER_PIXEL) - 1 downto 0);
+--signal i_video_d          : std_logic_vector((C_PCFG_CCD_LVDS_COUNT
+--                                               * C_PCFG_CCD_BIT_PER_PIXEL) - 1 downto 0);
+signal i_video_d          : std_logic_vector(((C_PCFG_CCD_LVDS_COUNT - C_PCFG_CCD_SYNC_LINE_COUNT) * selval(16, 32, C_PCFG_VD_BIT_PER_PIXEL = 8)) - 1 downto 0);
 --signal i_video_d          : std_logic_vector(256 - 1 downto 0);
 signal i_video_d_clk      : std_logic;
 signal i_video_vs         : std_logic;
@@ -161,6 +178,10 @@ signal tst_ccd_status    : std_logic_vector(i_ccd_status'range);
 signal i_ccd_clkref      : std_logic;
 signal i_ccd_clk         : std_logic;
 signal i_ccd_clk2        : std_logic;
+
+signal i_ccd_fifo_wr     : std_logic;
+signal i_ccd_fifo_rd     : std_logic;
+signal i_ccd_fifo_empty  : std_logic;
 
 attribute keep : string;
 attribute keep of g_usrclk : signal is "true";
@@ -231,10 +252,10 @@ p_in_rst       => i_rst
 --pin_out_TP2(1) <= i_ccd_tst_out(3);--clk:fpga -> ccd --i_video_vs;--
 --pin_out_TP2(2) <= i_ccd_tst_out(7);--clk:fpga <- ccd --i_btn_push;--
 
-pin_out_led(0) <= OR_reduce(tst_video_d);
+pin_out_led(0) <= OR_reduce(tst_video_d(127 downto 0));
 --pin_out_led(1) <= i_test_led(0);
 
-pin_out_TP2(0) <= tst_video_vs and tst_video_hs and tst_video_den;
+pin_out_TP2(0) <= '0';--tst_video_vs and tst_video_hs and tst_video_den;
 pin_out_TP2(1) <= OR_reduce(tst_ccd_status);
 pin_out_TP2(2) <= OR_reduce(i_ccd_tst_out);
 
@@ -303,12 +324,12 @@ process(i_video_d_clk)
 begin
   if rising_edge(i_video_d_clk) then
 
---    if i_ccd_init_done = '1' and i_ccd_detect_tr = '1' then
---      if i_video_vs = '1' and i_video_hs = '1' and i_video_den = '1' then
-        tst_video_d <= i_video_d;
-        tst_video_vs  <= i_video_vs ;
-        tst_video_hs  <= i_video_hs ;
-        tst_video_den <= i_video_den;
+----    if i_ccd_init_done = '1' and i_ccd_detect_tr = '1' then
+----      if i_video_vs = '1' and i_video_hs = '1' and i_video_den = '1' then
+--        tst_video_d <= i_video_d;
+--        tst_video_vs  <= i_video_vs ;
+--        tst_video_hs  <= i_video_hs ;
+--        tst_video_den <= i_video_den;
 
         tst_ccd_status <= i_ccd_status;
 --      end if;
@@ -316,6 +337,28 @@ begin
 
   end if;
 end process;
+
+i_ccd_fifo_wr <= i_video_vs and i_video_hs and i_video_den;
+
+
+m_ccd_fifo : ccd_fifo_tmp
+port map(
+din    => i_video_d,
+wr_en  => i_ccd_fifo_wr,
+wr_clk => i_video_d_clk,
+
+dout   => tst_video_d(127 downto 0),--: out std_logic_vector(127 downto 0);
+rd_en  => i_ccd_fifo_rd,
+rd_clk => g_usrclk(5),
+
+full   => open,
+empty  => i_ccd_fifo_empty,
+
+rst    => i_rst
+);
+
+i_ccd_fifo_rd <= not i_ccd_fifo_empty;
+
 
 --END MAIN
 end architecture;
