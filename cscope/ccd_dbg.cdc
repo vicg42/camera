@@ -1,5 +1,5 @@
 #ChipScope Core Inserter Project File Version 3.0
-#Thu Sep 11 06:04:24 VET 2014
+#Wed Sep 24 07:47:35 VET 2014
 Project.device.designInputFile=D\:\\Work\\Yansar\\camera\\ise\\prj\\test_ccd_main_cs.ngc
 Project.device.designOutputFile=D\:\\Work\\Yansar\\camera\\ise\\prj\\test_ccd_main_cs.ngc
 Project.device.deviceFamily=20
@@ -7,7 +7,7 @@ Project.device.enableRPMs=true
 Project.device.outputDirectory=D\:\\Work\\Yansar\\camera\\ise\\prj\\_ngo
 Project.device.useSRL16=true
 Project.filter.dimension=19
-Project.filter<0>=*i_vfr*
+Project.filter<0>=
 Project.filter<10>=*i_aligen_done
 Project.filter<11>=*i_aligen_done*
 Project.filter<12>=*i_deser_d3*
@@ -17,7 +17,7 @@ Project.filter<15>=*
 Project.filter<16>=*i_bitslip*
 Project.filter<17>=*i_rstcnt*
 Project.filter<18>=*i_init_done
-Project.filter<1>=
+Project.filter<1>=*i_vfr*
 Project.filter<2>=*i_idelaye2_ce
 Project.filter<3>=*i_idelaye2_inc
 Project.filter<4>=*i_bitslip
