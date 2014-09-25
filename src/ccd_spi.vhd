@@ -24,6 +24,7 @@ use work.reduce_pack.all;
 
 entity ccd_spi is
 generic(
+G_SPI_WRITE : std_logic := '1';
 G_SIM : string := "OFF"
 );
 port(
@@ -35,11 +36,13 @@ p_in_physpi     : in   TSPI_pinin;
 --p_out_fifo_rd   : out  std_logic;
 --p_in_fifo_empty : in   std_logic;
 
+p_in_align      : in   std_logic;
 p_out_init_done : out  std_logic;
 p_out_err       : out  std_logic;
 
 p_out_tst       : out  std_logic_vector(31 downto 0);
 p_in_tst        : in   std_logic_vector(31 downto 0);
+p_in_tst2       : in   std_logic_vector(47 downto 0);
 
 p_in_clk        : in   std_logic;
 p_in_rst        : in   std_logic
@@ -47,6 +50,9 @@ p_in_rst        : in   std_logic
 end;
 
 architecture behavior of ccd_spi is
+
+constant CI_SPI_WRITE : std_logic := G_SPI_WRITE;
+constant CI_SPI_READ : std_logic := not G_SPI_WRITE;
 
 component spi_core is
 generic(
@@ -90,10 +96,24 @@ S_INIT_RD,
 S_INIT_RD_1,
 S_INIT_RD_2,
 
---S_WAIT2_BTN,
+S_WAIT2_BTN,
+S_WAIT2_BTN_1,
+S_WAIT2_BTN_2,
+
+S_SET_RIO,
+S_SET_RIO_1,
+S_SET_RIO_2,
+
+S_SET_EXPOSURE,
+S_SET_EXPOSURE_1,
+S_SET_EXPOSURE_2,
+
+S_SET_STOP,
+S_SET_STOP_1,
+S_SET_STOP_2,
 
 S_ERR,
-S_REG_USR
+S_WAIT_ALIGN
 );
 
 signal i_fsm_spi_cs     : TFsm_spireg;
@@ -113,12 +133,15 @@ signal i_regcnt         : unsigned(log2(C_CCD_REGINIT2'length) - 1 downto 0) := 
 --signal i_ccd_rst_n      : std_logic := '1';
 signal i_init_done      : std_logic := '0';
 signal i_err            : std_logic := '0';
+signal i_align          : std_logic := '0';
 
 signal sr_btn_push      : unsigned(0 to 1) := (others => '0');
 signal i_btn_push       : std_logic := '0';
 signal tst_fsmstate,tst_fsmstate_dly : std_logic_vector(3 downto 0) := (others => '0');
 signal i_spi_core_tst_out : std_logic_vector(31 downto 0) := (others => '0');
 
+signal i_ccd_readout    : std_logic;
+signal i_ccd_win    : TCCD_WinINIT;
 
 --MAIN
 begin
@@ -160,7 +183,7 @@ begin
       i_spi_core_start <= '0';
       i_init_done <= '0';
       i_err <= '0';
-      i_fsm_spi_cs <= S_IDLE;
+      i_fsm_spi_cs <= S_IDLE; i_ccd_readout <= '1';
 
     else
       if i_clk_en = '1' then
@@ -179,7 +202,7 @@ begin
           --------------------------------
           when S_RD_CHIPID =>
 
-            i_adr <= std_logic_vector(TO_UNSIGNED(16#00#, i_adr'length - 1)) & '0';--RegAdr & CMD(0/1 -Read/Write)
+            i_adr <= std_logic_vector(TO_UNSIGNED(16#00#, i_adr'length - 1)) & CI_SPI_READ;
             i_spi_core_dir <= C_SPI_READ;
             i_spi_core_start <= '1';
             i_fsm_spi_cs <= S_RD_CHIPID_1;
@@ -207,7 +230,7 @@ begin
 
             for i in 0 to C_CCD_REGINIT'length - 1 loop
               if i_regcnt = i then
-                i_adr <= C_CCD_REGINIT(i)(24 downto 16) & '1';--RegAdr & CMD(0/1 -Read/Write)
+                i_adr <= C_CCD_REGINIT(i)(24 downto 16) & CI_SPI_WRITE;
                 i_txd <= C_CCD_REGINIT(i)(15 downto 0);
               end if;
             end loop;
@@ -232,7 +255,7 @@ begin
 
             for i in 0 to C_CCD_REGINIT'length - 1 loop
               if i_regcnt = i then
-                i_adr <= C_CCD_REGINIT(i)(24 downto 16) & '0';--RegAdr & CMD(0/1 -Read/Write)
+                i_adr <= C_CCD_REGINIT(i)(24 downto 16) & CI_SPI_READ;
                 i_txd <= C_CCD_REGINIT(i)(15 downto 0);
               end if;
             end loop;
@@ -250,7 +273,8 @@ begin
 
             if i_busy = '0' then
               if i_regcnt = TO_UNSIGNED(C_CCD_REGINIT'length - 1, i_regcnt'length) then
-                i_fsm_spi_cs <= S_REG_USR;
+                i_regcnt <= (others => '0');
+                i_fsm_spi_cs <= S_WAIT_ALIGN;
 
               else
                 if i_rxd /= i_txd then
@@ -265,24 +289,155 @@ begin
             end if;
 
           --------------------------------
-          --CCD User Reg Control
+          --
           --------------------------------
-          when S_REG_USR =>
-            i_init_done <= '1';
-            i_spi_core_dir <= C_SPI_WRITE;
-            i_spi_core_start <= '0';
-            i_fsm_spi_cs <= S_REG_USR;
-
           when S_ERR =>
 
             i_err <= '1';
             i_fsm_spi_cs <= S_ERR;
---
---          when S_WAIT2_BTN =>
---
+
+          --------------------------------
+          --CCD User Reg Control
+          --------------------------------
+          when S_WAIT_ALIGN =>
+
+            i_init_done <= '1';
+            i_spi_core_dir <= C_SPI_WRITE;
+            i_spi_core_start <= '0';
+
+            if i_align = '1' then
+              i_fsm_spi_cs <= S_SET_STOP;--S_WAIT_ALIGN;
+            end if;
+
+
+          --------------------------------
+          --
+          --------------------------------
+          when S_SET_STOP =>
+
+            if i_btn_push = '1' then
+              i_adr <= std_logic_vector(TO_UNSIGNED(10#192#, C_CCD_SPI_AWIDTH - 1)) & CI_SPI_WRITE;
+              i_txd <= std_logic_vector(TO_UNSIGNED(16#0000#, C_CCD_SPI_DWIDTH));
+
+              i_spi_core_dir <= C_SPI_WRITE;
+              i_spi_core_start <= '1';
+              i_fsm_spi_cs <= S_SET_STOP_1;
+            end if;
+
+          when S_SET_STOP_1 =>
+
+            i_spi_core_start <= '0';
+            i_fsm_spi_cs <= S_SET_STOP_2;
+
+          when S_SET_STOP_2 =>
+
+            if i_busy = '0' then
+              i_fsm_spi_cs <= S_SET_RIO;
+            end if;
+
+          --------------------------------
+          --
+          --------------------------------
+          when S_SET_RIO =>
+
+--          if i_btn_push = '1' then
+            for i in 0 to C_CCD_WININIT'length - 1 loop
+              if i_regcnt = i then
+                i_adr <= C_CCD_WININIT(i)(24 downto 16) & CI_SPI_WRITE;
+                i_txd <= C_CCD_WININIT(i)(15 downto 0);
+              end if;
+            end loop;
+--            for i in 0 to i_ccd_win'length - 1 loop
+--              if i_regcnt = i then
+--                i_adr <= i_ccd_win(i)(24 downto 16) & CI_SPI_WRITE;
+--                i_txd <= i_ccd_win(i)(15 downto 0);
+--              end if;
+--            end loop;
+
+            i_spi_core_dir <= C_SPI_WRITE;
+            i_spi_core_start <= '1';
+            i_fsm_spi_cs <= S_SET_RIO_1;
+--          end if;
+
+          when S_SET_RIO_1 =>
+
+            i_spi_core_start <= '0';
+            i_fsm_spi_cs <= S_SET_RIO_2;
+
+          when S_SET_RIO_2 =>
+
+            if i_busy = '0' then
+              if i_regcnt = TO_UNSIGNED(C_CCD_WININIT'length - 1, i_regcnt'length) then
+                i_regcnt <= (others => '0');
+                i_fsm_spi_cs <= S_SET_EXPOSURE;
+
+              else
+                i_fsm_spi_cs <= S_SET_RIO;
+                i_regcnt <= i_regcnt + 1;
+
+              end if;
+            end if;
+
+          --------------------------------
+          --
+          --------------------------------
+          when S_SET_EXPOSURE =>
+
+            for i in 0 to C_CCD_EXPINIT'length - 1 loop
+              if i_regcnt = i then
+                i_adr <= C_CCD_EXPINIT(i)(24 downto 16) & CI_SPI_WRITE;
+                i_txd <= C_CCD_EXPINIT(i)(15 downto 0);
+              end if;
+            end loop;
+
+            i_spi_core_dir <= C_SPI_WRITE;
+            i_spi_core_start <= '1';
+            i_fsm_spi_cs <= S_SET_EXPOSURE_1;
+
+          when S_SET_EXPOSURE_1 =>
+
+            i_spi_core_start <= '0';
+            i_fsm_spi_cs <= S_SET_EXPOSURE_2;
+
+          when S_SET_EXPOSURE_2 =>
+
+            if i_busy = '0' then
+              if i_regcnt = TO_UNSIGNED(C_CCD_EXPINIT'length - 1, i_regcnt'length) then
+                i_regcnt <= (others => '0');
+                i_fsm_spi_cs <= S_WAIT2_BTN;
+
+              else
+                i_fsm_spi_cs <= S_SET_EXPOSURE;
+                i_regcnt <= i_regcnt + 1;
+
+              end if;
+            end if;
+
+          --------------------------------
+          --
+          --------------------------------
+          when S_WAIT2_BTN =>
+
 --            if i_btn_push = '1' then
---              i_fsm_spi_cs <= S_INIT_WR;
+              i_adr <= std_logic_vector(TO_UNSIGNED(10#192#, C_CCD_SPI_AWIDTH - 1)) & CI_SPI_WRITE;
+              i_txd <= std_logic_vector(TO_UNSIGNED(16#0001#, C_CCD_SPI_DWIDTH));
+
+              i_spi_core_dir <= C_SPI_WRITE;
+              i_spi_core_start <= '1';
+              i_fsm_spi_cs <= S_WAIT2_BTN_1;
 --            end if;
+
+          when S_WAIT2_BTN_1 =>
+
+            i_spi_core_start <= '0';
+            i_fsm_spi_cs <= S_WAIT2_BTN_2;
+
+          when S_WAIT2_BTN_2 =>
+
+            if i_busy = '0' then
+              i_ccd_readout <= not i_ccd_readout;
+              i_fsm_spi_cs <= S_SET_STOP;
+            end if;
 
         end case;
 
@@ -321,6 +476,13 @@ p_in_rst    => p_in_rst
 process(p_in_clk)
 begin
   if rising_edge(p_in_clk) then
+    i_align <= p_in_align;
+  end if;
+end process;
+
+process(p_in_clk)
+begin
+  if rising_edge(p_in_clk) then
 
     if i_clk_en = '1' then
     sr_btn_push <= p_in_tst(0) & sr_btn_push(0 to 0);
@@ -333,7 +495,7 @@ begin
 end process;
 
 
-tst_fsmstate <= std_logic_vector(TO_UNSIGNED(16#0B#,tst_fsmstate'length)) when i_fsm_spi_cs = S_REG_USR       else
+tst_fsmstate <= std_logic_vector(TO_UNSIGNED(16#0B#,tst_fsmstate'length)) when i_fsm_spi_cs = S_WAIT_ALIGN       else
                 std_logic_vector(TO_UNSIGNED(16#0A#,tst_fsmstate'length)) when i_fsm_spi_cs = S_ERR           else
                 std_logic_vector(TO_UNSIGNED(16#09#,tst_fsmstate'length)) when i_fsm_spi_cs = S_RD_CHIPID     else
                 std_logic_vector(TO_UNSIGNED(16#08#,tst_fsmstate'length)) when i_fsm_spi_cs = S_RD_CHIPID_1   else
@@ -350,6 +512,34 @@ tst_fsmstate <= std_logic_vector(TO_UNSIGNED(16#0B#,tst_fsmstate'length)) when i
 --                std_logic_vector(TO_UNSIGNED(16#0F#,tst_fsmstate'length)) when i_fsm_spi_cs = S_CCD_RST_1     else
 --                std_logic_vector(TO_UNSIGNED(16#0C#,tst_fsmstate'length)) when i_fsm_spi_cs = S_CCD_RST       else
 
+
+--i_ccd_win(0) <= std_logic_vector(TO_UNSIGNED(195, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(16#0001#, C_CCD_SPI_DWIDTH)); --RIO_ACTIVE(15..0)
+--i_ccd_win(1) <= std_logic_vector(TO_UNSIGNED(196, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(16#0000#, C_CCD_SPI_DWIDTH)); --RIO_ACTIVE(31..16)
+--
+----RIO_0
+--i_ccd_win(2) <= std_logic_vector(TO_UNSIGNED((256 + (3 * 0) + 0), C_CCD_SPI_AWIDTH - 1))
+--              & p_in_tst2(7 downto 0)
+--              & p_in_tst2(15 downto 8); --X_START & X_END
+--i_ccd_win(3) <= std_logic_vector(TO_UNSIGNED((256 + (3 * 0) + 1), C_CCD_SPI_AWIDTH - 1)) & p_in_tst2(31 downto 16);     --Y_START
+--i_ccd_win(4) <= std_logic_vector(TO_UNSIGNED((256 + (3 * 0) + 2), C_CCD_SPI_AWIDTH - 1)) & p_in_tst2(47 downto 32);     --Y_END
+--
+----RIO_1
+--i_ccd_win(5) <= std_logic_vector(TO_UNSIGNED((256 + (3 * 1) + 0), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(0          , C_CCD_SPI_DWIDTH / 2))
+--                                                                         & std_logic_vector(TO_UNSIGNED((4096 / 64), C_CCD_SPI_DWIDTH / 2));
+--i_ccd_win(6) <= std_logic_vector(TO_UNSIGNED((256 + (3 * 1) + 1), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(0          , C_CCD_SPI_DWIDTH));
+--i_ccd_win(7) <= std_logic_vector(TO_UNSIGNED((256 + (3 * 1) + 2), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(4096       , C_CCD_SPI_DWIDTH));
+--
+----RIO_2
+--i_ccd_win(8) <= std_logic_vector(TO_UNSIGNED((256 + (3 * 2) + 0), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(0          , C_CCD_SPI_DWIDTH / 2))
+--                                                                         & std_logic_vector(TO_UNSIGNED((4096 / 64), C_CCD_SPI_DWIDTH / 2));
+--i_ccd_win(9) <= std_logic_vector(TO_UNSIGNED((256 + (3 * 2) + 1), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(0          , C_CCD_SPI_DWIDTH));
+--i_ccd_win(10) <= std_logic_vector(TO_UNSIGNED((256 + (3 * 2) + 2), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(4096       , C_CCD_SPI_DWIDTH));
+--
+----RIO_3
+--i_ccd_win(11) <= std_logic_vector(TO_UNSIGNED((256 + (3 * 3) + 0), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(0          , C_CCD_SPI_DWIDTH / 2))
+--                                                                         & std_logic_vector(TO_UNSIGNED((4096 / 64), C_CCD_SPI_DWIDTH / 2));
+--i_ccd_win(12) <= std_logic_vector(TO_UNSIGNED((256 + (3 * 3) + 1), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(0          , C_CCD_SPI_DWIDTH));
+--i_ccd_win(13) <= std_logic_vector(TO_UNSIGNED((256 + (3 * 3) + 2), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(4096       , C_CCD_SPI_DWIDTH));
 
 --END MAIN
 end architecture;

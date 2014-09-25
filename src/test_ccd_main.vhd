@@ -21,6 +21,7 @@ use work.vicg_common_pkg.all;
 use work.clocks_pkg.all;
 use work.ccd_pkg.all;
 use work.prj_cfg.all;
+use work.dbg_pkg.all;
 
 entity test_ccd_main is
 port(
@@ -42,6 +43,18 @@ pin_in_refclk       : in   TRefclk_pinin
 end entity;
 
 architecture struct of test_ccd_main is
+
+component dbg_ctrl is
+port(
+p_out_usr     : out  TDGB_ctrl_out;
+p_in_usr      : in   TDGB_ctrl_in;
+
+p_in_clk      : in   std_logic
+);
+end component dbg_ctrl;
+
+signal i_dbg_ctrl_out    : TDGB_ctrl_out;
+signal i_dbg_ctrl_in     : TDGB_ctrl_in;
 
 component ccd_fifo_tmp is
 port (
@@ -124,6 +137,7 @@ p_out_status   : out  std_logic_vector(C_CCD_STATUS_LAST_BIT downto 0);
 
 p_out_tst      : out  std_logic_vector(31 downto 0);
 p_in_tst       : in   std_logic_vector(31 downto 0);
+p_in_tst2       : in   std_logic_vector(47 downto 0);
 
 p_in_refclk    : in   std_logic;
 p_in_ccdclk    : in   std_logic;
@@ -186,6 +200,7 @@ signal i_ccd_fifo_empty  : std_logic;
 attribute keep : string;
 attribute keep of g_usrclk : signal is "true";
 
+signal i_ccd_tst2        : std_logic_vector(47 downto 0);
 
 --MAIN
 begin
@@ -234,6 +249,7 @@ p_out_status   => i_ccd_status,
 
 p_out_tst      => i_ccd_tst_out,
 p_in_tst       => i_ccd_tst_in,
+p_in_tst2       => i_ccd_tst2,
 
 p_in_refclk    => i_ccd_clkref,
 p_in_ccdclk    => i_ccd_clk   ,
@@ -358,6 +374,22 @@ rst    => i_rst
 );
 
 i_ccd_fifo_rd <= not i_ccd_fifo_empty;
+
+
+--m_dbg_ctrl : dbg_ctrl
+--port map(
+--p_out_usr => i_dbg_ctrl_out,
+--p_in_usr  => i_dbg_ctrl_in,
+--
+--p_in_clk => g_usrclk(6)
+--);
+--
+--i_dbg_ctrl_in.tv_detect <= '0';
+--
+--i_ccd_tst2(47 downto 32) <= i_dbg_ctrl_out.vout_start_x     ;--: std_logic_vector(15 downto 0);
+--i_ccd_tst2(31 downto 16) <= i_dbg_ctrl_out.vout_start_y     ;--: std_logic_vector(15 downto 0);
+--i_ccd_tst2(15 downto 8)  <= i_dbg_ctrl_out.vout_memtrn_lenwr;--: std_logic_vector(7 downto 0);
+--i_ccd_tst2(7 downto 0)   <= i_dbg_ctrl_out.vout_memtrn_lenrd;--: std_logic_vector(7 downto 0);
 
 
 --END MAIN

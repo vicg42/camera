@@ -41,6 +41,7 @@ p_out_status   : out  std_logic_vector(C_CCD_STATUS_LAST_BIT downto 0);
 
 p_out_tst      : out  std_logic_vector(31 downto 0);
 p_in_tst       : in   std_logic_vector(31 downto 0);
+p_in_tst2       : in   std_logic_vector(47 downto 0);
 
 p_in_refclk    : in   std_logic;
 p_in_ccdclk    : in   std_logic;
@@ -52,6 +53,7 @@ architecture behavior of ccd_vita25K is
 
 component ccd_spi
 generic(
+G_SPI_WRITE : std_logic := '1';
 G_SIM : string := "OFF"
 );
 port(
@@ -63,11 +65,13 @@ p_in_physpi     : in   TSPI_pinin;
 --p_out_fifo_rd   : out  std_logic;
 --p_in_fifo_empty : in   std_logic;
 
+p_in_align      : in   std_logic;
 p_out_init_done : out  std_logic;
 p_out_err       : out  std_logic;
 
 p_out_tst       : out   std_logic_vector(31 downto 0);
 p_in_tst        : in    std_logic_vector(31 downto 0);
+p_in_tst2       : in   std_logic_vector(47 downto 0);
 
 p_in_clk        : in   std_logic;
 p_in_rst        : in   std_logic
@@ -170,6 +174,7 @@ i_ccd_rst_n <= i_rstcnt( selval(19, 8, strcmp(G_SIM, "OFF")) );
 --####################################
 m_spi : ccd_spi
 generic map(
+G_SPI_WRITE => '1',
 G_SIM => G_SIM
 )
 port map(
@@ -181,11 +186,13 @@ p_in_physpi     => i_spi_in ,
 --p_out_fifo_rd   => open,
 --p_in_fifo_empty => '0',
 
+p_in_align      => i_ccd_fg_status(C_CCD_FG_STATUS_ALIGN_OK_BIT),
 p_out_init_done => i_ccd_init_done,
 p_out_err       => i_ccd_spi_err,
 
 p_out_tst       => i_tst_spi_out,
-p_in_tst        => p_in_tst,
+p_in_tst        => p_in_tst(31 downto 0),
+p_in_tst2       => p_in_tst2,
 
 p_in_clk        => p_in_ccdclk,
 p_in_rst        => p_in_rst

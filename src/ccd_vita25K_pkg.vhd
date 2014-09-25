@@ -63,6 +63,50 @@ std_logic_vector(TO_UNSIGNED(10#192#, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(
 );
 --std_logic_vector(TO_UNSIGNED(10#144#, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(16#0000#, C_CCD_SPI_DWIDTH)), --Enable test pattern
 
+--
+type TCCD_ExpINIT is array (0 to 4 - 1)
+  of std_logic_vector(C_CCD_SPI_AWIDTH - 1 + C_CCD_SPI_DWIDTH - 1 downto 0);
+
+constant C_CCD_EXPINIT : TCCD_ExpINIT := (
+std_logic_vector(TO_UNSIGNED(194, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(4    , C_CCD_SPI_DWIDTH)), --fr_mode
+std_logic_vector(TO_UNSIGNED(199, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(32   , C_CCD_SPI_DWIDTH)), --mult_timer
+std_logic_vector(TO_UNSIGNED(200, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(19375, C_CCD_SPI_DWIDTH)), --fr_length
+std_logic_vector(TO_UNSIGNED(201, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(44562, C_CCD_SPI_DWIDTH))  --exposure
+);
+
+--
+type TCCD_WinINIT is array (0 to (2 + (3 * 4)) - 1)
+  of std_logic_vector(C_CCD_SPI_AWIDTH - 1 + C_CCD_SPI_DWIDTH - 1 downto 0);
+
+constant C_CCD_WININIT : TCCD_WinINIT := (
+std_logic_vector(TO_UNSIGNED(195, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(16#0001#, C_CCD_SPI_DWIDTH)), --RIO_ACTIVE(15..0)
+std_logic_vector(TO_UNSIGNED(196, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(16#0000#, C_CCD_SPI_DWIDTH)), --RIO_ACTIVE(31..16)
+
+--RIO_0
+std_logic_vector(TO_UNSIGNED((256 + (3 * 0) + 0), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED((4096 / 64), C_CCD_SPI_DWIDTH / 2))
+                                                                         & std_logic_vector(TO_UNSIGNED(0          , C_CCD_SPI_DWIDTH / 2)), --X_END & X_START
+std_logic_vector(TO_UNSIGNED((256 + (3 * 0) + 1), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(0          , C_CCD_SPI_DWIDTH)),     --Y_START
+std_logic_vector(TO_UNSIGNED((256 + (3 * 0) + 2), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(4096       , C_CCD_SPI_DWIDTH)),     --Y_END
+
+--RIO_1
+std_logic_vector(TO_UNSIGNED((256 + (3 * 1) + 0), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED((4096 / 64), C_CCD_SPI_DWIDTH / 2))
+                                                                         & std_logic_vector(TO_UNSIGNED(0          , C_CCD_SPI_DWIDTH / 2)),
+std_logic_vector(TO_UNSIGNED((256 + (3 * 1) + 1), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(0          , C_CCD_SPI_DWIDTH)),
+std_logic_vector(TO_UNSIGNED((256 + (3 * 1) + 2), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(4096       , C_CCD_SPI_DWIDTH)),
+
+--RIO_2
+std_logic_vector(TO_UNSIGNED((256 + (3 * 2) + 0), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED((4096 / 64), C_CCD_SPI_DWIDTH / 2))
+                                                                         & std_logic_vector(TO_UNSIGNED(0          , C_CCD_SPI_DWIDTH / 2)),
+std_logic_vector(TO_UNSIGNED((256 + (3 * 2) + 1), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(0          , C_CCD_SPI_DWIDTH)),
+std_logic_vector(TO_UNSIGNED((256 + (3 * 2) + 2), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(4096       , C_CCD_SPI_DWIDTH)),
+
+--RIO_3
+std_logic_vector(TO_UNSIGNED((256 + (3 * 3) + 0), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED((4096 / 64), C_CCD_SPI_DWIDTH / 2))
+                                                                         & std_logic_vector(TO_UNSIGNED(0          , C_CCD_SPI_DWIDTH / 2)),
+std_logic_vector(TO_UNSIGNED((256 + (3 * 3) + 1), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(0          , C_CCD_SPI_DWIDTH)),
+std_logic_vector(TO_UNSIGNED((256 + (3 * 3) + 2), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(4096       , C_CCD_SPI_DWIDTH))
+);
+
 
 --constant C_CCD_REGINIT : TCCD_RegINIT := (
 --std_logic_vector(TO_UNSIGNED(10#002#, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(16#0001#, C_CCD_SPI_DWIDTH)),

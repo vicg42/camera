@@ -73,7 +73,7 @@ signal icascade2             : std_logic;
 signal i_align_ok            : std_logic;
 signal i_bitslip_cnt         : unsigned(3 downto 0);
 signal i_bitslip             : std_logic;
-signal i_cntok               : unsigned(10 downto 0);
+signal i_cntok               : unsigned(11 downto 0);
 
 signal i_cntdly              : unsigned(6 downto 0);
 
