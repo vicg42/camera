@@ -83,8 +83,8 @@ std_logic_vector(TO_UNSIGNED(195, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_U
 std_logic_vector(TO_UNSIGNED(196, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(16#0000#, C_CCD_SPI_DWIDTH)), --RIO_ACTIVE(31..16)
 
 --RIO_0
-std_logic_vector(TO_UNSIGNED((256 + (3 * 0) + 0), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED((4096 / 64), C_CCD_SPI_DWIDTH / 2))
-                                                                         & std_logic_vector(TO_UNSIGNED(0          , C_CCD_SPI_DWIDTH / 2)), --X_END & X_START
+std_logic_vector(TO_UNSIGNED((256 + (3 * 0) + 0), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED((4096 / 64), C_CCD_SPI_DWIDTH / 2))  --X_START
+                                                                         & std_logic_vector(TO_UNSIGNED(0          , C_CCD_SPI_DWIDTH / 2)), --X_END
 std_logic_vector(TO_UNSIGNED((256 + (3 * 0) + 1), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(0          , C_CCD_SPI_DWIDTH)),     --Y_START
 std_logic_vector(TO_UNSIGNED((256 + (3 * 0) + 2), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(4096       , C_CCD_SPI_DWIDTH)),     --Y_END
 
