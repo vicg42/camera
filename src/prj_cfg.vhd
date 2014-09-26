@@ -20,13 +20,15 @@ constant C_PCFG_SIM : string := "OFF";
 
 --cfg CCD
 constant C_PCFG_CCD_BIT_PER_PIXEL   : integer := 10;
-constant C_PCFG_CCD_DATA_LINE_COUNT : integer := 0;
+constant C_PCFG_CCD_DATA_LINE_COUNT : integer := 32;
 constant C_PCFG_CCD_SYNC_LINE_COUNT : integer := 1;
 constant C_PCFG_CCD_FULL_X          : integer := 4096;
 constant C_PCFG_CCD_FULL_Y          : integer := 4096;
 
 constant C_PCFG_CCD_LVDS_COUNT : integer := C_PCFG_CCD_DATA_LINE_COUNT
                                             + C_PCFG_CCD_SYNC_LINE_COUNT;
+
+constant C_PCFG_VD_BIT_PER_PIXEL  : integer := 10; --Pix range for write to memory
 
 --cfg Memory Controller
 constant C_PCGF_MEMCTRL_DWIDTH      : integer := 128;
@@ -35,7 +37,7 @@ constant C_PCFG_MEMARB_CH_COUNT     : integer := 2;
 
 --cfg VIDEO OUT
 constant C_PCGF_VOUT_TYPE  : string := "VGA";--"VGA"/"TV"
-constant C_PCGF_VOUT_TEST  : string := "OFF";--"ON"/"OFF"
+constant C_PCGF_VOUT_TEST  : string := "ON";--"ON"/"OFF"
 
 constant C_CGF_VBUFO_DWIDTH   : integer := 32;
 constant C_PCFG_VOUT_START_X  : integer := 0;

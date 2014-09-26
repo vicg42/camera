@@ -19,7 +19,7 @@ library work;
 use work.reduce_pack.all;
 use work.vicg_common_pkg.all;
 use work.clocks_pkg.all;
-use work.ccd_vita25K_pkg.all;
+use work.ccd_pkg.all;
 use work.prj_cfg.all;
 use work.vout_pkg.all;
 use work.mem_ctrl_pkg.all;
@@ -41,11 +41,11 @@ pin_out_TP2         : out   std_logic_vector(2 downto 0);
 pin_out_led         : out   std_logic_vector(0 downto 0);
 pin_in_btn          : in    std_logic;
 
-----------------------------------------------------
-----CCD
-----------------------------------------------------
---pin_in_ccd          : in   TCCD_pinin;
---pin_out_ccd         : out  TCCD_pinout;
+--------------------------------------------------
+--CCD
+--------------------------------------------------
+pin_in_ccd          : in   TCCD_pinin;
+pin_out_ccd         : out  TCCD_pinout;
 
 --------------------------------------------------
 --Video Output
@@ -210,38 +210,38 @@ G_VOUT_TYPE : string := "VGA"
 );
 port(
 p_out_rst  : out   std_logic;
-p_out_gclk : out   std_logic_vector(6 downto 0);
+p_out_gclk : out   std_logic_vector(7 downto 0);
 
 p_in_clk   : in    TRefclk_pinin
 );
 end component;
 
---component ccd_vita25K is
---generic(
---G_SIM : string := "OFF"
---);
---port(
---p_in_ccd   : in   TCCD_pinin;
---p_out_ccd  : out  TCCD_pinout;
---
---p_out_video_vs  : out std_logic;
---p_out_video_hs  : out std_logic;
---p_out_video_den : out std_logic;
---p_out_video_d   : out std_logic_vector((C_PCFG_CCD_LVDS_COUNT
---                                          * C_PCFG_CCD_BIT_PER_PIXEL) - 1 downto 0);
---p_out_video_clk : out std_logic;
---
---p_out_init_done : out  std_logic;
---p_out_detect_tr : out  std_logic;
---
---p_out_tst       : out   std_logic_vector(31 downto 0);
---p_in_tst        : in    std_logic_vector(31 downto 0);
---
---p_in_refclk : in   std_logic;
---p_in_ccdclk : in   std_logic;
---p_in_rst    : in   std_logic
---);
---end component;
+component ccd_vita25K is
+generic(
+G_SIM : string := "OFF"
+);
+port(
+p_in_ccd       : in   TCCD_pinin;
+p_out_ccd      : out  TCCD_pinout;
+
+p_out_vfr_data : out  std_logic_vector(((C_PCFG_CCD_LVDS_COUNT - C_PCFG_CCD_SYNC_LINE_COUNT)
+                                    * selval(16, 32, C_PCFG_VD_BIT_PER_PIXEL = 8)) - 1 downto 0);
+p_out_vfr_den  : out  std_logic;
+p_out_vfr_vs   : out  std_logic;
+p_out_vfr_hs   : out  std_logic;
+p_out_vfr_clk  : out  std_logic;
+
+p_out_status   : out  std_logic_vector(C_CCD_STATUS_LAST_BIT downto 0);
+
+p_out_tst      : out  std_logic_vector(31 downto 0);
+p_in_tst       : in   std_logic_vector(31 downto 0);
+p_in_tst2       : in   std_logic_vector(47 downto 0);
+
+p_in_refclk    : in   std_logic;
+p_in_ccdclk    : in   std_logic;
+p_in_rst       : in   std_logic
+);
+end component;
 
 component vout is
 generic(
@@ -271,6 +271,7 @@ component video_ctrl is
 generic(
 G_USR_OPT : std_logic_vector(7 downto 0) := (others=>'0');
 G_DBGCS  : string:="OFF";
+G_VBUFI_DWIDTH : integer := 32;
 G_VBUFO_DWIDTH : integer := 32;
 G_MEM_AWIDTH : integer:=32;
 G_MEMWR_DWIDTH : integer:=32;
@@ -289,7 +290,7 @@ p_in_vread_prm        : in   TReaderVCHParams;
 -------------------------------
 --CCD
 -------------------------------
-p_in_ccd_d            : in    std_logic_vector(G_MEMWR_DWIDTH - 1 downto 0);
+p_in_ccd_d            : in    std_logic_vector(G_VBUFI_DWIDTH - 1 downto 0);
 p_in_ccd_den          : in    std_logic;
 p_in_ccd_hs           : in    std_logic;
 p_in_ccd_vs           : in    std_logic;
@@ -328,11 +329,11 @@ p_in_rst              : in    std_logic
 end component;
 
 signal i_rst              : std_logic;
-signal g_usrclk           : std_logic_vector(6 downto 0);
+signal g_usrclk           : std_logic_vector(7 downto 0);
 signal g_usr_highclk      : std_logic;
---signal i_video_d          : std_logic_vector((C_PCFG_CCD_LVDS_COUNT
---                                               * C_PCFG_CCD_BIT_PER_PIXEL) - 1 downto 0);
-signal i_video_d          : std_logic_vector(256 - 1 downto 0);
+
+signal i_video_d          : std_logic_vector(((C_PCFG_CCD_LVDS_COUNT - C_PCFG_CCD_SYNC_LINE_COUNT)
+                                          * selval(16, 32, C_PCFG_VD_BIT_PER_PIXEL = 8)) - 1 downto 0);
 signal i_video_d_clk      : std_logic;
 signal i_video_vs         : std_logic;
 signal i_video_hs         : std_logic;
@@ -372,7 +373,7 @@ signal i_btn              : std_logic;
 signal sr_btn_push        : unsigned(0 to 1);
 signal sr_video_vs        : unsigned(0 to 1) := (others => '1');
 
-signal i_ccd_init_done    : std_logic;
+signal i_ccd_status       : std_logic_vector(C_CCD_STATUS_LAST_BIT downto 0);
 signal i_ccd_tst_in       : std_logic_vector(31 downto 0);
 signal i_ccd_tst_out      : std_logic_vector(31 downto 0);
 signal i_ccd_out          : TCCD_pinout;
@@ -430,6 +431,7 @@ signal i_dbg_ctrl_in     : TDGB_ctrl_in;
 attribute keep : string;
 attribute keep of g_usrclk : signal is "true";
 attribute keep of g_usr_highclk : signal is "true";
+attribute keep of i_video_d_clk : signal is "true";
 
 
 --MAIN
@@ -462,35 +464,35 @@ i_arb_mem_rst <= not OR_reduce(i_mem_ctrl_status.rdy);
 i_arb_mem_rst_n <= OR_reduce(i_mem_ctrl_status.rdy);
 
 
-----***********************************************************
-----
-----***********************************************************
---pin_out_ccd <= i_ccd_out;
+--***********************************************************
 --
---m_ccd : ccd_vita25K
---generic map(
---G_SIM => C_PCFG_SIM
---)
---port map(
---p_in_ccd   => pin_in_ccd ,
---p_out_ccd  => i_ccd_out,--pin_out_ccd,
---
---p_out_video_vs  => i_video_vs,
---p_out_video_hs  => i_video_hs,
---p_out_video_den => i_video_den,
---p_out_video_d   => i_video_d,
---p_out_video_clk => i_video_d_clk,
---
---p_out_init_done => i_ccd_init_done,
---p_out_detect_tr => open,
---
---p_out_tst   => i_ccd_tst_out,
---p_in_tst    => i_ccd_tst_in,
---
---p_in_refclk => i_ccd_clkref,--g_usrclk(0),
---p_in_ccdclk => i_ccd_clk   ,--g_usrclk(1),
---p_in_rst    => i_rst
---);
+--***********************************************************
+pin_out_ccd <= i_ccd_out;
+
+m_ccd : ccd_vita25K
+generic map(
+G_SIM => C_PCFG_SIM
+)
+port map(
+p_in_ccd       => pin_in_ccd ,
+p_out_ccd      => i_ccd_out,--pin_out_ccd,
+
+p_out_vfr_data => i_video_d,
+p_out_vfr_den  => i_video_den,
+p_out_vfr_vs   => i_video_vs,
+p_out_vfr_hs   => i_video_hs,
+p_out_vfr_clk  => i_video_d_clk,
+
+p_out_status   => i_ccd_status,
+
+p_out_tst      => i_ccd_tst_out,
+p_in_tst       => i_ccd_tst_in,
+p_in_tst2       => (others => '0'),--i_ccd_tst2,
+
+p_in_refclk    => i_ccd_clkref,
+p_in_ccdclk    => i_ccd_clk   ,
+p_in_rst       => i_rst
+);
 
 
 --***********************************************************
@@ -559,6 +561,7 @@ m_vctrl : video_ctrl
 generic map(
 G_USR_OPT => (others=>'0'),
 G_DBGCS  => "ON",
+G_VBUFI_DWIDTH => i_video_d'length,
 G_VBUFO_DWIDTH => C_CGF_VBUFO_DWIDTH,
 G_MEM_AWIDTH => C_AXI_AWIDTH,
 G_MEMWR_DWIDTH => C_AXIS_DWIDTH(0),
@@ -697,7 +700,7 @@ p_in_sys        => i_mem_ctrl_sysin
 
 --pin_out_led(1) <= i_test_led(0);
 --pin_out_led(0) <= OR_reduce(i_video_d) or OR_reduce(i_ccd_tst_out) or i_ccd_init_done;-- or -- or i_video_vs or i_video_hs or i_video_den;-- or sr_tst_ccd_syn;--OR_reduce(i_mem_ctrl_status.rdy);
-pin_out_led(0) <= OR_reduce(tst_vctrl_out) or OR_reduce(i_video_d);--OR_reduce(tst_vbufo_do) or
+pin_out_led(0) <= OR_reduce(tst_vctrl_out);-- or OR_reduce(i_video_d);--OR_reduce(tst_vbufo_do) or
 
 pin_out_TP2(0) <= OR_reduce(tst_vout_out);
 pin_out_TP2(1) <= '0';--tmp_vbufo_empty;--tst_vctrl_in(0);--i_video_vs;
@@ -747,49 +750,49 @@ i_ccd_tst_in(0) <= i_btn_push;
 i_ccd_tst_in(i_ccd_tst_in'length - 1 downto 1) <= (others => '0');
 
 
-
-tst_vfr_pixcount <= TO_UNSIGNED(C_PCFG_CCD_FULL_X / (i_video_d'length / 8), tst_vfr_pixcount'length);
-tst_vfr_rowcount <= TO_UNSIGNED(C_PCFG_CCD_FULL_Y, tst_vfr_rowcount'length);
-
---3..0 --0/1/2/3/4 - 30fps/60fps/120fps/240fps/480fps/
---7..4 --0/1/2/    - Test picture: V+H Counter/ V Counter/ H Counter/
-tst_vfr_cfg <= TO_UNSIGNED(16#00#, tst_vfr_cfg'length);
-
-tst_vfr_synwidth <= TO_UNSIGNED(372, tst_vfr_synwidth'length);-- for 30fps (for dwidth=256bit, frame:4096x4096)
---tst_vfr_synwidth <= TO_UNSIGNED(240, tst_vfr_synwidth'length);-- for 30fps (for dwidth=256bit, frame:5120x5120)
---tst_vfr_synwidth <= TO_UNSIGNED(1278, tst_vfr_synwidth'length);-- for 30fps (for dwidth=32bit, frame:1280x1024)
-
-m_vtest_gen : vtest_gen
-generic map(
-G_DBG => "OFF",
-G_VD_WIDTH => i_video_d'length,
-G_VSYN_ACTIVE => '0'
-)
-port map(
---CFG
-p_in_cfg      => std_logic_vector(tst_vfr_cfg),
-p_in_vpix     => std_logic_vector(tst_vfr_pixcount),
-p_in_vrow     => std_logic_vector(tst_vfr_rowcount),
-p_in_syn_h    => std_logic_vector(tst_vfr_synwidth),
-p_in_syn_v    => std_logic_vector(tst_vfr_synwidth),
-
---Test Video
-p_out_vd      => i_video_d,
-p_out_vs      => i_video_vs,
-p_out_hs      => i_video_hs,
-
---Технологический
-p_in_tst      => (others => '0'),
-p_out_tst     => open,
-
---System
-p_in_clk_en   => '1',
-p_in_clk      => g_usrclk(6),
-p_in_rst      => i_rst
-);
-
-i_video_den <= i_video_hs and i_video_vs and tst_vtest_en;
-i_video_d_clk <= g_usrclk(6);
+--
+--tst_vfr_pixcount <= TO_UNSIGNED(C_PCFG_CCD_FULL_X / (i_video_d'length / 8), tst_vfr_pixcount'length);
+--tst_vfr_rowcount <= TO_UNSIGNED(C_PCFG_CCD_FULL_Y, tst_vfr_rowcount'length);
+--
+----3..0 --0/1/2/3/4 - 30fps/60fps/120fps/240fps/480fps/
+----7..4 --0/1/2/    - Test picture: V+H Counter/ V Counter/ H Counter/
+--tst_vfr_cfg <= TO_UNSIGNED(16#00#, tst_vfr_cfg'length);
+--
+--tst_vfr_synwidth <= TO_UNSIGNED(372, tst_vfr_synwidth'length);-- for 30fps (for dwidth=256bit, frame:4096x4096)
+----tst_vfr_synwidth <= TO_UNSIGNED(240, tst_vfr_synwidth'length);-- for 30fps (for dwidth=256bit, frame:5120x5120)
+----tst_vfr_synwidth <= TO_UNSIGNED(1278, tst_vfr_synwidth'length);-- for 30fps (for dwidth=32bit, frame:1280x1024)
+--
+--m_vtest_gen : vtest_gen
+--generic map(
+--G_DBG => "OFF",
+--G_VD_WIDTH => i_video_d'length,
+--G_VSYN_ACTIVE => '0'
+--)
+--port map(
+----CFG
+--p_in_cfg      => std_logic_vector(tst_vfr_cfg),
+--p_in_vpix     => std_logic_vector(tst_vfr_pixcount),
+--p_in_vrow     => std_logic_vector(tst_vfr_rowcount),
+--p_in_syn_h    => std_logic_vector(tst_vfr_synwidth),
+--p_in_syn_v    => std_logic_vector(tst_vfr_synwidth),
+--
+----Test Video
+--p_out_vd      => i_video_d,
+--p_out_vs      => i_video_vs,
+--p_out_hs      => i_video_hs,
+--
+----Технологический
+--p_in_tst      => (others => '0'),
+--p_out_tst     => open,
+--
+----System
+--p_in_clk_en   => '1',
+--p_in_clk      => g_usrclk(6),
+--p_in_rst      => i_rst
+--);
+--
+--i_video_den <= i_video_hs and i_video_vs and tst_vtest_en;
+--i_video_d_clk <= g_usrclk(6);
 
 --tst_vtest_en <= '1';
 process(g_usrclk(6))

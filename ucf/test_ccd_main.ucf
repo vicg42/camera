@@ -114,9 +114,11 @@ NET "pin_in_ccd_data_n<31>"  LOC = "AF22" | IOSTANDARD = LVDS_25;
 NET "pin_in_ccd_data_p<32>"  LOC = "AD23" | IOSTANDARD = LVDS_25;
 NET "pin_in_ccd_data_n<32>"  LOC = "AD24" | IOSTANDARD = LVDS_25;
 
+INST "m_ccd/m_fg/delayctrl0"  LOC = IDELAYCTRL_X0Y0;
+INST "m_ccd/m_fg/delayctrl1"  LOC = IDELAYCTRL_X0Y1;
 INST "m_ccd/m_fg/m_clk_gen/m_ibufds"    DIFF_TERM = TRUE;
 INST "m_ccd/m_fg/gen_lvds_ch[*].m_deser/m_ibufds"  DIFF_TERM = TRUE;
-INST "m_ccd/m_fg/gen_lvds_ch[*].m_deser/m_idelaye2"  IODELAY_GROUP = "deser_lvds_ccd_group";
+INST "m_ccd/m_fg/gen_lvds_ch[*].m_deser/m_idelaye2"  IODELAY_GROUP = "CCD_GROUP_DESER_LVDS";
 
 #################################################################################
 ### DAC

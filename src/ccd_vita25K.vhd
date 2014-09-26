@@ -31,7 +31,8 @@ port(
 p_in_ccd       : in   TCCD_pinin;
 p_out_ccd      : out  TCCD_pinout;
 
-p_out_vfr_data : out  std_logic_vector(((C_PCFG_CCD_LVDS_COUNT - C_PCFG_CCD_SYNC_LINE_COUNT) * selval(16, 32, C_PCFG_VD_BIT_PER_PIXEL = 8)) - 1 downto 0);
+p_out_vfr_data : out  std_logic_vector(((C_PCFG_CCD_LVDS_COUNT - C_PCFG_CCD_SYNC_LINE_COUNT)
+                                          * selval(16, 32, C_PCFG_VD_BIT_PER_PIXEL = 8)) - 1 downto 0);
 p_out_vfr_den  : out  std_logic;
 p_out_vfr_vs   : out  std_logic;
 p_out_vfr_hs   : out  std_logic;

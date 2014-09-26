@@ -106,8 +106,7 @@ end component;
 signal i_mmcm_lckd      : std_logic;
 signal i_mmcm_rst       : std_logic;
 
-signal i_idelayctrl_rdy : std_logic;
-signal sr_sync_rst      : std_logic_vector(6 downto 0);
+signal i_idelayctrl_rdy : std_logic_vector(1 downto 0);
 
 --signal i_clk_en         : std_logic;
 signal i_clk            : std_logic;
@@ -120,8 +119,6 @@ type TDeserData is array (0 to G_LVDS_CH_COUNT - 1)
 signal i_deser_d        : TDeserData := (( others => (others => '0')));
 signal i_deser_dout     : TDeserData := (( others => (others => '0')));
 signal i_align_ok       : std_logic_vector(G_LVDS_CH_COUNT - 1 downto 0);
-
-signal i_rxd            : std_logic_vector((G_LVDS_CH_COUNT * G_CCD_BIT_COUNT) - 1 downto 0);
 
 type TRxD_sr is array (0 to G_LVDS_CH_COUNT - G_SYNC_LINE_COUNT - 1)
   of std_logic_vector(G_VD_BIT_COUNT - 1 downto 0);
@@ -147,18 +144,25 @@ type TKernelPix is array (0 to G_LVDS_CH_COUNT - G_SYNC_LINE_COUNT - 1)
 signal i_kernel_pix     : TKernelPix;
 
 signal i_vfr_pix_out    : std_logic_vector(p_out_vfr_data'range);
-signal tst_vfr_den_out  : std_logic;
+
 
 begin
 
 -- IDELAYCTRL is needed for calibration
-delayctrl : IDELAYCTRL
+delayctrl0 : IDELAYCTRL
 port map (
-RDY    => i_idelayctrl_rdy,
+RDY    => i_idelayctrl_rdy(0),
 REFCLK => p_in_refclk,
 RST    => p_in_rst
 );
 
+-- IDELAYCTRL is needed for calibration
+delayctrl1 : IDELAYCTRL
+port map (
+RDY    => i_idelayctrl_rdy(1),
+REFCLK => p_in_refclk,
+RST    => p_in_rst
+);
 
 m_clk_fpga2ccd : OBUFDS
 port map (
@@ -196,7 +200,7 @@ reset     => i_mmcm_rst
 i_mmcm_rst <= not p_in_ccdinit;
 i_clk_inv <= not (i_clk);
 
-i_deser_rst <= not (i_mmcm_lckd and i_idelayctrl_rdy);
+i_deser_rst <= not (i_mmcm_lckd and AND_Reduce(i_idelayctrl_rdy));
 
 
 --###########################################
@@ -383,11 +387,11 @@ end if;
 end process;
 
 
-gen_pixout: for lvds_ch in 0 to i_kernel_pix'length - 1 generate
+gen_fifo_di: for lvds_ch in 0 to i_kernel_pix'length - 1 generate
 begin
 i_vfr_pix_out((i_kernel_pix(lvds_ch)'length * (lvds_ch + 1)) - 1
                    downto (i_kernel_pix(lvds_ch)'length * lvds_ch)) <= i_kernel_pix(lvds_ch);
-end generate gen_pixout;
+end generate gen_fifo_di;
 
 
 end xilinx;
