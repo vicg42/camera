@@ -271,7 +271,7 @@ p_in_rst       => i_rst
 pin_out_led(0) <= OR_reduce(tst_video_d(127 downto 0));
 --pin_out_led(1) <= i_test_led(0);
 
-pin_out_TP2(0) <= '0';--tst_video_vs and tst_video_hs and tst_video_den;
+pin_out_TP2(0) <= i_video_vs and i_video_hs;
 pin_out_TP2(1) <= OR_reduce(tst_ccd_status);
 pin_out_TP2(2) <= OR_reduce(i_ccd_tst_out);
 
@@ -354,7 +354,7 @@ begin
   end if;
 end process;
 
-i_ccd_fifo_wr <= i_video_vs and i_video_hs and i_video_den;
+i_ccd_fifo_wr <= i_video_den;
 
 
 m_ccd_fifo : ccd_fifo_tmp

@@ -35,7 +35,8 @@ port(
 p_in_ccd        : in    TCCD_pinin;
 p_out_ccd       : out   TCCD_pinout;
 
-p_out_vfr_data  : out   std_logic_vector((((G_LVDS_CH_COUNT - G_SYNC_LINE_COUNT)) * selval(16, 32, G_VD_BIT_COUNT = 8)) - 1 downto 0);
+p_out_vfr_data  : out   std_logic_vector((((G_LVDS_CH_COUNT - G_SYNC_LINE_COUNT))
+                                               * selval(16, 32, G_VD_BIT_COUNT = 8)) - 1 downto 0);
 p_out_vfr_den   : out   std_logic;
 p_out_vfr_vs    : out   std_logic;
 p_out_vfr_hs    : out   std_logic;
@@ -135,9 +136,9 @@ signal i_vfr_hs         : std_logic;
 signal i_vfr_den        : std_logic;
 signal i_vfr_bl         : std_logic;
 signal i_crc            : std_logic;
-signal i_vfr_den_out    : std_logic;
-signal i_vfr_vs_out     : std_logic;
-signal i_vfr_hs_out     : std_logic;
+signal i_vfr_den_out    : std_logic := '0';
+signal i_vfr_vs_out     : std_logic := '0';
+signal i_vfr_hs_out     : std_logic := '0';
 
 signal i_kernel_cnt     : unsigned(1 downto 0);
 
@@ -146,7 +147,7 @@ type TKernelPix is array (0 to G_LVDS_CH_COUNT - G_SYNC_LINE_COUNT - 1)
 signal i_kernel_pix     : TKernelPix;
 
 signal i_vfr_pix_out    : std_logic_vector(p_out_vfr_data'range);
-signal tst_sync           : std_logic_vector(6 downto 0);
+signal tst_vfr_den_out  : std_logic;
 
 begin
 
@@ -246,7 +247,8 @@ begin
 
     for lvds_ch in 1 to G_LVDS_CH_COUNT - 1 loop
       --from Pix=10bit skip 2 lsb bit
-      sr_rxd(lvds_ch - 1) <= i_deser_dout(lvds_ch)(G_CCD_BIT_COUNT - 1 downto (G_CCD_BIT_COUNT - G_VD_BIT_COUNT));
+      sr_rxd(lvds_ch - 1) <= i_deser_dout(lvds_ch)
+                                    (G_CCD_BIT_COUNT - 1 downto (G_CCD_BIT_COUNT - G_VD_BIT_COUNT));
       i_vfr_pix(lvds_ch - 1) <= sr_rxd(lvds_ch - 1);
     end loop;
   end if;
@@ -254,7 +256,6 @@ end process;
 
 
 process(i_clk_div)
-variable sync : std_logic_vector(6 downto 0);
 begin
 if rising_edge(i_clk_div) then
   if i_deser_rst = '1' then
@@ -264,45 +265,40 @@ if rising_edge(i_clk_div) then
     i_vfr_bl <= '0';
     i_crc <= '0';
 
-    tst_sync <= (others => '0');
-    sync := (others => '0');
-
   else
 
-    sync := (others => '0');
-
-    if (i_sync_d = TO_UNSIGNED(C_CCD_CHSYNC_FS, i_sync_d'length)) then           sync(0) := '1';
+    if (i_sync_d = TO_UNSIGNED(C_CCD_CHSYNC_FS, i_sync_d'length)) then
       i_vfr_vs <= '0';
       i_vfr_hs <= '1';
       i_vfr_den <= '1';
       i_vfr_bl <= '0';
 
-    elsif (i_sync_d = TO_UNSIGNED(C_CCD_CHSYNC_FE, i_sync_d'length)) then        sync(1) := '1';
+    elsif (i_sync_d = TO_UNSIGNED(C_CCD_CHSYNC_FE, i_sync_d'length)) then
       i_vfr_vs <= '1';
       i_vfr_hs <= '0';
       i_vfr_den <= '0';
       i_vfr_bl <= '0';
 
-    elsif (i_sync_d = TO_UNSIGNED(C_CCD_CHSYNC_LS, i_sync_d'length)) then        sync(2) := '1';
+    elsif (i_sync_d = TO_UNSIGNED(C_CCD_CHSYNC_LS, i_sync_d'length)) then
       i_vfr_vs <= '0';
       i_vfr_hs <= '1';
       i_vfr_den <= '1';
       i_vfr_bl <= '0';
 
-    elsif (i_sync_d = TO_UNSIGNED(C_CCD_CHSYNC_LE, i_sync_d'length)) then        sync(3) := '1';
+    elsif (i_sync_d = TO_UNSIGNED(C_CCD_CHSYNC_LE, i_sync_d'length)) then
       i_vfr_hs <= '0';
       i_vfr_den <= '0';
       i_vfr_bl <= '0';
 
-    elsif (i_sync_d = TO_UNSIGNED(C_CCD_CHSYNC_IMAGE, i_sync_d'length)) then     sync(4) := '1';
+    elsif (i_sync_d = TO_UNSIGNED(C_CCD_CHSYNC_IMAGE, i_sync_d'length)) then
       i_vfr_vs <= '0';
       i_vfr_den <= '1';
       i_vfr_bl <= '0';
 
-    elsif (i_sync_d = TO_UNSIGNED(C_CCD_CHSYNC_BLACKPIX, i_sync_d'length)) then  sync(5) := '1';
+    elsif (i_sync_d = TO_UNSIGNED(C_CCD_CHSYNC_BLACKPIX, i_sync_d'length)) then
       i_vfr_bl <= '1';
 
-    elsif (i_sync_d = TO_UNSIGNED(C_CCD_CHSYNC_CRC, i_sync_d'length)) then       sync(6) := '1';
+    elsif (i_sync_d = TO_UNSIGNED(C_CCD_CHSYNC_CRC, i_sync_d'length)) then
       i_crc <= '1';
 
     else
@@ -311,36 +307,34 @@ if rising_edge(i_clk_div) then
 
     end if;
 
-    i_vfr_den_out  <= i_vfr_den and not i_crc;
-    i_vfr_vs_out   <= i_vfr_vs ;
-    i_vfr_hs_out   <= i_vfr_hs ;
-
-    tst_sync <= sync;
-
   end if;
 end if;
 end process;
 
 
 p_out_vfr_data <= i_vfr_pix_out;
-p_out_vfr_den  <= i_vfr_den_out and i_kernel_cnt(0);
+p_out_vfr_den  <= i_vfr_den_out;
 p_out_vfr_vs   <= i_vfr_vs_out ;
 p_out_vfr_hs   <= i_vfr_hs_out ;
 p_out_vfr_clk  <= i_clk_div;
 
 p_out_status(C_CCD_FG_STATUS_ALIGN_OK_BIT) <= AND_reduce(i_align_ok);
 
-p_out_tst(0) <= i_vfr_bl or OR_reduce(tst_sync);
+p_out_tst(0) <= i_vfr_bl or i_crc;
 p_out_tst(31 downto 1) <= (others => '0');
 
 
 
 --###########################################
---Pixel Array
+--Byte Remapping
 --###########################################
 process(i_clk_div)
 begin
 if rising_edge(i_clk_div) then
+
+  i_vfr_den_out  <= i_vfr_den and i_kernel_cnt(0);
+  i_vfr_vs_out   <= i_vfr_vs ;
+  i_vfr_hs_out   <= i_vfr_hs ;
 
   if i_vfr_den = '0' then
     i_kernel_cnt <= (others => '0');
@@ -358,22 +352,26 @@ if rising_edge(i_clk_div) then
         if i_kernel_cnt(1) = '0' then
 
           i_kernel_pix(lvds_ch)(((i_kernel_pix(lvds_ch)'length / 2) * 1) - 1
-              downto (i_kernel_pix(lvds_ch)'length / 2) * 0) <= std_logic_vector(RESIZE(UNSIGNED(sr_vfr_pix(lvds_ch)),
-                                                                                            (i_kernel_pix(lvds_ch)'length / 2)));
+              downto (i_kernel_pix(lvds_ch)'length / 2) * 0)
+                      <= std_logic_vector(RESIZE(UNSIGNED(sr_vfr_pix(lvds_ch))
+                                                  , (i_kernel_pix(lvds_ch)'length / 2)));
 
           i_kernel_pix(lvds_ch)(((i_kernel_pix(lvds_ch)'length / 2) * 2) - 1
-              downto (i_kernel_pix(lvds_ch)'length / 2) * 1) <= std_logic_vector(RESIZE(UNSIGNED(i_vfr_pix(lvds_ch)),
-                                                                                            (i_kernel_pix(lvds_ch)'length / 2)));
+              downto (i_kernel_pix(lvds_ch)'length / 2) * 1)
+                      <= std_logic_vector(RESIZE(UNSIGNED(i_vfr_pix(lvds_ch))
+                                                  , (i_kernel_pix(lvds_ch)'length / 2)));
 
         else
 
           i_kernel_pix(lvds_ch)(((i_kernel_pix(lvds_ch)'length / 2) * 1) - 1
-              downto (i_kernel_pix(lvds_ch)'length / 2) * 0) <= std_logic_vector(RESIZE(UNSIGNED(i_vfr_pix(lvds_ch)),
-                                                                                            (i_kernel_pix(lvds_ch)'length / 2)));
+              downto (i_kernel_pix(lvds_ch)'length / 2) * 0)
+                      <= std_logic_vector(RESIZE(UNSIGNED(i_vfr_pix(lvds_ch))
+                                                  , (i_kernel_pix(lvds_ch)'length / 2)));
 
           i_kernel_pix(lvds_ch)(((i_kernel_pix(lvds_ch)'length / 2) * 2) - 1
-              downto (i_kernel_pix(lvds_ch)'length / 2) * 1) <= std_logic_vector(RESIZE(UNSIGNED(sr_vfr_pix(lvds_ch)),
-                                                                                            (i_kernel_pix(lvds_ch)'length / 2)));
+              downto (i_kernel_pix(lvds_ch)'length / 2) * 1)
+                      <= std_logic_vector(RESIZE(UNSIGNED(sr_vfr_pix(lvds_ch))
+                                                  , (i_kernel_pix(lvds_ch)'length / 2)));
 
         end if;
       end if;

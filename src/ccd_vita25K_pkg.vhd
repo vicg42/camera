@@ -59,7 +59,7 @@ std_logic_vector(TO_UNSIGNED(10#064#, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(
 std_logic_vector(TO_UNSIGNED(10#040#, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(16#0003#, C_CCD_SPI_DWIDTH)),
 std_logic_vector(TO_UNSIGNED(10#048#, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(16#0001#, C_CCD_SPI_DWIDTH)),
 std_logic_vector(TO_UNSIGNED(10#112#, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(16#0007#, C_CCD_SPI_DWIDTH)),
-std_logic_vector(TO_UNSIGNED(10#192#, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(16#0001#, C_CCD_SPI_DWIDTH))  --Reg 192[0]=1 - Start Image Capture CCD
+std_logic_vector(TO_UNSIGNED(10#192#, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(16#0000#, C_CCD_SPI_DWIDTH))  --Reg 192[0]=1 - Start Image Capture CCD
 );
 --std_logic_vector(TO_UNSIGNED(10#144#, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(16#0000#, C_CCD_SPI_DWIDTH)), --Enable test pattern
 

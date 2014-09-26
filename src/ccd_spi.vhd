@@ -108,9 +108,9 @@ S_SET_EXPOSURE,
 S_SET_EXPOSURE_1,
 S_SET_EXPOSURE_2,
 
-S_SET_STOP,
-S_SET_STOP_1,
-S_SET_STOP_2,
+--S_SET_STOP,
+--S_SET_STOP_1,
+--S_SET_STOP_2,
 
 S_ERR,
 S_WAIT_ALIGN
@@ -306,34 +306,34 @@ begin
             i_spi_core_start <= '0';
 
             if i_align = '1' then
-              i_fsm_spi_cs <= S_SET_STOP;--S_WAIT_ALIGN;
+              i_fsm_spi_cs <= S_SET_RIO;--S_SET_STOP;--S_WAIT_ALIGN;
             end if;
 
 
-          --------------------------------
-          --
-          --------------------------------
-          when S_SET_STOP =>
-
-            if i_btn_push = '1' then
-              i_adr <= std_logic_vector(TO_UNSIGNED(10#192#, C_CCD_SPI_AWIDTH - 1)) & CI_SPI_WRITE;
-              i_txd <= std_logic_vector(TO_UNSIGNED(16#0000#, C_CCD_SPI_DWIDTH));
-
-              i_spi_core_dir <= C_SPI_WRITE;
-              i_spi_core_start <= '1';
-              i_fsm_spi_cs <= S_SET_STOP_1;
-            end if;
-
-          when S_SET_STOP_1 =>
-
-            i_spi_core_start <= '0';
-            i_fsm_spi_cs <= S_SET_STOP_2;
-
-          when S_SET_STOP_2 =>
-
-            if i_busy = '0' then
-              i_fsm_spi_cs <= S_SET_RIO;
-            end if;
+--          --------------------------------
+--          --
+--          --------------------------------
+--          when S_SET_STOP =>
+--
+--            if i_btn_push = '1' then
+--              i_adr <= std_logic_vector(TO_UNSIGNED(10#192#, C_CCD_SPI_AWIDTH - 1)) & CI_SPI_WRITE;
+--              i_txd <= std_logic_vector(TO_UNSIGNED(16#0000#, C_CCD_SPI_DWIDTH));
+--
+--              i_spi_core_dir <= C_SPI_WRITE;
+--              i_spi_core_start <= '1';
+--              i_fsm_spi_cs <= S_SET_STOP_1;
+--            end if;
+--
+--          when S_SET_STOP_1 =>
+--
+--            i_spi_core_start <= '0';
+--            i_fsm_spi_cs <= S_SET_STOP_2;
+--
+--          when S_SET_STOP_2 =>
+--
+--            if i_busy = '0' then
+--              i_fsm_spi_cs <= S_SET_RIO;
+--            end if;
 
           --------------------------------
           --
@@ -436,7 +436,7 @@ begin
 
             if i_busy = '0' then
               i_ccd_readout <= not i_ccd_readout;
-              i_fsm_spi_cs <= S_SET_STOP;
+              i_fsm_spi_cs <= S_WAIT2_BTN_2;
             end if;
 
         end case;
