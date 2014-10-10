@@ -22,6 +22,7 @@ use unisim.vcomponents.all;
 
 library work;
 use work.ccd_pkg.all;
+use work.reduce_pack.all;
 
 entity ccd_deser is
 generic(
@@ -126,7 +127,7 @@ signal windowcount       : unsigned(9 downto 0);
 type TCompare is array (0 to G_BIT_COUNT - 1) of unsigned(G_BIT_COUNT - 1 downto 0);
 signal sr_train_compare  : TCompare;
 
-signal tst_deser_d_sv_ROR1 : unsigned(G_BIT_COUNT - 1 downto 0);
+signal tst_deser_d_sv_ROL,tst_deser_d_sv_ROR : unsigned(G_BIT_COUNT - 1 downto 0);
 signal p_in_align_start  : std_logic;
 signal sr_handshake_end  : std_logic_vector(0 to 4);
 
@@ -135,14 +136,16 @@ constant RETRY_MAX      : integer := 32767;
 constant STABLE_COUNT   : integer := 16;
 constant INVERSE_BITORDER : boolean := FALSE;
 
-
+signal i_idelaye2_ce_t  : std_logic;
+signal i_bitslip_t      : std_logic;
 
 
 begin
 
-tst_deser_d_sv_ROR1 <= (UNSIGNED(i_deser_d_sv) ROR 1);
+tst_deser_d_sv_ROL <= (UNSIGNED(i_deser_d_sv) ROL 1);
+tst_deser_d_sv_ROR <= (UNSIGNED(i_deser_d_sv) ROR 1);
 
-p_out_tst(i_deser_d_sv'range) <= std_logic_vector(tst_deser_d_sv_ROR1);
+p_out_tst(0) <= OR_reduce(std_logic_vector(tst_deser_d_sv_ROL)) or OR_reduce(std_logic_vector(tst_deser_d_sv_ROR));
 
 
 m_ibufds : IBUFDS
@@ -171,7 +174,7 @@ port map (
 DATAOUT           => i_idelaye2_dout,
 DATAIN            => '0',
 C                 => p_in_clkdiv,
-CE                => i_idelaye2_ce,
+CE                => i_idelaye2_ce_t,
 INC               => i_idelaye2_inc,
 IDATAIN           => i_ser_din,
 LD                => '0',
@@ -182,6 +185,8 @@ CNTVALUEOUT       => open,
 CINVCTRL          => '0'
 );
 
+i_idelaye2_ce_t <= i_idelaye2_ce and i_handshake_start;
+i_bitslip_t <= i_bitslip and i_handshake_start;
 
 m_iserdese2_master : ISERDESE2
 generic map (
@@ -215,7 +220,7 @@ Q7                => i_deser_d(6),
 Q8                => i_deser_d(7),
 SHIFTOUT1         => icascade1,       -- Cascade connection to Slave
 SHIFTOUT2         => icascade2,       -- Cascade connection to Slave
-BITSLIP           => i_bitslip,       -- 1-bit Invoke Bitslip. This can be used with any
+BITSLIP           => i_bitslip_t,       -- 1-bit Invoke Bitslip. This can be used with any
                                       -- DATA_WIDTH, cascaded or not.
 CE1               => p_in_clken,
 CE2               => p_in_clken,
@@ -272,7 +277,7 @@ SHIFTOUT1         => open,
 SHIFTOUT2         => open,
 SHIFTIN1          => icascade1,       -- Cascade connections from Master
 SHIFTIN2          => icascade2,       -- Cascade connections from Master
-BITSLIP           => i_bitslip,       -- 1-bit Invoke Bitslip. This can be used with any
+BITSLIP           => i_bitslip_t,       -- 1-bit Invoke Bitslip. This can be used with any
                                       -- DATA_WIDTH, cascaded or not.
 CE1               => p_in_clken,
 CE2               => p_in_clken,
@@ -805,7 +810,7 @@ elsif rising_edge(p_in_clkdiv) then
 
             if (i_handshake_end = '1') then
                 if (
-                    ((i_deser_d(i_deser_d_sv'range) = (UNSIGNED(i_deser_d_sv) ROR 1)) and (INVERSE_BITORDER = FALSE)) or
+                    ((i_deser_d(i_deser_d_sv'range) = (UNSIGNED(i_deser_d_sv) ROL 1)) and (INVERSE_BITORDER = FALSE)) or
                     ((i_deser_d(i_deser_d_sv'range) = (UNSIGNED(i_deser_d_sv) ROL 1)) and (INVERSE_BITORDER = TRUE))
                         ) then  --edge found (1 time)
 
@@ -866,7 +871,7 @@ elsif rising_edge(p_in_clkdiv) then
                     i_gen_cntr <= i_gen_cntr - 1;
 
                     if (
-                    ((i_deser_d(i_deser_d_sv'range) = (UNSIGNED(i_deser_d_sv) ROR 1)) and (INVERSE_BITORDER = FALSE)) or
+                    ((i_deser_d(i_deser_d_sv'range) = (UNSIGNED(i_deser_d_sv) ROL 1)) and (INVERSE_BITORDER = FALSE)) or
                     ((i_deser_d(i_deser_d_sv'range) = (UNSIGNED(i_deser_d_sv) ROL 1)) and (INVERSE_BITORDER = TRUE))
                         ) then
 
@@ -895,7 +900,7 @@ elsif rising_edge(p_in_clkdiv) then
 
             if (i_handshake_end = '1') then
                 if (
-                    ((i_deser_d(i_deser_d_sv'range) = (UNSIGNED(i_deser_d_sv) ROR 2)) and (INVERSE_BITORDER = FALSE)) or
+                    ((i_deser_d(i_deser_d_sv'range) = (UNSIGNED(i_deser_d_sv) ROR 1)) and (INVERSE_BITORDER = FALSE)) or
                     ((i_deser_d(i_deser_d_sv'range) = (UNSIGNED(i_deser_d_sv) ROL 2)) and (INVERSE_BITORDER = TRUE))
                         ) then   -- 2nd edge found, window found
 

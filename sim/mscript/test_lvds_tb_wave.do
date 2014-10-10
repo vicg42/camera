@@ -28,8 +28,9 @@ add wave -noupdate /test_lvds_tb/m_rcv/m_deser/i_fsm_serdesseq
 add wave -noupdate -color {Slate Blue} /test_lvds_tb/m_rcv/m_deser/i_fsm_align
 add wave -noupdate -radix hexadecimal /test_lvds_tb/m_rcv/m_deser/i_deser_d
 add wave -noupdate -radix hexadecimal /test_lvds_tb/m_rcv/m_deser/p_out_data
+add wave -noupdate -radix hexadecimal /test_lvds_tb/m_rcv/m_deser/tst_deser_d_sv_ROL
+add wave -noupdate -radix hexadecimal /test_lvds_tb/m_rcv/m_deser/tst_deser_d_sv_ROR
 add wave -noupdate -radix hexadecimal /test_lvds_tb/m_rcv/m_deser/i_deser_d_sv
-add wave -noupdate -radix hexadecimal /test_lvds_tb/m_rcv/m_deser/tst_deser_d_sv_ROR1
 add wave -noupdate -radix hexadecimal /test_lvds_tb/m_rcv/m_deser/i_edge
 add wave -noupdate -radix hexadecimal /test_lvds_tb/m_rcv/m_deser/i_edge_or
 add wave -noupdate -radix hexadecimal /test_lvds_tb/m_rcv/m_deser/i_edge_sv
@@ -48,7 +49,7 @@ add wave -noupdate -radix hexadecimal -childformat {{/test_lvds_tb/m_rcv/m_deser
 TreeUpdate [SetDefaultTree]
 WaveRestoreCursors {{Cursor 1} {0 ps} 0}
 quietly wave cursor active 0
-configure wave -namecolwidth 150
+configure wave -namecolwidth 180
 configure wave -valuecolwidth 100
 configure wave -justifyvalue left
 configure wave -signalnamewidth 1
@@ -62,4 +63,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ps
 update
-WaveRestoreZoom {862703 ps} {5607568 ps}
+WaveRestoreZoom {0 ps} {105 us}
