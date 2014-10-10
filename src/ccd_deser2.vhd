@@ -15,6 +15,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+--use ieee.std_logic_signed.all;
 
 library unisim;
 use unisim.vcomponents.all;
@@ -95,7 +96,7 @@ S_CHK_FIRST_EDGE_CHANGED,
 S_CHK_FIRST_EDGE_STABLE,
 S_CHK_SECOND_EDGE_CHANGED,
 S_WINDOW_FOUND,
-S_RST_DELAY_MAN,
+--S_RST_DELAY_MAN,
 S_START_WORD_ALIGN,
 S_DO_WORD_ALIGN,
 S_ALIGNMENT_DONE
@@ -103,10 +104,45 @@ S_ALIGNMENT_DONE
 signal i_fsm_align : TFsm_Align;
 
 
+signal i_deser_d_sv      : unsigned (G_BIT_COUNT - 1 downto 0);
+
+signal i_edge            : unsigned (G_BIT_COUNT - 1 downto 0);
+signal i_edge_sv         : unsigned (G_BIT_COUNT - 1 downto 0);
+signal i_edge_or         : std_logic;
+signal i_handshake_start : std_logic;
+signal i_handshake_end   : std_logic;
+
+signal i_align_start     : std_logic;
+signal i_align_busy      : std_logic;
+--signal i_align_ok        : std_logic;
+signal i_align_done      : std_logic;
+
+signal i_cnt_tap         : unsigned(9 downto 0);
+signal i_cnt_retry       : unsigned(15 downto 0);
+signal i_gen_cntr        : unsigned(15 downto 0);
+
+signal windowcount       : unsigned(9 downto 0);
+
+type TCompare is array (0 to G_BIT_COUNT - 1) of unsigned(G_BIT_COUNT - 1 downto 0);
+signal sr_train_compare  : TCompare;
+
+signal tst_deser_d_sv_ROR1 : unsigned(G_BIT_COUNT - 1 downto 0);
+signal p_in_align_start  : std_logic;
+signal sr_handshake_end  : std_logic_vector(0 to 4);
+
+constant TAP_COUNT_MAX  : integer := 32;
+constant RETRY_MAX      : integer := 32767;
+constant STABLE_COUNT   : integer := 16;
+constant INVERSE_BITORDER : boolean := FALSE;
+
+
+
+
 begin
 
+tst_deser_d_sv_ROR1 <= (UNSIGNED(i_deser_d_sv) ROR 1);
 
-p_out_tst <= (others => '0');
+p_out_tst(i_deser_d_sv'range) <= std_logic_vector(tst_deser_d_sv_ROR1);
 
 
 m_ibufds : IBUFDS
@@ -263,361 +299,427 @@ p_out_align_ok <= i_align_ok;
 --################################
 --FSM ccd video data align
 --################################
-gen_edge_detect: for i in 0 to (DATAWIDTH-2) generate
-edge_int(i) <= i_deser_d(i) xor i_deser_d(i+1);
+gen_edge_detect: for i in 0 to (G_BIT_COUNT - 2) generate
+i_edge(i) <= i_deser_d(i) xor i_deser_d(i + 1);
 end generate;
-edge_int(DATAWIDTH-1) <= i_deser_d(0) xor i_deser_d(DATAWIDTH-1);
+i_edge(G_BIT_COUNT - 1) <= i_deser_d(0) xor i_deser_d(G_BIT_COUNT - 1);
 
-edgeprocess: process(CLOCK)
+edgeprocess: process(p_in_clkdiv)
 variable edge_tmp : std_logic := '0';
 begin
-if (CLOCK'event and CLOCK = '1') then
+if rising_edge(p_in_clkdiv) then
   -- funny workaround to make OR-ing of parametrisable signals into one signal work
-  if (start_handshake = '1') then
+  if (i_handshake_start = '1') then
     edge_tmp := '0';
   else
-    for i in 0 to DATAWIDTH-1 loop
-      edge_tmp := edge_tmp or edge_int(i);
+    for i in 0 to G_BIT_COUNT - 1 loop
+      edge_tmp := edge_tmp or i_edge(i);
     end loop;
-    edge_int_or <= edge_tmp;
+    i_edge_or <= edge_tmp;
   end if;
 end if;
 end process;
 
-handshaker: process(RESET, CLOCK)
+handshaker: process(p_in_rst, p_in_clkdiv)
 begin
-if (RESET = '1') then
-  REQ            <= '0';
-  end_handshake  <= '0';
-  i_fsm_handshake <= S_IDLE;
-  TIMEOUTONACK   <= '0';
-  TimeOutCntr    <= TimeOutCntrLd;
-
-elsif (CLOCK'EVENT and CLOCK = '1') then
-
-  -- defaults
-  end_handshake   <= '0';
-
-  case i_fsm_handshake is
-    when S_IDLE =>
-
-      if ALIGN_START='1'then
-          TIMEOUTONACK <= '0';
-          TimeOutCntr <= TimeOutCntrLd;
-      end if;
-
-      if (start_handshake = '1') then
-          REQ <= '1';
-          i_fsm_handshake <= S_WAIT_ACK_HIGH;
-      end if;
-
-    when S_WAIT_ACK_HIGH =>
-      if (ACK = '1') then
-          REQ <= '0';
-          i_fsm_handshake <= S_WAIT_ACK_LOW;
-          TimeOutCntr <= TimeOutCntrLd;
-
-      elsif(TimeOutCntr(TimeOutCntr'high) = '1') then
-          TIMEOUTONACK <=  '1';
-          i_fsm_handshake <= S_IDLE;
-          TimeOutCntr <= TimeOutCntrLd;
-          end_handshake <= '1';
-      else
-          TimeOutCntr <= TimeOutCntr - '1' ;
-      end if;
-
-    when S_WAIT_ACK_LOW =>
-      if (ACK = '0') then
-          end_handshake <= '1';
-          i_fsm_handshake <= S_IDLE;
-          TimeOutCntr <= TimeOutCntrLd;
-
-      elsif(TimeOutCntr(TimeOutCntr'high) = '1') then
-          TIMEOUTONACK <=  '1';
-          i_fsm_handshake <= S_IDLE;
-          TimeOutCntr <= TimeOutCntrLd;
-          end_handshake <= '1';
-      else
-          TimeOutCntr <= TimeOutCntr - '1';
-      end if;
-
-    when others =>
-        i_fsm_handshake <= S_IDLE;
-
-  end case;
+if (p_in_rst = '1') then
+  sr_handshake_end <= (others => '0');
+  i_handshake_end <= '0';
+elsif rising_edge(p_in_clkdiv) then
+  sr_handshake_end <= i_handshake_start & sr_handshake_end(0 to 3);
+--  i_handshake_end <= sr_handshake_end(2);
+  i_handshake_end <= sr_handshake_end(1);
 end if;
 end process handshaker;
 
+--handshaker: process(p_in_rst, p_in_clkdiv)
+--begin
+--if (p_in_rst = '1') then
+--  REQ            <= '0';
+--  i_handshake_end <= '0';
+--  i_fsm_handshake <= S_IDLE;
+--  TIMEOUTONACK <= '0';
+--  TimeOutCntr <= TimeOutCntrLd;
+--
+--elsif rising_edge(p_in_clkdiv) then
+--
+--  -- defaults
+--  i_handshake_end   <= '0';
+--
+--  case i_fsm_handshake is
+--    when S_IDLE =>
+--
+--      if ALIGN_START = '1' then
+--          TIMEOUTONACK <= '0';
+--          TimeOutCntr <= TimeOutCntrLd;
+--      end if;
+--
+--      if (i_handshake_start = '1') then
+--          REQ <= '1';
+--          i_fsm_handshake <= S_WAIT_ACK_HIGH;
+--      end if;
+--
+--    when S_WAIT_ACK_HIGH =>
+--      if (ACK = '1') then
+--          REQ <= '0';
+--          i_fsm_handshake <= S_WAIT_ACK_LOW;
+--          TimeOutCntr <= TimeOutCntrLd;
+--
+--      elsif(TimeOutCntr(TimeOutCntr'high) = '1') then
+--          TIMEOUTONACK <=  '1';
+--          i_fsm_handshake <= S_IDLE;
+--          TimeOutCntr <= TimeOutCntrLd;
+--          i_handshake_end <= '1';
+--      else
+--          TimeOutCntr <= TimeOutCntr - '1' ;
+--      end if;
+--
+--    when S_WAIT_ACK_LOW =>
+--      if (ACK = '0') then
+--          i_handshake_end <= '1';
+--          i_fsm_handshake <= S_IDLE;
+--          TimeOutCntr <= TimeOutCntrLd;
+--
+--      elsif(TimeOutCntr(TimeOutCntr'high) = '1') then
+--          TIMEOUTONACK <=  '1';
+--          i_fsm_handshake <= S_IDLE;
+--          TimeOutCntr <= TimeOutCntrLd;
+--          i_handshake_end <= '1';
+--      else
+--          TimeOutCntr <= TimeOutCntr - '1';
+--      end if;
+--
+--    when others =>
+--        i_fsm_handshake <= S_IDLE;
+--
+--  end case;
+--end if;
+--end process handshaker;
 
-CTRL_SEL <= selector;
 
-alignsequencer: process(RESET, CLOCK)
+--CTRL_SEL <= selector;
+
+alignsequencer: process(p_in_rst, p_in_clkdiv)
 begin
-if (RESET = '1') then
-  selector       <= (others => '0');
-  SerdesCntr     <= std_logic_vector(TO_SIGNED(3,(SerdesCntr'high+1)));
+if (p_in_rst = '1') then
+----  CTRL_FIFO_RESET <= '1';
+--  CTRL_SAMPLEINFIRSTBIT   <= (others => '0');
+--  CTRL_SAMPLEINLASTBIT    <= (others => '0');
+--  CTRL_SAMPLEINOTHERBIT   <= (others => '0');
 
-  ALIGN_BUSY     <= '0';
-  ALIGNED        <= '0';
+--  selector       <= (others => '0');
+--  SerdesCntr     <= std_logic_vector(TO_SIGNED(3,(SerdesCntr'high + 1)));
 
-  start_align_i  <= '0';
+--  ALIGN_BUSY <= '0';
+  i_align_ok    <= '0';
+  i_align_start <= '0';
 
-  CTRL_FIFO_RESET <= '1';
-  CTRL_SAMPLEINFIRSTBIT   <= (others => '0');
-  CTRL_SAMPLEINLASTBIT    <= (others => '0');
-  CTRL_SAMPLEINOTHERBIT   <= (others => '0');
+  i_fsm_serdesseq <= S_IDLE;
 
-  i_fsm_serdesseq  <= S_IDLE;
+elsif rising_edge(p_in_clkdiv) then
 
-elsif (CLOCK'EVENT and CLOCK = '1') then
-
-  start_align_i   <= '0';
+  i_align_start   <= '0';
 
   case i_fsm_serdesseq is
 
       when S_IDLE =>
         --CTRL_FIFO_RESET <= '0';
-        if (ALIGN_START = '1') then
-          CTRL_FIFO_RESET <= '1';
-          ALIGN_BUSY      <= '1';
-          start_align_i   <= '1';
-          SerdesCntr      <=  std_logic_vector(TO_SIGNED((NROF_CONN-2),(SerdesCntr'high+1)));
-          selector        <= (others => '0');
-          i_fsm_serdesseq  <= S_TRAIN_SERDES;
+        if (p_in_align_start = '1') then
+--          CTRL_FIFO_RESET <= '1';
+--          ALIGN_BUSY      <= '1';
+          i_align_ok <= '0';
+          i_align_start <= '1';
+--          SerdesCntr      <=  std_logic_vector(TO_SIGNED((NROF_CONN - 2),(SerdesCntr'high + 1)));
+--          selector        <= (others => '0');
+          i_fsm_serdesseq <= S_TRAIN_SERDES;
         end if;
 
       when S_TRAIN_SERDES =>
         i_fsm_serdesseq  <= S_WAIT_TRAIN_SERDES_BUSYON;
 
       when S_WAIT_TRAIN_SERDES_BUSYON =>
-        if (busy_align_i = '1') then
-          i_fsm_serdesseq  <= S_WAIT_TRAIN_SERDES_BUSYOFF;
+        if (i_align_busy = '1') then
+          i_fsm_serdesseq <= S_WAIT_TRAIN_SERDES_BUSYOFF;
         end if;
 
       when S_WAIT_TRAIN_SERDES_BUSYOFF =>
-        if (busy_align_i = '0') then
-            CTRL_SAMPLEINFIRSTBIT(TO_INTEGER(UNSIGNED(selector)))<= CTRL_SAMPLEINFIRSTBIT_i;
-            CTRL_SAMPLEINLASTBIT(TO_INTEGER(UNSIGNED(selector))) <= CTRL_SAMPLEINLASTBIT_i;
-            CTRL_SAMPLEINOTHERBIT(TO_INTEGER(UNSIGNED(selector)))<= CTRL_SAMPLEINOTHERBIT_i;
-            if (SerdesCntr(SerdesCntr'high) = '1') then
-              ALIGNED         <= '1';
-              ALIGN_BUSY      <= '0';
-              CTRL_FIFO_RESET <= '0';
+        if (i_align_busy = '0') then
+--            CTRL_SAMPLEINFIRSTBIT(TO_INTEGER(UNSIGNED(selector)))<= CTRL_SAMPLEINFIRSTBIT_i;
+--            CTRL_SAMPLEINLASTBIT(TO_INTEGER(UNSIGNED(selector))) <= CTRL_SAMPLEINLASTBIT_i;
+--            CTRL_SAMPLEINOTHERBIT(TO_INTEGER(UNSIGNED(selector)))<= CTRL_SAMPLEINOTHERBIT_i;
+
+--            if (SerdesCntr(SerdesCntr'high) = '1') then
+              i_align_ok  <= '1';
+--              ALIGN_BUSY  <= '0';
+----              CTRL_FIFO_RESET <= '0';
               i_fsm_serdesseq  <= S_IDLE;
-            else
-              start_align_i <= '1';
-              selector <= selector + '1';
-              SerdesCntr <= SerdesCntr - '1';
-              i_fsm_serdesseq <= S_TRAIN_SERDES;
-            end if;
+--            else
+--              i_align_start <= '1';
+--              selector <= selector + '1';
+--              SerdesCntr <= SerdesCntr - '1';
+--              i_fsm_serdesseq <= S_TRAIN_SERDES;
+--            end if;
         end if;
 
       when others =>
           i_fsm_serdesseq <= S_IDLE;
+
   end case;
 end if;
 end process alignsequencer;
 
-aligning: process(RESET, CLOCK)
-variable index : integer range 0 to 65535;
+
+aligning: process(p_in_rst, p_in_clkdiv)
+--variable index : integer range 0 to 65535;
 begin
-if (RESET = '1') then
+if (p_in_rst = '1') then
 
-    done_align_i    <= '0';
-    busy_align_i    <= '0';
+    i_deser_rst    <= '1';
+    i_idelaye2_inc <= '0';
+    i_idelaye2_ce  <= '0';
+    i_bitslip      <= '0';
 
-    CTRL_RESET          <= '1';
-    CTRL_INC            <= '0';
-    CTRL_CE             <= '0';
-    CTRL_BITSLIP        <= '0';
+--    CTRL_SAMPLEINFIRSTBIT_i <= '0';
+--    CTRL_SAMPLEINLASTBIT_i  <= '0';
+--    CTRL_SAMPLEINOTHERBIT_i <= '0';
 
-    CTRL_SAMPLEINFIRSTBIT_i   <= '0';
-    CTRL_SAMPLEINLASTBIT_i    <= '0';
-    CTRL_SAMPLEINOTHERBIT_i   <= '0';
+    i_align_done <= '0';
+    i_align_busy <= '0';
 
-    edge_init           <= (others => '0');
-    data_init           <= (others => '0');
+    i_edge_sv <= (others => '0');
+    i_deser_d_sv <= (others => '0');
 
-    EDGE_DETECT         <= (others => '0');
-    TRAINING_DETECT     <= (others => '0');
-    STABLE_DETECT       <= (others => '0');
-    FIRST_EDGE_FOUND    <= (others => '0');
-    SECOND_EDGE_FOUND   <= (others => '0');
-    WORD_ALIGN          <= (others => '0');
-    NROF_RETRIES        <= (others => '0');
-    TAP_SETTING         <= (others => '0');
-    WINDOW_WIDTH        <= (others => '0');
+--    EDGE_DETECT       <= (others => '0');
+--    TRAINING_DETECT   <= (others => '0');
+--    STABLE_DETECT     <= (others => '0');
+--    FIRST_EDGE_FOUND  <= (others => '0');
+--    SECOND_EDGE_FOUND <= (others => '0');
+--    WORD_ALIGN        <= (others => '0');
+--    NROF_RETRIES      <= (others => '0');
+--    TAP_SETTING       <= (others => '0');
+--    WINDOW_WIDTH      <= (others => '0');
 
-    start_handshake <= '0';
+    i_handshake_start <= '0';
 
-    maxcount            <= (others => '1');
-    tapcount            <= (others => '0');
     windowcount         <= (others => '0');
-    bitcount            <= (others => '0');
-    retries             <= (others => '0');
+--    bitcount            <= (others => '0');
+--    tapcount            <= (others => '0');
+--    i_statistic_retries <= (others => '0');
 
-    compare             <= (others => (others => '0'));
+    sr_train_compare <= (others => (others => '0'));
 
-    RetryCntr           <= (others => '1');
-    GenCntr             <= (others => '1');
+    i_cnt_tap   <= (others => '1');
+    i_cnt_retry <= (others => '1');
+    i_gen_cntr  <= (others => '1');
 
-    index               := 0;
+--    index := 0;
     i_fsm_align <= S_IDLE;
 
-elsif (CLOCK'event and CLOCK = '1') then
+elsif rising_edge(p_in_clkdiv) then
     --defaults
-    done_align_i    <= '0';
-    start_handshake <= '0';
+    i_align_done <= '0';
+    i_handshake_start <= '0';
 
-    index               := TO_INTEGER(UNSIGNED(selector));
+--    index := TO_INTEGER(UNSIGNED(selector));
 
     -- generate compare words
     -- the 2 last versions will be the 'special' words that when stable sampling
     -- occurs on both of them the resulting parallel words will be skewed.
     -- In this case the data written into the FIFO has to be compensated for the skew
     --
-    for i in 0 to (DATAWIDTH-1) loop
-        compare(i) <= STD_LOGIC_VECTOR(UNSIGNED(TRAINING) ROL (i+6));
+    for i in 0 to (G_BIT_COUNT - 1) loop
+--    sr_train_compare(i) <= std_logic_vector(UNSIGNED(TRAINING) ROL (i + 6));
+    sr_train_compare(i) <= TO_UNSIGNED(C_CCD_CHSYNC_TRAINING, sr_train_compare(i)'length) ROL (i + 6);
     end loop;
 
     case i_fsm_align is
+
         when S_IDLE =>
-            busy_align_i    <= '0';
-            if (start_align_i = '1') then
-                 busy_align_i    <= '1';
+
+            i_align_busy <= '0';
+
+            if (i_align_start = '1') then
+                 i_align_busy <= '1';
+                 i_align_done <= '0';
+
                 --reset status words
-                 EDGE_DETECT(index)         <= '0';
-                 TRAINING_DETECT(index)     <= '0';
-                 STABLE_DETECT(index)       <= '0';
-                 FIRST_EDGE_FOUND(index)    <= '0';
-                 SECOND_EDGE_FOUND(index)   <= '0';
-                 WORD_ALIGN(index)          <= '0';
-                 NROF_RETRIES((16*index)+15 downto 16*index)    <= (others => '0');
-                 TAP_SETTING((10*index)+9 downto 10*index)      <= (others => '0');
-                 WINDOW_WIDTH((10*index)+9 downto 10*index)     <= (others => '0');
+--                 EDGE_DETECT(index)         <= '0';
+--                 TRAINING_DETECT(index)     <= '0';
+--                 STABLE_DETECT(index)       <= '0';
+--                 FIRST_EDGE_FOUND(index)    <= '0';
+--                 SECOND_EDGE_FOUND(index)   <= '0';
+--                 WORD_ALIGN(index)          <= '0';
+--                 NROF_RETRIES((16 * index) + 15 downto 16 * index)<= (others => '0');
+--                 TAP_SETTING((10 * index) + 9 downto 10 * index)  <= (others => '0');
+--                 WINDOW_WIDTH((10 * index) + 9 downto 10 * index) <= (others => '0');
 
-                 tapcount            <= (others => '0');
+--                 tapcount            <= (others => '0');
                  windowcount         <= (others => '0');
-                 bitcount            <= (others => '0');
-                 Maxcount            <= std_logic_vector(TO_UNSIGNED((TAP_COUNT_MAX-1),(Maxcount'high+1)));
-                 retries             <= (others => '0');
-                 RetryCntr           <= retry_count_load;
+--                 bitcount            <= (others => '0');
+--                 i_statistic_retries <= (others => '0');
 
-                if (AUTOALIGN = '1') then -- use training algorithm
-                    CTRL_RESET      <= '1';
-                    CTRL_INC        <= '0';
-                    CTRL_CE         <= '0';
-                    start_handshake <= '1';
-                    CTRL_SAMPLEINFIRSTBIT_i   <= '0';
-                    CTRL_SAMPLEINLASTBIT_i    <= '0';
-                    CTRL_SAMPLEINOTHERBIT_i   <= '0';
-                    i_fsm_align      <= S_RST_DELAY;
-                else                      -- manually set tapcount
-                    start_handshake <= '1';
-                    CTRL_RESET      <= '1';
-                    CTRL_INC        <= '0';
-                    CTRL_CE         <= '0';
-                    GenCntr         <= "000000" & MANUAL_TAP;
-                    CTRL_SAMPLEINFIRSTBIT_i   <= '0';
-                    CTRL_SAMPLEINLASTBIT_i    <= '0';
-                    CTRL_SAMPLEINOTHERBIT_i   <= '0';
-                    i_fsm_align      <= S_RST_DELAY_MAN;
-                end if;
+                 i_cnt_tap <= TO_UNSIGNED((TAP_COUNT_MAX - 1), i_cnt_tap'length);
+                 i_cnt_retry <= TO_UNSIGNED((RETRY_MAX - 2), i_cnt_retry'length);--retry_count_load; --—четчик повторов
+
+--                if AUTOALIGN = '1' then -- use training algorithm
+                    i_deser_rst    <= '1';
+                    i_idelaye2_inc <= '0';
+                    i_idelaye2_ce  <= '0';
+
+                    i_handshake_start <= '1';
+
+--                    CTRL_SAMPLEINFIRSTBIT_i <= '0';
+--                    CTRL_SAMPLEINLASTBIT_i  <= '0';
+--                    CTRL_SAMPLEINOTHERBIT_i <= '0';
+
+                    i_fsm_align <= S_RST_DELAY;
+
+--                else   -- manually set tapcount
+--                    i_deser_rst    <= '1';
+--                    i_idelaye2_inc <= '0';
+--                    i_idelaye2_ce  <= '0';
+--
+--                    i_handshake_start <= '1';
+--
+--                    CTRL_SAMPLEINFIRSTBIT_i <= '0';
+--                    CTRL_SAMPLEINLASTBIT_i  <= '0';
+--                    CTRL_SAMPLEINOTHERBIT_i <= '0';
+--
+--                    i_gen_cntr <= "000000" & MANUAL_TAP;
+--
+--                    i_fsm_align <= S_RST_DELAY_MAN;
+--                end if;
             end if;
 
+
         when S_RST_DELAY =>
-            GenCntr         <= std_logic_vector(TO_UNSIGNED((STABLE_COUNT-1),(GenCntr'high+1)));
-            if (end_handshake = '1') then
-               i_fsm_align       <= S_WAIT_RST_DELAY;
+
+            i_gen_cntr <= TO_UNSIGNED((STABLE_COUNT - 1), i_gen_cntr'length);
+
+            if (i_handshake_end = '1') then
+               i_fsm_align <= S_WAIT_RST_DELAY;
             end if;
 
         when S_WAIT_RST_DELAY =>
-            start_handshake     <= '1';
+
+            i_handshake_start <= '1';
+
             --do nothing
-            CTRL_RESET          <= '0';
-            CTRL_INC            <= '0';
-            CTRL_CE             <= '0';
-            i_fsm_align          <= S_GET_EDGE;
+            i_deser_rst    <= '0';
+            i_idelaye2_inc <= '0';
+            i_idelaye2_ce  <= '0';
+
+            i_fsm_align <= S_GET_EDGE;
 
         when S_GET_EDGE =>
-            if (end_handshake = '1') then
-                EDGE_DETECT(index)   <= edge_int_or;
-                i_fsm_align           <= S_CHK_EDGE;
+
+            if (i_handshake_end = '1') then
+--                EDGE_DETECT(index) <= i_edge_or;
+                i_fsm_align  <= S_CHK_EDGE;
             end if;
 
         when S_CHK_EDGE =>
-            if (RetryCntr(RetryCntr'high) = '1') then -- no stable edge found within retry limit
-                NROF_RETRIES((16*index)+15 downto 16*index)    <= retries;
-                TAP_SETTING((10*index)+9 downto 10*index)      <= tapcount;
+
+            if (i_cnt_retry(i_cnt_retry'high) = '1') then -- no stable edge found within retry limit
+
+--                NROF_RETRIES((16 * index) + 15 downto 16 * index) <= i_statistic_retries;
+--                TAP_SETTING((10 * index) + 9 downto 10 * index) <= tapcount;
                 i_fsm_align   <= S_IDLE;
+
             else
-                RetryCntr  <= RetryCntr - '1';
-                if (edge_int_or = '1') then             -- edge found, check stability
-                    DATA_init       <= CTRL_DATA;       -- memorize data
-                    edge_init       <= edge_int;        -- memorize data edges
-                    start_handshake <= '1';
+                i_cnt_retry  <= i_cnt_retry - 1;
+
+                if (i_edge_or = '1') then -- edge found, check stability
+                    i_deser_d_sv <= i_deser_d(G_BIT_COUNT - 1 downto 0); -- memorize data
+                    i_edge_sv <= i_edge;  -- memorize data edges
+
                     --do nothing
-                    CTRL_RESET      <= '0';
-                    CTRL_INC        <= '0';
-                    CTRL_CE         <= '0';
-                    i_fsm_align      <= S_WAIT_SAMPLE_STABLE;
+                    i_deser_rst    <= '0';
+                    i_idelaye2_inc <= '0';
+                    i_idelaye2_ce  <= '0';
+
+                    i_handshake_start <= '1';
+
+                    i_fsm_align <= S_WAIT_SAMPLE_STABLE;
+
                 else
-                    start_handshake <= '1';    -- no edge found but retrylimit not yet reached, increment tap and try again
-                    if (Maxcount(Maxcount'high) = '1') then
-                            retries         <= retries + '1';
-                            RetryCntr       <= RetryCntr - '1';
-                            tapcount        <= (others => '0');
-                            CTRL_RESET      <= '1';
-                            CTRL_INC        <= '0';
-                            CTRL_CE         <= '0';
-                            Maxcount        <= std_logic_vector(TO_UNSIGNED((TAP_COUNT_MAX-1),(Maxcount'high+1)));
-                            i_fsm_align      <= S_RST_DELAY;
+                    i_handshake_start <= '1';    -- no edge found but retrylimit not yet reached, increment tap and try again
+
+                    if (i_cnt_tap(i_cnt_tap'high) = '1') then
+                        i_cnt_tap <= TO_UNSIGNED((TAP_COUNT_MAX - 1), i_cnt_tap'length);
+                        i_cnt_retry  <= i_cnt_retry - 1;
+--                        i_statistic_retries    <= i_statistic_retries + '1';
+--                        tapcount   <= (others => '0');
+
+                        i_deser_rst    <= '1';
+                        i_idelaye2_inc <= '0';
+                        i_idelaye2_ce  <= '0';
+
+                        i_fsm_align <= S_RST_DELAY;
+
                     else
-                            retries         <= retries + '1';
-                            RetryCntr       <= RetryCntr - '1';
-                            tapcount        <= tapcount + '1';
-                            Maxcount        <= Maxcount - '1';
-                            CTRL_RESET      <= '0';
-                            CTRL_INC        <= '1';
-                            CTRL_CE         <= '1';
-                            i_fsm_align      <= S_GET_EDGE;
+                        i_deser_rst    <= '0';
+                        i_idelaye2_inc <= '1';
+                        i_idelaye2_ce  <= '1';
+
+--                        i_statistic_retries    <= i_statistic_retries + '1';
+--                        tapcount   <= tapcount + '1';
+                        i_cnt_retry <= i_cnt_retry - 1;
+                        i_cnt_tap   <= i_cnt_tap - 1;
+
+                        i_fsm_align <= S_GET_EDGE;
                     end if;
                 end if;
             end if;
 
         when S_WAIT_SAMPLE_STABLE =>
-            if (end_handshake = '1') then
-                if (GenCntr(GenCntr'high) = '1') then  -- sampled x times the same edge data
-                    STABLE_DETECT(index)   <= '1';
-                    GenCntr                   <= std_logic_vector(TO_UNSIGNED((DATAWIDTH-1),(GenCntr'high+1)));      --recycle stablecounter for compare purposes
-                    i_fsm_align                <= S_COMPARE_TRAINING;
+
+            if (i_handshake_end = '1') then
+                if (i_gen_cntr(i_gen_cntr'high) = '1') then  -- sampled x times the same edge data
+--                    STABLE_DETECT(index)   <= '1';
+
+                    --recycle stablecounter for compare purposes
+                    i_gen_cntr <= TO_UNSIGNED((G_BIT_COUNT - 1), i_gen_cntr'length);
+
+                    i_fsm_align <= S_COMPARE_TRAINING;
+
                 else
-                   if (edge_init /= edge_int) then     -- data not the same, increment tab and try again
-                        start_handshake <= '1';
-                        retries               <= retries + '1';
-                        RetryCntr             <= RetryCntr - '1';
-                        if (Maxcount(Maxcount'high) = '1') then
-                            tapcount              <= (others => '0');
-                            CTRL_RESET            <= '1';
-                            CTRL_INC              <= '0';
-                            CTRL_CE               <= '0';
-                            Maxcount              <= std_logic_vector(TO_UNSIGNED((TAP_COUNT_MAX-1),(Maxcount'high+1)));
-                            i_fsm_align            <= S_RST_DELAY;
+                   if (i_edge_sv /= i_edge) then     -- data not the same, increment tab and try again
+
+--                        i_statistic_retries <= i_statistic_retries + '1';
+                        i_handshake_start <= '1';
+                        i_cnt_retry <= i_cnt_retry - 1;
+
+                        if (i_cnt_tap(i_cnt_tap'high) = '1') then
+--                            tapcount <= (others => '0');
+
+                            i_deser_rst    <= '1';
+                            i_idelaye2_inc <= '0';
+                            i_idelaye2_ce  <= '0';
+
+                            i_cnt_tap <= TO_UNSIGNED((TAP_COUNT_MAX - 1), i_cnt_tap'length);
+                            i_fsm_align <= S_RST_DELAY;
+
                         else
-                            tapcount              <= tapcount + '1';
-                            Maxcount              <= Maxcount - '1';
-                            CTRL_RESET            <= '0';
-                            CTRL_INC              <= '1';
-                            CTRL_CE               <= '1';
-                            GenCntr               <= StableCntrLoad;
-                            i_fsm_align            <= S_GET_EDGE;
+                            i_deser_rst    <= '0';
+                            i_idelaye2_inc <= '1';
+                            i_idelaye2_ce  <= '1';
+
+--                            tapcount <= tapcount + '1';
+                            i_cnt_tap <= i_cnt_tap - 1;
+                            i_gen_cntr <= TO_UNSIGNED((STABLE_COUNT - 2), i_gen_cntr'length);--StableCntrLoad;
+                            i_fsm_align <= S_GET_EDGE;
+
                         end if;
+
                     else
-                        GenCntr               <= GenCntr - '1';
-                        CTRL_RESET            <= '0';
-                        CTRL_INC              <= '0';
-                        CTRL_CE               <= '0';
-                        start_handshake       <= '1';
+                        i_deser_rst    <= '0';
+                        i_idelaye2_inc <= '0';
+                        i_idelaye2_ce  <= '0';
+
+                        i_gen_cntr <= i_gen_cntr - 1;
+                        i_handshake_start <= '1';
+
                     end if;
                 end if;
             end if;
@@ -627,240 +729,321 @@ elsif (CLOCK'event and CLOCK = '1') then
         -- therefore no new data is 'grabbed' from the serdes module
 
         when S_COMPARE_TRAINING =>
-            if (GenCntr(GenCntr'high) = '1') then
-               start_handshake       <= '1';
-               if (Maxcount(Maxcount'high) = '1') then
-                    tapcount              <= (others => '0');
-                    CTRL_RESET            <= '1';
-                    CTRL_INC              <= '0';
-                    CTRL_CE               <= '0';
-                    Maxcount              <= std_logic_vector(TO_UNSIGNED((TAP_COUNT_MAX-1),(Maxcount'high+1)));
-                    i_fsm_align            <= S_RST_DELAY;
+
+            if (i_gen_cntr(i_gen_cntr'high) = '1') then
+
+               i_handshake_start <= '1';
+
+               if (i_cnt_tap(i_cnt_tap'high) = '1') then
+                    i_deser_rst    <= '1';
+                    i_idelaye2_inc <= '0';
+                    i_idelaye2_ce  <= '0';
+
+--                    tapcount    <= (others => '0');
+                    i_cnt_tap <= TO_UNSIGNED((TAP_COUNT_MAX - 1), i_cnt_tap'length);
+                    i_fsm_align <= S_RST_DELAY;
+
                else
-                    retries               <= retries + '1';
-                    RetryCntr             <= RetryCntr - '1';
-                    tapcount              <= tapcount + '1';
-                    Maxcount              <= Maxcount - '1';
-                    CTRL_RESET            <= '0';
-                    CTRL_INC              <= '1';
-                    CTRL_CE               <= '1';
-                    GenCntr               <= StableCntrLoad;
-                    i_fsm_align            <= S_GET_EDGE;
+                    i_deser_rst    <= '0';
+                    i_idelaye2_inc <= '1';
+                    i_idelaye2_ce  <= '1';
+
+--                    i_statistic_retries <= i_statistic_retries + '1';
+--                    tapcount            <= tapcount + '1';
+                    i_cnt_retry <= i_cnt_retry - 1;
+                    i_cnt_tap <= i_cnt_tap - 1;
+                    i_gen_cntr <= TO_UNSIGNED((STABLE_COUNT - 2), i_gen_cntr'length);--StableCntrLoad;
+                    i_fsm_align <= S_GET_EDGE;
+
               end if;
+
             else
-                if (CTRL_DATA = compare(TO_INTEGER(UNSIGNED(GenCntr)))) then
-                    TRAINING_DETECT(index)   <= '1';
+              if (i_deser_d(i_deser_d_sv'range) = sr_train_compare(TO_INTEGER(i_gen_cntr))) then
 
-                    if (GenCntr = DATAWIDTH-1) then
-                        CTRL_SAMPLEINFIRSTBIT_i <= '0';
-                        CTRL_SAMPLEINLASTBIT_i  <= '1';
-                        CTRL_SAMPLEINOTHERBIT_i <= '0';
-                    elsif (GenCntr = DATAWIDTH-2) then
-                        CTRL_SAMPLEINFIRSTBIT_i <= '1';
-                        CTRL_SAMPLEINLASTBIT_i  <= '0';
-                        CTRL_SAMPLEINOTHERBIT_i <= '0';
-                    else
-                        CTRL_SAMPLEINFIRSTBIT_i <= '0';
-                        CTRL_SAMPLEINLASTBIT_i  <= '0';
-                        CTRL_SAMPLEINOTHERBIT_i <= '1';
-                    end if;
+--                TRAINING_DETECT(index) <= '1';
 
-                    i_fsm_align               <= S_VALID_BEGIN_FOUND;
-                end if;
-                GenCntr             <= GenCntr - '1';
+--                if (i_gen_cntr = G_BIT_COUNT - 1) then
+--                  CTRL_SAMPLEINFIRSTBIT_i <= '0';
+--                  CTRL_SAMPLEINLASTBIT_i  <= '1';
+--                  CTRL_SAMPLEINOTHERBIT_i <= '0';
+--
+--                elsif (i_gen_cntr = G_BIT_COUNT - 2) then
+--                  CTRL_SAMPLEINFIRSTBIT_i <= '1';
+--                  CTRL_SAMPLEINLASTBIT_i  <= '0';
+--                  CTRL_SAMPLEINOTHERBIT_i <= '0';
+--
+--                else
+--                  CTRL_SAMPLEINFIRSTBIT_i <= '0';
+--                  CTRL_SAMPLEINLASTBIT_i  <= '0';
+--                  CTRL_SAMPLEINOTHERBIT_i <= '1';
+--
+--                end if;
+
+                i_fsm_align <= S_VALID_BEGIN_FOUND;
+
+              end if;
+
+                i_gen_cntr <= i_gen_cntr - 1;
+
             end if;
+
 
         when S_VALID_BEGIN_FOUND =>
-            start_handshake <= '1';
-            Maxcount        <= Maxcount - '1';
-            tapcount        <= tapcount + '1';
-            CTRL_RESET      <= '0';
-            CTRL_INC        <= '1';
-            CTRL_CE         <= '1';
-            i_fsm_align      <= S_CHK_FIRST_EDGE_CHANGED;
+
+            i_deser_rst    <= '0';
+            i_idelaye2_inc <= '1';
+            i_idelaye2_ce  <= '1';
+
+            i_handshake_start <= '1';
+
+--            tapcount        <= tapcount + 1;
+            i_cnt_tap <= i_cnt_tap - 1;
+            i_fsm_align <= S_CHK_FIRST_EDGE_CHANGED;
+
 
         when S_CHK_FIRST_EDGE_CHANGED =>
-            if (end_handshake = '1') then
-                IF (
-                    ((CTRL_DATA = STD_LOGIC_VECTOR(UNSIGNED(DATA_init) ROR 1)) and (INVERSE_BITORDER = FALSE)) or
-                    ((CTRL_DATA = STD_LOGIC_VECTOR(UNSIGNED(DATA_init) ROL 1)) and (INVERSE_BITORDER = TRUE))
-                        ) THEN  --edge found (1 time)
-                    start_handshake <= '1';
-                    CTRL_RESET      <= '0';
-                    CTRL_INC        <= '0';
-                    CTRL_CE         <= '0';
-                    GenCntr         <= std_logic_vector(TO_UNSIGNED((STABLE_COUNT-1),(GenCntr'high+1)));
-                    i_fsm_align      <= S_CHK_FIRST_EDGE_STABLE;
+
+            if (i_handshake_end = '1') then
+                if (
+                    ((i_deser_d(i_deser_d_sv'range) = (UNSIGNED(i_deser_d_sv) ROR 1)) and (INVERSE_BITORDER = FALSE)) or
+                    ((i_deser_d(i_deser_d_sv'range) = (UNSIGNED(i_deser_d_sv) ROL 1)) and (INVERSE_BITORDER = TRUE))
+                        ) then  --edge found (1 time)
+
+                    i_deser_rst    <= '0';
+                    i_idelaye2_inc <= '0';
+                    i_idelaye2_ce  <= '0';
+
+                    i_handshake_start <= '1';
+                    i_gen_cntr <= TO_UNSIGNED((STABLE_COUNT - 1), i_gen_cntr'length);
+                    i_fsm_align <= S_CHK_FIRST_EDGE_STABLE;
+
                 else
-                    start_handshake <= '1';
-                    if (Maxcount(Maxcount'high) = '1') then
-                        tapcount        <= (others => '0');
-                        CTRL_RESET      <= '1';
-                        CTRL_INC        <= '0';
-                        CTRL_CE         <= '0';
-                        Maxcount        <= std_logic_vector(TO_UNSIGNED((TAP_COUNT_MAX-1),(Maxcount'high+1)));
-                        i_fsm_align      <= S_RST_DELAY;
+                    i_handshake_start <= '1';
+
+                    if (i_cnt_tap(i_cnt_tap'high) = '1') then
+                        i_cnt_tap <= TO_UNSIGNED((TAP_COUNT_MAX - 1), i_cnt_tap'length);
+
+                        i_deser_rst    <= '1';
+                        i_idelaye2_inc <= '0';
+                        i_idelaye2_ce  <= '0';
+
+--                        tapcount        <= (others => '0');
+                        i_fsm_align <= S_RST_DELAY;
+
                     else
-                        Maxcount        <= Maxcount - '1';
-                        tapcount        <= tapcount + '1';
-                        CTRL_RESET      <= '0';
-                        CTRL_INC        <= '1';
-                        CTRL_CE         <= '1';
+                        i_cnt_tap <= i_cnt_tap - 1;
+--                        tapcount        <= tapcount + 1;
+                        i_deser_rst    <= '0';
+                        i_idelaye2_inc <= '1';
+                        i_idelaye2_ce  <= '1';
+
                     end if;
                 end if;
             end if;
+
 
         when S_CHK_FIRST_EDGE_STABLE =>
-            if (end_handshake = '1') then
-                start_handshake             <= '1';
-                if (GenCntr(GenCntr'high) = '1') then -- edge detected ok
-                    windowcount                 <= windowcount + '1';
-                    bitcount                    <= bitcount + '1';
-                    tapcount                    <= tapcount + '1';
-                    Maxcount                    <= Maxcount - '1';
-                    CTRL_RESET                  <= '0';
-                    CTRL_INC                    <= '1';
-                    CTRL_CE                     <= '1';
-                    FIRST_EDGE_FOUND(index)     <= '1';
-                    i_fsm_align                  <= S_CHK_SECOND_EDGE_CHANGED;
+
+            if (i_handshake_end = '1') then
+
+                i_handshake_start <= '1';
+
+                if (i_gen_cntr(i_gen_cntr'high) = '1') then -- edge detected ok
+
+                    i_deser_rst    <= '0';
+                    i_idelaye2_inc <= '1';
+                    i_idelaye2_ce  <= '1';
+
+--                    bitcount   <= bitcount + '1';
+--                    tapcount   <= tapcount + '1';
+                    windowcount <= windowcount + 1;
+                    i_cnt_tap  <= i_cnt_tap - 1;
+
+--                    FIRST_EDGE_FOUND(index) <= '1';
+                    i_fsm_align <= S_CHK_SECOND_EDGE_CHANGED;
+
                 else
-                    GenCntr                     <= GenCntr - '1';
-                    IF (
-                    ((CTRL_DATA = STD_LOGIC_VECTOR(UNSIGNED(DATA_init) ROR 1)) and (INVERSE_BITORDER = FALSE)) or
-                    ((CTRL_DATA = STD_LOGIC_VECTOR(UNSIGNED(DATA_init) ROL 1)) and (INVERSE_BITORDER = TRUE))
-                        ) THEN
-                        CTRL_RESET          <= '0';
-                        CTRL_INC            <= '0';
-                        CTRL_CE             <= '0';
+                    i_gen_cntr <= i_gen_cntr - 1;
+
+                    if (
+                    ((i_deser_d(i_deser_d_sv'range) = (UNSIGNED(i_deser_d_sv) ROR 1)) and (INVERSE_BITORDER = FALSE)) or
+                    ((i_deser_d(i_deser_d_sv'range) = (UNSIGNED(i_deser_d_sv) ROL 1)) and (INVERSE_BITORDER = TRUE))
+                        ) then
+
+                        i_deser_rst    <= '0';
+                        i_idelaye2_inc <= '0';
+                        i_idelaye2_ce  <= '0';
+
                     else -- edge changed during stability test
-                        GenCntr             <= std_logic_vector(TO_UNSIGNED((STABLE_COUNT-1),(GenCntr'high+1)));
-                        tapcount            <= tapcount + '1'; -- increment tapcount by one and try again
-                        bitcount            <= bitcount + '1';
-                        Maxcount            <= Maxcount - '1';
-                        CTRL_RESET          <= '0';
-                        CTRL_INC            <= '1';
-                        CTRL_CE             <= '1';
-                        i_fsm_align          <= S_CHK_FIRST_EDGE_CHANGED;
+                        i_deser_rst    <= '0';
+                        i_idelaye2_inc <= '1';
+                        i_idelaye2_ce  <= '1';
+
+--                        tapcount   <= tapcount + '1'; -- increment tapcount by one and try again
+--                        bitcount   <= bitcount + '1';
+                        i_gen_cntr <= TO_UNSIGNED((STABLE_COUNT - 1), i_gen_cntr'length);
+                        i_cnt_tap  <= i_cnt_tap - 1;
+                        i_fsm_align <= S_CHK_FIRST_EDGE_CHANGED;
+
                     end if;
                 end if;
             end if;
 
+
+
         when S_CHK_SECOND_EDGE_CHANGED =>
-            if (end_handshake = '1') then
-                IF (
-                    ((CTRL_DATA = STD_LOGIC_VECTOR(UNSIGNED(DATA_init) ROR 2)) and (INVERSE_BITORDER = FALSE)) or
-                    ((CTRL_DATA = STD_LOGIC_VECTOR(UNSIGNED(DATA_init) ROL 2)) and (INVERSE_BITORDER = TRUE))
-                        ) THEN   -- 2nd edge found, window found
-                    SECOND_EDGE_FOUND(index)                      <= '1';
-                    WINDOW_WIDTH((10*index)+9 downto 10*index) <= windowcount;
-                    BIT_WIDTH((10*index)+9 downto 10*index) <= bitcount;
-                    GenCntr             <= ("0000000" & windowcount(9 downto 1)) - "10"; --divide by 2
-                    start_handshake     <= '1';
-                    tapcount            <= tapcount - '1';
-                    CTRL_RESET          <= '0';
-                    CTRL_INC            <= '0';
-                    CTRL_CE             <= '1';
-                    i_fsm_align          <= S_WINDOW_FOUND;
+
+            if (i_handshake_end = '1') then
+                if (
+                    ((i_deser_d(i_deser_d_sv'range) = (UNSIGNED(i_deser_d_sv) ROR 2)) and (INVERSE_BITORDER = FALSE)) or
+                    ((i_deser_d(i_deser_d_sv'range) = (UNSIGNED(i_deser_d_sv) ROL 2)) and (INVERSE_BITORDER = TRUE))
+                        ) then   -- 2nd edge found, window found
+
+--                    SECOND_EDGE_FOUND(index) <= '1';
+--                    WINDOW_WIDTH((10 * index) + 9 downto 10 * index) <= windowcount;
+--                    BIT_WIDTH((10 * index) + 9 downto 10 * index) <= bitcount;
+
+                    i_handshake_start <= '1';
+--                    i_gen_cntr <= ("0000000" & windowcount(9 downto 1)) - "10"; --divide by 2
+                    i_gen_cntr <= ("0000000" & windowcount(9 downto 1)) - 2; --divide by 2
+--                    tapcount   <= tapcount - '1';
+
+                    i_deser_rst    <= '0';
+                    i_idelaye2_inc <= '0';
+                    i_idelaye2_ce  <= '1';
+
+                    i_fsm_align <= S_WINDOW_FOUND;
+
                 else
-                        start_handshake <= '1';
-                        if (Maxcount(Maxcount'high) = '1') then  --overrun tapcount
-                            CTRL_RESET      <= '1';
-                            CTRL_INC        <= '0';
-                            CTRL_CE         <= '0';
-                            i_fsm_align   <= S_RST_DELAY;
-                        else
-                            windowcount     <= windowcount + '1';
-                            bitcount        <= bitcount + '1';
-                            Maxcount        <= Maxcount - '1';
-                            tapcount        <= tapcount + '1';
-                            CTRL_RESET      <= '0';
-                            CTRL_INC        <= '1';
-                            CTRL_CE         <= '1';
-                        end if;
+                    i_handshake_start <= '1';
+
+                    if (i_cnt_tap(i_cnt_tap'high) = '1') then  --overrun tapcount
+                      i_deser_rst    <= '1';
+                      i_idelaye2_inc <= '0';
+                      i_idelaye2_ce  <= '0';
+
+                      i_fsm_align <= S_RST_DELAY;
+
+                    else
+                      i_deser_rst    <= '0';
+                      i_idelaye2_inc <= '1';
+                      i_idelaye2_ce  <= '1';
+
+                      windowcount <= windowcount + 1;
+                      i_cnt_tap   <= i_cnt_tap - 1;
+--                      bitcount    <= bitcount + '1';
+--                      tapcount    <= tapcount + '1';
+
+                    end if;
                 end if;
             end if;
+
 
         when S_WINDOW_FOUND =>
-            if (end_handshake = '1') then
-                if (GenCntr(GenCntr'high) = '1') then
-                   --TAP_SETTING((10*index)+9 downto 10*index)      <= tapcount;
-                   i_fsm_align   <= S_START_WORD_ALIGN;
-                else
-                   start_handshake     <= '1';
-                   tapcount            <= tapcount - '1';
-                   GenCntr             <= GenCntr - '1';
-                   CTRL_RESET          <= '0';
-                   CTRL_INC            <= '0';
-                   CTRL_CE             <= '1';
-                end if;
+
+            if (i_handshake_end = '1') then
+              if (i_gen_cntr(i_gen_cntr'high) = '1') then
+                 --TAP_SETTING((10*index)+9 downto 10*index)      <= tapcount;
+                 i_fsm_align <= S_START_WORD_ALIGN;
+
+              else
+                 i_deser_rst    <= '0';
+                 i_idelaye2_inc <= '0';
+                 i_idelaye2_ce  <= '1';
+
+                 i_handshake_start <= '1';
+                 i_gen_cntr <= i_gen_cntr - 1;
+--                 tapcount <= tapcount - '1';
+
+              end if;
             end if;
 
-        when S_RST_DELAY_MAN =>
-            if (end_handshake = '1') then
-               if (GenCntr(GenCntr'high) = '1') then
-                   i_fsm_align          <= S_START_WORD_ALIGN;
-                   --TAP_SETTING((10*index)+9 downto 10*index)      <= tapcount;
-               else
-                   GenCntr             <= GenCntr - '1';
-                   start_handshake     <= '1';
-                   tapcount            <= tapcount + '1';
-                   CTRL_RESET          <= '0';
-                   CTRL_INC            <= '1';
-                   CTRL_CE             <= '1';
-               end if;
-            end if;
+
+--        when S_RST_DELAY_MAN =>
+--            if (i_handshake_end = '1') then
+--               if (i_gen_cntr(i_gen_cntr'high) = '1') then
+--                   i_fsm_align <= S_START_WORD_ALIGN;
+--                   --TAP_SETTING((10*index)+9 downto 10*index)      <= tapcount;
+--               else
+--                   i_deser_rst    <= '0';
+--                   i_idelaye2_inc <= '1';
+--                   i_idelaye2_ce  <= '1';
+--
+--                   i_handshake_start <= '1';
+--                   i_gen_cntr             <= i_gen_cntr - '1';
+----                   tapcount            <= tapcount + '1';
+--
+--               end if;
+--            end if;
 
 -- wordalignment, can fail in manual tap mode, or when bitalign algorithm fails
 
         when S_START_WORD_ALIGN =>
-            if (CTRL_DATA = TRAINING) then
-                WORD_ALIGN(index)   <= '1';
-                i_fsm_align          <= S_ALIGNMENT_DONE;
+
+            if (i_deser_d(i_deser_d_sv'range) = TO_UNSIGNED(C_CCD_CHSYNC_TRAINING, G_BIT_COUNT)) then
+--                WORD_ALIGN(index) <= '1';
+                i_fsm_align <= S_ALIGNMENT_DONE;
+
             else
-                start_handshake     <= '1';
-                GenCntr             <= std_logic_vector(TO_UNSIGNED((DATAWIDTH-2),(GenCntr'high+1)));
-                CTRL_RESET          <= '0';
-                CTRL_INC            <= '0';
-                CTRL_CE             <= '0';
-                CTRL_BITSLIP        <= '1';
-                i_fsm_align          <= S_DO_WORD_ALIGN;
+                i_deser_rst    <= '0';
+                i_idelaye2_inc <= '0';
+                i_idelaye2_ce  <= '0';
+                i_bitslip      <= '1';
+
+                i_handshake_start <= '1';
+                i_gen_cntr <= TO_UNSIGNED((G_BIT_COUNT - 2), i_gen_cntr'length);
+                i_fsm_align <= S_DO_WORD_ALIGN;
+
             end if;
+
 
         when S_DO_WORD_ALIGN =>
-            if (end_handshake = '1') then
-                if (CTRL_DATA = TRAINING) then
-                    WORD_ALIGN(index)   <= '1';
-                    i_fsm_align          <= S_ALIGNMENT_DONE;
+
+--            if (i_handshake_end = '1') then
+              if (i_deser_d(i_deser_d_sv'range) = TO_UNSIGNED(C_CCD_CHSYNC_TRAINING, G_BIT_COUNT)) then
+--                  WORD_ALIGN(index) <= '1';
+                  i_bitslip      <= '0';
+                  i_fsm_align <= S_ALIGNMENT_DONE;
+
+              else
+                if (i_gen_cntr(i_gen_cntr'high) = '1') then --alignment failed
+--                    TAP_SETTING((10 * index) + 9 downto 10 * index) <= tapcount;
+--                    NROF_RETRIES((16 * index) + 15 downto 16 * index) <= i_statistic_retries;
+                    i_fsm_align <= S_IDLE;
+
                 else
-                    if (GenCntr(GenCntr'high) = '1') then --alignment failed
-                        TAP_SETTING((10*index)+9 downto 10*index)      <= tapcount;
-                        NROF_RETRIES((16*index)+15 downto 16*index)    <= retries;
-                        i_fsm_align      <= S_IDLE;
-                    else
-                        start_handshake <= '1';
-                        CTRL_BITSLIP    <= '1';
-                        GenCntr             <= GenCntr - '1';
-                    end if;
+                    i_bitslip <= '1';
+
+                    i_handshake_start <= '1';
+                    i_gen_cntr <= i_gen_cntr - 1;
+
                 end if;
-            end if;
+              end if;
+--            end if;
 
         when S_ALIGNMENT_DONE =>
-            done_align_i        <= '1';
-            CTRL_RESET          <= '0';
-            CTRL_INC            <= '0';
-            CTRL_CE             <= '0';
-            CTRL_BITSLIP        <= '0';
-            NROF_RETRIES((16*index)+15 downto 16*index)    <= retries;
-            TAP_SETTING((10*index)+9 downto 10*index)      <= tapcount;
-            i_fsm_align          <= S_IDLE;
+
+            i_deser_rst    <= '0';
+            i_idelaye2_inc <= '0';
+            i_idelaye2_ce  <= '0';
+            i_bitslip      <= '0';
+--            NROF_RETRIES((16 * index) + 15 downto 16 * index) <= i_statistic_retries;
+--            TAP_SETTING((10 * index) + 9 downto 10 * index) <= tapcount;
+
+            i_align_done <= '1';
+            i_fsm_align <= S_IDLE;
 
         when others =>
-            i_fsm_align   <= S_IDLE;
+            i_fsm_align <= S_IDLE;
 
     end case;
 end if;
 end process;
 
+
+
+
+p_in_align_start <= p_in_tst(0);
 
 end xilinx;
 

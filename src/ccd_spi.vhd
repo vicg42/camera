@@ -42,7 +42,6 @@ p_out_err       : out  std_logic;
 
 p_out_tst       : out  std_logic_vector(31 downto 0);
 p_in_tst        : in   std_logic_vector(31 downto 0);
-p_in_tst2       : in   std_logic_vector(47 downto 0);
 
 p_in_clk        : in   std_logic;
 p_in_rst        : in   std_logic
@@ -147,7 +146,7 @@ signal i_ccd_win    : TCCD_WinINIT;
 begin
 
 p_out_tst(0) <= i_clkcnt(i_clkcnt'high);
-p_out_tst(1) <= OR_reduce(tst_fsmstate_dly);
+p_out_tst(1) <= OR_reduce(tst_fsmstate_dly) or i_align;
 p_out_tst(2) <= i_spi_core_tst_out(1);
 p_out_tst(3) <= OR_reduce(i_rxd);
 p_out_tst(4) <= p_in_tst(0);
@@ -305,7 +304,8 @@ begin
             i_spi_core_dir <= C_SPI_WRITE;
             i_spi_core_start <= '0';
 
-            if i_align = '1' then
+--            if i_align = '1' then
+            if i_btn_push = '1' then
               i_fsm_spi_cs <= S_SET_RIO;--S_SET_STOP;--S_WAIT_ALIGN;
             end if;
 
@@ -435,7 +435,7 @@ begin
           when S_WAIT2_BTN_2 =>
 
             if i_busy = '0' then
-              i_ccd_readout <= not i_ccd_readout;
+--              i_ccd_readout <= not i_ccd_readout;
               i_fsm_spi_cs <= S_WAIT2_BTN_2;
             end if;
 
@@ -512,34 +512,6 @@ tst_fsmstate <= std_logic_vector(TO_UNSIGNED(16#0B#,tst_fsmstate'length)) when i
 --                std_logic_vector(TO_UNSIGNED(16#0F#,tst_fsmstate'length)) when i_fsm_spi_cs = S_CCD_RST_1     else
 --                std_logic_vector(TO_UNSIGNED(16#0C#,tst_fsmstate'length)) when i_fsm_spi_cs = S_CCD_RST       else
 
-
---i_ccd_win(0) <= std_logic_vector(TO_UNSIGNED(195, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(16#0001#, C_CCD_SPI_DWIDTH)); --RIO_ACTIVE(15..0)
---i_ccd_win(1) <= std_logic_vector(TO_UNSIGNED(196, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(16#0000#, C_CCD_SPI_DWIDTH)); --RIO_ACTIVE(31..16)
---
-----RIO_0
---i_ccd_win(2) <= std_logic_vector(TO_UNSIGNED((256 + (3 * 0) + 0), C_CCD_SPI_AWIDTH - 1))
---              & p_in_tst2(7 downto 0)
---              & p_in_tst2(15 downto 8); --X_START & X_END
---i_ccd_win(3) <= std_logic_vector(TO_UNSIGNED((256 + (3 * 0) + 1), C_CCD_SPI_AWIDTH - 1)) & p_in_tst2(31 downto 16);     --Y_START
---i_ccd_win(4) <= std_logic_vector(TO_UNSIGNED((256 + (3 * 0) + 2), C_CCD_SPI_AWIDTH - 1)) & p_in_tst2(47 downto 32);     --Y_END
---
-----RIO_1
---i_ccd_win(5) <= std_logic_vector(TO_UNSIGNED((256 + (3 * 1) + 0), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(0          , C_CCD_SPI_DWIDTH / 2))
---                                                                         & std_logic_vector(TO_UNSIGNED((4096 / 64), C_CCD_SPI_DWIDTH / 2));
---i_ccd_win(6) <= std_logic_vector(TO_UNSIGNED((256 + (3 * 1) + 1), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(0          , C_CCD_SPI_DWIDTH));
---i_ccd_win(7) <= std_logic_vector(TO_UNSIGNED((256 + (3 * 1) + 2), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(4096       , C_CCD_SPI_DWIDTH));
---
-----RIO_2
---i_ccd_win(8) <= std_logic_vector(TO_UNSIGNED((256 + (3 * 2) + 0), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(0          , C_CCD_SPI_DWIDTH / 2))
---                                                                         & std_logic_vector(TO_UNSIGNED((4096 / 64), C_CCD_SPI_DWIDTH / 2));
---i_ccd_win(9) <= std_logic_vector(TO_UNSIGNED((256 + (3 * 2) + 1), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(0          , C_CCD_SPI_DWIDTH));
---i_ccd_win(10) <= std_logic_vector(TO_UNSIGNED((256 + (3 * 2) + 2), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(4096       , C_CCD_SPI_DWIDTH));
---
-----RIO_3
---i_ccd_win(11) <= std_logic_vector(TO_UNSIGNED((256 + (3 * 3) + 0), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(0          , C_CCD_SPI_DWIDTH / 2))
---                                                                         & std_logic_vector(TO_UNSIGNED((4096 / 64), C_CCD_SPI_DWIDTH / 2));
---i_ccd_win(12) <= std_logic_vector(TO_UNSIGNED((256 + (3 * 3) + 1), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(0          , C_CCD_SPI_DWIDTH));
---i_ccd_win(13) <= std_logic_vector(TO_UNSIGNED((256 + (3 * 3) + 2), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(4096       , C_CCD_SPI_DWIDTH));
 
 --END MAIN
 end architecture;

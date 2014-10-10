@@ -129,7 +129,7 @@ p_in_clk   => pin_in_refclk
 --Технологический порт
 --***********************************************************
 pin_out_led(0) <= i_test_led(0);
-pin_out_led(1) <= '0';
+pin_out_led(1) <= i_test_led(0);
 
 
 m_led1_tst: fpga_test_01

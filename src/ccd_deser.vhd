@@ -60,6 +60,7 @@ signal i_fsm_align_cs        : TFsm_align;
 
 signal i_ser_din             : std_logic;
 
+signal i_idelaye2_ld         : std_logic;
 signal i_idelaye2_dout       : std_logic;
 signal i_idelaye2_ce         : std_logic;
 signal i_idelaye2_inc        : std_logic;
@@ -67,13 +68,14 @@ signal i_idelaye2_tapcnt     : unsigned(5 downto 0);
 
 signal i_deser_rst           : std_logic;
 signal i_deser_d             : unsigned(13 downto 0);
+signal sr_deser_d            : unsigned(p_out_data'range);
 signal icascade1             : std_logic;
 signal icascade2             : std_logic;
 
 signal i_align_ok            : std_logic;
 signal i_bitslip_cnt         : unsigned(3 downto 0);
 signal i_bitslip             : std_logic;
-signal i_cntok               : unsigned(11 downto 0);
+signal i_cntok               : unsigned(12 downto 0);
 
 signal i_cntdly              : unsigned(6 downto 0);
 
@@ -114,7 +116,7 @@ C                 => p_in_clkdiv,
 CE                => i_idelaye2_ce,
 INC               => i_idelaye2_inc,
 IDATAIN           => i_ser_din,
-LD                => '0',
+LD                => i_idelaye2_ld,
 REGRST            => i_deser_rst, --p_in_rst,--
 LDPIPEEN          => '0',
 CNTVALUEIN        => (others => '0'),
@@ -249,13 +251,18 @@ if rising_edge(p_in_clkdiv) then
     i_idelaye2_tapcnt <= (others => '0');
     i_idelaye2_inc <= '0';
     i_idelaye2_ce <= '0';
+    i_idelaye2_ld <= '0';
 
     i_cntok <= (others => '0');
 
     i_cntdly <= (others => '0');
     i_deser_rst <= '0';
 
+    sr_deser_d <= (others => '0');
+
   else
+
+    sr_deser_d <= i_deser_d(G_BIT_COUNT - 1 downto 0);
 
     case i_fsm_align_cs is
 
@@ -281,6 +288,7 @@ if rising_edge(p_in_clkdiv) then
 
           if i_cntdly = TO_UNSIGNED(10, i_cntdly'length) then
             i_cntdly <= (others => '0');
+            i_idelaye2_ld <= '1';
             i_fsm_align_cs <= S_BITSLIP_ANLZ;
           else
             i_cntdly <= i_cntdly + 1;
@@ -289,10 +297,10 @@ if rising_edge(p_in_clkdiv) then
 
       when S_BITSLIP_ANLZ =>
 
+          i_idelaye2_ld <= '0';
           i_cntok <= (others => '0');
 
-          if i_deser_d(G_BIT_COUNT - 1 downto 0)
-              /= TO_UNSIGNED(C_CCD_CHSYNC_TRAINING, G_BIT_COUNT) then
+          if sr_deser_d /= TO_UNSIGNED(C_CCD_CHSYNC_TRAINING, sr_deser_d'length) then
 
             if i_bitslip_cnt = TO_UNSIGNED(10, G_BIT_COUNT) then
               i_bitslip_cnt <= (others => '0');
@@ -300,7 +308,7 @@ if rising_edge(p_in_clkdiv) then
               --idelaye2 adjustment
               i_idelaye2_tapcnt <= i_idelaye2_tapcnt + 1;
               i_idelaye2_inc <= '1';
-              i_idelaye2_ce <= not i_idelaye2_tapcnt(5);
+              i_idelaye2_ce <= '1';--not i_idelaye2_tapcnt(5);
 
               if i_idelaye2_tapcnt = (i_idelaye2_tapcnt'range => '1') then
                 i_fsm_align_cs <= S_IDLE;
@@ -341,8 +349,7 @@ if rising_edge(p_in_clkdiv) then
 
       when S_ALIGN_ANLZ =>
 
-          if i_deser_d(G_BIT_COUNT - 1 downto 0)
-              = TO_UNSIGNED(C_CCD_CHSYNC_TRAINING, G_BIT_COUNT) then
+          if sr_deser_d /= TO_UNSIGNED(C_CCD_CHSYNC_TRAINING, sr_deser_d'length) then
 
             if i_cntok = (i_cntok'range => '1') then
               i_cntok <= (others => '0');
@@ -367,7 +374,7 @@ end if;
 end process;
 
 
-p_out_data <= std_logic_vector(i_deser_d(p_out_data'range));
+p_out_data <= std_logic_vector(sr_deser_d);
 p_out_align_ok <= i_align_ok;
 
 

@@ -31,6 +31,7 @@ use work.reduce_pack.all;
 
 entity ccd_deser_clk is
 generic (
+CLKIN_DIFF      : boolean := TRUE ;
 CLKIN_PERIOD    : real := 6.000 ;     -- clock period (ns) of input clock on clkin_p
 MMCM_MODE       : integer := 1 ;      -- Parameter to set multiplier for MMCM either 1 or 2 to get VCO in correct operating range. 1 multiplies clock by 7, 2 multiplies clock by 14
 MMCM_MODE_REAL  : real := 1.000 ;     -- Parameter to set multiplier for MMCM either 1 or 2 to get VCO in correct operating range. 1 multiplies clock by 7, 2 multiplies clock by 14
@@ -56,7 +57,7 @@ end entity ccd_deser_clk ;
 
 architecture xilinx of ccd_deser_clk is
 
-signal clkint        : std_logic ;
+signal g_ccd2fpga    : std_logic ;
 signal mmcmout_xn    : std_logic ;
 signal mmcmout_x1    : std_logic ;
 signal mmcmout_d2    : std_logic ;
@@ -73,17 +74,22 @@ p_out_tst <= (others => '0');
 --txclk_div <= clkint;
 --mmcm_lckd <= '1';
 
-m_ibufds : IBUFDS
+gen_clkin_diff : if CLKIN_DIFF = TRUE generate begin
+m_clk_ccd2fpga : IBUFGDS
 --generic map (
 --DIFF_TERM  => TRUE -- define into ucf file!!!
 --)
 port map (
 I  => clkin_p,
 IB => clkin_n,
-O  => clkint_tmp
+O  => g_ccd2fpga
 );
-m_clk_ccd2fpga : BUFG port map(I => clkint_tmp, O => clkint) ;
+end generate gen_clkin_diff;
 
+gen_clkin_diff_no : if CLKIN_DIFF = FALSE generate begin
+m_clk_ccd2fpga : IBUFG
+port map(I => clkin_p, O => g_ccd2fpga) ;
+end generate gen_clkin_diff_no;
 
 pixel_clk <= pixel_clk_int ;
 
@@ -152,7 +158,7 @@ PSINCDEC     => '0',
 PWRDWN       => '0',
 LOCKED       => mmcm_lckd,          -- active high mmcm lock signal
 CLKFBIN      => pixel_clk_int,      -- clock feedback input
-CLKIN1       => clkint,             -- primary clock input
+CLKIN1       => g_ccd2fpga,             -- primary clock input
 CLKIN2       => '0',                -- secondary clock input
 CLKINSEL     => '1',                -- selects '1' = clkin1, '0' = clkin2
 DADDR        => "0000000",          -- dynamic reconfig address input (7-bits)
@@ -272,7 +278,7 @@ DRDY        => open,
 PWRDWN      => '0',
 LOCKED      => mmcm_lckd,
 CLKFBIN     => pixel_clk_int,
-CLKIN1      => clkint,
+CLKIN1      => g_ccd2fpga,
 CLKIN2      => '0',
 CLKINSEL    => '1',
 DADDR       => "0000000",

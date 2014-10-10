@@ -42,7 +42,6 @@ p_out_status   : out  std_logic_vector(C_CCD_STATUS_LAST_BIT downto 0);
 
 p_out_tst      : out  std_logic_vector(31 downto 0);
 p_in_tst       : in   std_logic_vector(31 downto 0);
-p_in_tst2       : in   std_logic_vector(47 downto 0);
 
 p_in_refclk    : in   std_logic;
 p_in_ccdclk    : in   std_logic;
@@ -72,7 +71,6 @@ p_out_err       : out  std_logic;
 
 p_out_tst       : out   std_logic_vector(31 downto 0);
 p_in_tst        : in    std_logic_vector(31 downto 0);
-p_in_tst2       : in   std_logic_vector(47 downto 0);
 
 p_in_clk        : in   std_logic;
 p_in_rst        : in   std_logic
@@ -153,20 +151,20 @@ p_out_ccd.mosi <= i_spi_out.mosi;
 i_spi_in.miso <= p_in_ccd.miso;
 
 
-process(p_in_rst, p_in_ccdclk)
-begin
-  if rising_edge(p_in_ccdclk) then
-    if p_in_rst = '1' then
-      i_rstcnt <= (others => '0');
-    else
-      if i_rstcnt(selval(19, 8, strcmp(G_SIM, "OFF"))) /= '1' then
-        i_rstcnt <= i_rstcnt + 1;
-      end if;
-    end if;
-  end if;
-end process;
+--process(p_in_rst, p_in_ccdclk)
+--begin
+--  if rising_edge(p_in_ccdclk) then
+--    if p_in_rst = '1' then
+--      i_rstcnt <= (others => '0');
+--    else
+--      if i_rstcnt(selval(19, 8, strcmp(G_SIM, "OFF"))) /= '1' then
+--        i_rstcnt <= i_rstcnt + 1;
+--      end if;
+--    end if;
+--  end if;
+--end process;
 
-i_ccd_rst_n <= i_rstcnt( selval(19, 8, strcmp(G_SIM, "OFF")) );
+i_ccd_rst_n <= '1';--i_rstcnt( selval(19, 8, strcmp(G_SIM, "OFF")) );
 --i_ccd_rst <= not i_rstcnt( selval(19, 8, strcmp(G_SIM, "OFF")) );
 
 
@@ -193,7 +191,6 @@ p_out_err       => i_ccd_spi_err,
 
 p_out_tst       => i_tst_spi_out,
 p_in_tst        => p_in_tst(31 downto 0),
-p_in_tst2       => p_in_tst2,
 
 p_in_clk        => p_in_ccdclk,
 p_in_rst        => p_in_rst

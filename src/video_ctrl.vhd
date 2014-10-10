@@ -268,7 +268,8 @@ gen_dbgcs_off : if strcmp(G_DBGCS,"OFF") generate
 p_out_tst(0) <= '0';
 p_out_tst(4 downto 1) <=tst_vwriter_out(4 downto 1);
 p_out_tst(8 downto 5) <=tst_vreader_out(3 downto 0);
-p_out_tst(15 downto 9) <= (others=>'0');
+p_out_tst(9)          <= i_vread_en;
+p_out_tst(15 downto 10) <= (others=>'0');
 p_out_tst(19 downto 16) <= (others=>'0');
 p_out_tst(25 downto 20) <= (others=>'0');
 p_out_tst(31 downto 26) <= tst_vwriter_out(31 downto 26);

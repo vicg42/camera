@@ -64,7 +64,7 @@ port(
 p_in_data_p    : in    std_logic;
 p_in_data_n    : in    std_logic;
 
-p_out_data     : out   std_logic_vector(G_CCD_BIT_COUNT - 1 downto 0);
+p_out_data     : out   std_logic_vector(G_BIT_COUNT - 1 downto 0);
 p_out_align_ok : out   std_logic;
 
 p_out_tst      : out   std_logic_vector(31 downto 0);
@@ -149,20 +149,14 @@ signal i_vfr_pix_out    : std_logic_vector(p_out_vfr_data'range);
 begin
 
 -- IDELAYCTRL is needed for calibration
-delayctrl0 : IDELAYCTRL
+gen_delayctrl: for i in 0 to 1 generate begin
+m_delayctrl : IDELAYCTRL
 port map (
-RDY    => i_idelayctrl_rdy(0),
+RDY    => i_idelayctrl_rdy(i),
 REFCLK => p_in_refclk,
 RST    => p_in_rst
 );
-
--- IDELAYCTRL is needed for calibration
-delayctrl1 : IDELAYCTRL
-port map (
-RDY    => i_idelayctrl_rdy(1),
-REFCLK => p_in_refclk,
-RST    => p_in_rst
-);
+end generate gen_delayctrl;
 
 m_clk_fpga2ccd : OBUFDS
 port map (
@@ -317,7 +311,7 @@ end process;
 
 
 p_out_vfr_data <= i_vfr_pix_out;
-p_out_vfr_den  <= i_vfr_den_out;
+p_out_vfr_den  <= i_vfr_den_out and AND_reduce(i_align_ok);
 p_out_vfr_vs   <= i_vfr_vs_out ;
 p_out_vfr_hs   <= i_vfr_hs_out ;
 p_out_vfr_clk  <= i_clk_div;
@@ -336,7 +330,7 @@ process(i_clk_div)
 begin
 if rising_edge(i_clk_div) then
 
-  i_vfr_den_out  <= i_vfr_den and i_kernel_cnt(0);
+  i_vfr_den_out  <= (i_vfr_den and i_kernel_cnt(0));
   i_vfr_vs_out   <= i_vfr_vs ;
   i_vfr_hs_out   <= i_vfr_hs ;
 

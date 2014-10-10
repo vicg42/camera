@@ -137,7 +137,7 @@ p_out_status   : out  std_logic_vector(C_CCD_STATUS_LAST_BIT downto 0);
 
 p_out_tst      : out  std_logic_vector(31 downto 0);
 p_in_tst       : in   std_logic_vector(31 downto 0);
-p_in_tst2       : in   std_logic_vector(47 downto 0);
+--p_in_tst2       : in   std_logic_vector(47 downto 0);
 
 p_in_refclk    : in   std_logic;
 p_in_ccdclk    : in   std_logic;
@@ -222,7 +222,7 @@ p_in_clk   => pin_in_refclk
 
 i_ccd_clkref <= g_usrclk(0);
 i_ccd_clk    <= g_usrclk(1);
-i_ccd_clk2   <= g_usrclk(7);
+--i_ccd_clk2   <= g_usrclk(7);
 
 
 
@@ -249,7 +249,7 @@ p_out_status   => i_ccd_status,
 
 p_out_tst      => i_ccd_tst_out,
 p_in_tst       => i_ccd_tst_in,
-p_in_tst2       => i_ccd_tst2,
+--p_in_tst2       => i_ccd_tst2,
 
 p_in_refclk    => i_ccd_clkref,
 p_in_ccdclk    => i_ccd_clk   ,
@@ -268,10 +268,10 @@ p_in_rst       => i_rst
 --pin_out_TP2(1) <= i_ccd_tst_out(3);--clk:fpga -> ccd --i_video_vs;--
 --pin_out_TP2(2) <= i_ccd_tst_out(7);--clk:fpga <- ccd --i_btn_push;--
 
-pin_out_led(0) <= OR_reduce(tst_video_d(127 downto 0));
+pin_out_led(0) <= i_test_led(0);
 --pin_out_led(1) <= i_test_led(0);
 
-pin_out_TP2(0) <= i_video_vs and i_video_hs;
+pin_out_TP2(0) <= (i_video_vs and i_video_hs) or OR_reduce(tst_video_d(127 downto 0));
 pin_out_TP2(1) <= OR_reduce(tst_ccd_status);
 pin_out_TP2(2) <= OR_reduce(i_ccd_tst_out);
 

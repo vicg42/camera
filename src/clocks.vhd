@@ -219,7 +219,8 @@ begin
 -- CLKFBOUT = (CLKIN1/DIVCLK_DIVIDE) * CLKFBOUT_MULT_F
 -- CLKOUTn  = (CLKIN1/DIVCLK_DIVIDE) * CLKFBOUT_MULT_F/CLKOUTn_DIVIDE
 -- CLKFvco =  (54 MHz/1) * 18.500       = 999 MHz
--- CLKOUT0  = (54 MHz/1) * 18.500/27.750 = 36 MHz
+-- CLKOUT0  = (54 MHz/1) * 18.375/31.500 = 31.5 MHz
+-- CLKOUT0  = (54 MHz/1) * 18.750/20.250 = 50 MHz
 -- CLKOUT1  = (54 MHz/1) * 18.500/1     = 999 MHz
 -- CLKOUT2  = (54 MHz/1) * 18.500/1     = 999 MHz
 -- CLKOUT3  = (54 MHz/1) * 18.500/1     = 999 MHz
@@ -229,8 +230,10 @@ generic map(
 BANDWIDTH          => "OPTIMIZED", -- string := "OPTIMIZED"
 CLKIN1_PERIOD      => 18.518,      -- real := 0.0
 DIVCLK_DIVIDE      => 1,           -- integer := 1 (1 to 128)
-CLKFBOUT_MULT_F    => 18.375,      -- real := 1.0  (5.0 to 64.0)
-CLKOUT0_DIVIDE_F   => 31.500,       -- real := 1.0  (1.0 to 128.0)
+--CLKFBOUT_MULT_F    => 18.375,      -- real := 1.0  (5.0 to 64.0)
+--CLKOUT0_DIVIDE_F   => 31.500,      -- real := 1.0  (1.0 to 128.0)
+CLKFBOUT_MULT_F    => 18.750,      -- real := 1.0  (5.0 to 64.0)
+CLKOUT0_DIVIDE_F   => 20.250,      -- real := 1.0  (1.0 to 128.0)
 CLKOUT1_DIVIDE     => 1,           -- integer := 1
 CLKOUT2_DIVIDE     => 1,           -- integer := 1
 CLKOUT3_DIVIDE     => 1,           -- integer := 1

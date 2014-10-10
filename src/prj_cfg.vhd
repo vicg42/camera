@@ -37,10 +37,10 @@ constant C_PCFG_MEMARB_CH_COUNT     : integer := 2;
 
 --cfg VIDEO OUT
 constant C_PCGF_VOUT_TYPE  : string := "VGA";--"VGA"/"TV"
-constant C_PCGF_VOUT_TEST  : string := "ON";--"ON"/"OFF"
+constant C_PCGF_VOUT_TEST  : string := "OFF";--"ON"/"OFF"
 
-constant C_CGF_VBUFO_DWIDTH   : integer := 32;
-constant C_PCFG_VOUT_START_X  : integer := 0;
+constant C_CGF_VBUFO_DWIDTH   : integer := 16;
+constant C_PCFG_VOUT_START_X  : integer := 1024;
 constant C_PCFG_VOUT_START_Y  : integer := 1800;
 
 end prj_cfg;
