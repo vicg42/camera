@@ -128,7 +128,8 @@ type TCompare is array (0 to G_BIT_COUNT - 1) of unsigned(G_BIT_COUNT - 1 downto
 signal sr_train_compare  : TCompare;
 
 signal tst_deser_d_sv_ROL,tst_deser_d_sv_ROR : unsigned(G_BIT_COUNT - 1 downto 0);
-signal p_in_align_start  : std_logic;
+signal tst_deser_d_sv_ROL2,tst_deser_d_sv_ROR2 : unsigned(G_BIT_COUNT - 1 downto 0);
+
 signal sr_handshake_end  : std_logic_vector(0 to 4);
 
 constant TAP_COUNT_MAX  : integer := 32;
@@ -145,7 +146,11 @@ begin
 tst_deser_d_sv_ROL <= (UNSIGNED(i_deser_d_sv) ROL 1);
 tst_deser_d_sv_ROR <= (UNSIGNED(i_deser_d_sv) ROR 1);
 
-p_out_tst(0) <= OR_reduce(std_logic_vector(tst_deser_d_sv_ROL)) or OR_reduce(std_logic_vector(tst_deser_d_sv_ROR));
+tst_deser_d_sv_ROL2 <= (UNSIGNED(i_deser_d_sv) ROL 2);
+tst_deser_d_sv_ROR2 <= (UNSIGNED(i_deser_d_sv) ROR 2);
+
+p_out_tst(0) <= OR_reduce(std_logic_vector(tst_deser_d_sv_ROL)) or OR_reduce(std_logic_vector(tst_deser_d_sv_ROR)) or
+                OR_reduce(std_logic_vector(tst_deser_d_sv_ROL2)) or OR_reduce(std_logic_vector(tst_deser_d_sv_ROR2));
 
 
 m_ibufds : IBUFDS
@@ -331,9 +336,9 @@ if (p_in_rst = '1') then
   sr_handshake_end <= (others => '0');
   i_handshake_end <= '0';
 elsif rising_edge(p_in_clkdiv) then
-  sr_handshake_end <= i_handshake_start & sr_handshake_end(0 to 3);
+--  sr_handshake_end <= i_handshake_start & sr_handshake_end(0 to 3);
 --  i_handshake_end <= sr_handshake_end(2);
-  i_handshake_end <= sr_handshake_end(1);
+  i_handshake_end <= i_handshake_start;
 end if;
 end process handshaker;
 
@@ -423,13 +428,11 @@ if (p_in_rst = '1') then
 
 elsif rising_edge(p_in_clkdiv) then
 
-  i_align_start   <= '0';
-
   case i_fsm_serdesseq is
 
       when S_IDLE =>
         --CTRL_FIFO_RESET <= '0';
-        if (p_in_align_start = '1') then
+        if (p_in_tst(0) = '1') then --if (p_in_align_start = '1') then
 --          CTRL_FIFO_RESET <= '1';
 --          ALIGN_BUSY      <= '1';
           i_align_ok <= '0';
@@ -440,6 +443,7 @@ elsif rising_edge(p_in_clkdiv) then
         end if;
 
       when S_TRAIN_SERDES =>
+        i_align_start   <= '0';
         i_fsm_serdesseq  <= S_WAIT_TRAIN_SERDES_BUSYON;
 
       when S_WAIT_TRAIN_SERDES_BUSYON =>
@@ -1045,10 +1049,6 @@ elsif rising_edge(p_in_clkdiv) then
 end if;
 end process;
 
-
-
-
-p_in_align_start <= p_in_tst(0);
 
 end xilinx;
 

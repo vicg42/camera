@@ -170,9 +170,9 @@ if rising_edge(i_usr_dclk) then
 
       when S_SND_0 =>
 
-          if i_cntdly = TO_UNSIGNED(350, i_cntdly'length) then --OK
+--          if i_cntdly = TO_UNSIGNED(350, i_cntdly'length) then --OK
 --          if i_cntdly = TO_UNSIGNED(503, i_cntdly'length) then
---          if i_cntdly = TO_UNSIGNED(1003, i_cntdly'length) then
+          if i_cntdly = TO_UNSIGNED(1003, i_cntdly'length) then
             i_cntdly <= (others => '0');
             i_usr_d <= TO_UNSIGNED(16#3A6#, i_usr_d'length);
             i_fsm_send <= S_SND_STABLE_0;
