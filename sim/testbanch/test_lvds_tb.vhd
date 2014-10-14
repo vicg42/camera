@@ -63,7 +63,7 @@ end component test_lvds_rcv;
 signal i_sys_rst         : std_logic := '1';
 signal i_sys_clk         : std_logic := '0';
 
-signal i_usr_d           : unsigned(G_BIT_COUNT - 1 downto 0) := (others => '0');
+signal i_usr_d,i_usr_dcnt : unsigned(G_BIT_COUNT - 1 downto 0) := (others => '0');
 signal i_usr_dclk        : std_logic := '0';
 signal i_usr_dclken      : std_logic := '0';
 
@@ -81,9 +81,9 @@ signal i_align_start     : std_logic := '0';
 type TFsm_send is (
 S_IDLE          ,
 S_SND_0         ,
-S_SND_STABLE_0
---S_SND_1         ,
---S_SND_STABLE_1
+S_SND_STABLE_0  ,
+S_SND_1         ,
+S_SND_STABLE_1
 );
 
 signal i_fsm_send        : TFsm_send;
@@ -156,6 +156,7 @@ begin
 if rising_edge(i_usr_dclk) then
   if i_usr_dclken = '0' then
     i_usr_d <= (others => '0');
+    i_usr_dcnt <= (others => '0');
     i_fsm_send <= S_IDLE;
     i_cntdly <= (others => '0');
 
@@ -165,55 +166,59 @@ if rising_edge(i_usr_dclk) then
 
       when S_IDLE =>
 
-          i_usr_d <= (others => '0');
+          i_usr_dcnt <= (others => '0');
           i_fsm_send <= S_SND_0;
 
       when S_SND_0 =>
 
---          if i_cntdly = TO_UNSIGNED(350, i_cntdly'length) then --OK
+          i_usr_dcnt <= i_usr_dcnt + 1;
+
+          if i_cntdly = TO_UNSIGNED(333, i_cntdly'length) then --OK
 --          if i_cntdly = TO_UNSIGNED(503, i_cntdly'length) then
-          if i_cntdly = TO_UNSIGNED(1003, i_cntdly'length) then
+--          if i_cntdly = TO_UNSIGNED(1003, i_cntdly'length) then
             i_cntdly <= (others => '0');
             i_usr_d <= TO_UNSIGNED(16#3A6#, i_usr_d'length);
             i_fsm_send <= S_SND_STABLE_0;
           else
             i_cntdly <= i_cntdly + 1;
-            i_usr_d <= i_usr_d + 1;
+            i_usr_d <= i_usr_dcnt;
           end if;
 
       when S_SND_STABLE_0 =>
 
---          if i_cntdly = TO_UNSIGNED(1024 * 11, i_cntdly'length) then
---            i_cntdly <= (others => '0');
-            if i_align_done_out = '1' then
-            i_fsm_send <= S_SND_0;
-            else
-            i_fsm_send <= S_SND_STABLE_0;
-            end if;
---          else
---            i_cntdly <= i_cntdly + 1;
---          end if;
---
+          i_usr_dcnt <= i_usr_dcnt + 1;
 
---      when S_SND_1 =>
---
---          if i_cntdly = TO_UNSIGNED(10, i_cntdly'length) then
---            i_cntdly <= (others => '0');
---            i_fsm_send <= S_SND_STABLE_1;
---          else
---            i_cntdly <= i_cntdly + 1;
---            i_usr_d <= i_usr_d + 1;
---          end if;
---
---      when S_SND_STABLE_1 =>
---
---          if i_cntdly = TO_UNSIGNED(5, i_cntdly'length) then
---            i_cntdly <= (others => '0');
---            i_fsm_send <= S_SND_0;
---          else
---            i_cntdly <= i_cntdly + 1;
---            i_usr_d <= i_usr_d + 1;
---          end if;
+          if i_align_done_out = '1' then
+            i_usr_d <= i_usr_dcnt;
+            i_fsm_send <= S_SND_1;
+          else
+            i_fsm_send <= S_SND_STABLE_0;
+          end if;
+
+
+      when S_SND_1 =>
+
+          i_usr_dcnt <= i_usr_dcnt + 1;
+
+          if i_cntdly = TO_UNSIGNED(444, i_cntdly'length) then
+            i_cntdly <= (others => '0');
+            i_usr_d <= TO_UNSIGNED(16#137#, i_usr_d'length);
+            i_fsm_send <= S_SND_STABLE_1;
+          else
+            i_cntdly <= i_cntdly + 1;
+            i_usr_d <= i_usr_dcnt;
+          end if;
+
+      when S_SND_STABLE_1 =>
+
+          i_usr_dcnt <= i_usr_dcnt + 1;
+
+          if i_align_done_out = '1' then
+            i_usr_d <= i_usr_dcnt;
+            i_fsm_send <= S_SND_0;
+          else
+            i_fsm_send <= S_SND_STABLE_1;
+          end if;
 
     end case;
 

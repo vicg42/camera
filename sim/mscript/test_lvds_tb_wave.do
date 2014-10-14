@@ -19,33 +19,20 @@ add wave -noupdate /test_lvds_tb/m_snd/p_out_lvds_clk_n
 add wave -noupdate -divider RECIVER
 add wave -noupdate /test_lvds_tb/i_align_start
 add wave -noupdate /test_lvds_tb/m_rcv/m_deser/i_align_start
-add wave -noupdate /test_lvds_tb/m_rcv/m_deser/i_align_busy
 add wave -noupdate /test_lvds_tb/m_rcv/m_deser/p_out_align_ok
-add wave -noupdate /test_lvds_tb/m_rcv/m_clk_gen/g_ccd2fpga
+add wave -noupdate /test_lvds_tb/m_rcv/m_deser/p_in_clkdiv
 add wave -noupdate /test_lvds_tb/m_rcv/i_mmcm_lckd
-add wave -noupdate /test_lvds_tb/m_rcv/m_deser/i_fsm_handshake
-add wave -noupdate /test_lvds_tb/m_rcv/m_deser/i_fsm_serdesseq
 add wave -noupdate -color {Slate Blue} /test_lvds_tb/m_rcv/m_deser/i_fsm_align
 add wave -noupdate -radix hexadecimal /test_lvds_tb/m_rcv/m_deser/i_deser_d
 add wave -noupdate -radix hexadecimal /test_lvds_tb/m_rcv/m_deser/p_out_data
-add wave -noupdate -radix hexadecimal /test_lvds_tb/m_rcv/m_deser/tst_deser_d_sv_ROL
-add wave -noupdate -radix hexadecimal /test_lvds_tb/m_rcv/m_deser/tst_deser_d_sv_ROR
-add wave -noupdate -radix hexadecimal /test_lvds_tb/m_rcv/m_deser/i_deser_d_sv
-add wave -noupdate -radix hexadecimal /test_lvds_tb/m_rcv/m_deser/i_edge
-add wave -noupdate -radix hexadecimal /test_lvds_tb/m_rcv/m_deser/i_edge_or
-add wave -noupdate -radix hexadecimal /test_lvds_tb/m_rcv/m_deser/i_edge_sv
-add wave -noupdate /test_lvds_tb/m_rcv/m_deser/i_handshake_start
-add wave -noupdate /test_lvds_tb/m_rcv/m_deser/i_handshake_end
+add wave -noupdate -radix hexadecimal /test_lvds_tb/m_rcv/m_deser/i_deser_d_sv0
 add wave -noupdate /test_lvds_tb/m_rcv/m_deser/i_idelaye2_ce
 add wave -noupdate /test_lvds_tb/m_rcv/m_deser/i_idelaye2_inc
 add wave -noupdate /test_lvds_tb/m_rcv/m_deser/i_bitslip
 add wave -noupdate /test_lvds_tb/m_rcv/m_deser/i_deser_rst
-add wave -noupdate /test_lvds_tb/m_rcv/m_deser/i_align_done
-add wave -noupdate -radix hexadecimal /test_lvds_tb/m_rcv/m_deser/i_cnt_tap
-add wave -noupdate -radix hexadecimal /test_lvds_tb/m_rcv/m_deser/i_cnt_retry
-add wave -noupdate -radix hexadecimal /test_lvds_tb/m_rcv/m_deser/i_gen_cntr
-add wave -noupdate -radix hexadecimal /test_lvds_tb/m_rcv/m_deser/windowcount
-add wave -noupdate -radix hexadecimal -childformat {{/test_lvds_tb/m_rcv/m_deser/sr_train_compare(0) -radix hexadecimal -childformat {{/test_lvds_tb/m_rcv/m_deser/sr_train_compare(0)(9) -radix hexadecimal} {/test_lvds_tb/m_rcv/m_deser/sr_train_compare(0)(8) -radix hexadecimal} {/test_lvds_tb/m_rcv/m_deser/sr_train_compare(0)(7) -radix hexadecimal} {/test_lvds_tb/m_rcv/m_deser/sr_train_compare(0)(6) -radix hexadecimal} {/test_lvds_tb/m_rcv/m_deser/sr_train_compare(0)(5) -radix hexadecimal} {/test_lvds_tb/m_rcv/m_deser/sr_train_compare(0)(4) -radix hexadecimal} {/test_lvds_tb/m_rcv/m_deser/sr_train_compare(0)(3) -radix hexadecimal} {/test_lvds_tb/m_rcv/m_deser/sr_train_compare(0)(2) -radix hexadecimal} {/test_lvds_tb/m_rcv/m_deser/sr_train_compare(0)(1) -radix hexadecimal} {/test_lvds_tb/m_rcv/m_deser/sr_train_compare(0)(0) -radix hexadecimal}}} {/test_lvds_tb/m_rcv/m_deser/sr_train_compare(1) -radix hexadecimal} {/test_lvds_tb/m_rcv/m_deser/sr_train_compare(2) -radix hexadecimal} {/test_lvds_tb/m_rcv/m_deser/sr_train_compare(3) -radix hexadecimal} {/test_lvds_tb/m_rcv/m_deser/sr_train_compare(4) -radix hexadecimal} {/test_lvds_tb/m_rcv/m_deser/sr_train_compare(5) -radix hexadecimal} {/test_lvds_tb/m_rcv/m_deser/sr_train_compare(6) -radix hexadecimal} {/test_lvds_tb/m_rcv/m_deser/sr_train_compare(7) -radix hexadecimal} {/test_lvds_tb/m_rcv/m_deser/sr_train_compare(8) -radix hexadecimal} {/test_lvds_tb/m_rcv/m_deser/sr_train_compare(9) -radix hexadecimal}} -subitemconfig {/test_lvds_tb/m_rcv/m_deser/sr_train_compare(0) {-height 15 -radix hexadecimal -childformat {{/test_lvds_tb/m_rcv/m_deser/sr_train_compare(0)(9) -radix hexadecimal} {/test_lvds_tb/m_rcv/m_deser/sr_train_compare(0)(8) -radix hexadecimal} {/test_lvds_tb/m_rcv/m_deser/sr_train_compare(0)(7) -radix hexadecimal} {/test_lvds_tb/m_rcv/m_deser/sr_train_compare(0)(6) -radix hexadecimal} {/test_lvds_tb/m_rcv/m_deser/sr_train_compare(0)(5) -radix hexadecimal} {/test_lvds_tb/m_rcv/m_deser/sr_train_compare(0)(4) -radix hexadecimal} {/test_lvds_tb/m_rcv/m_deser/sr_train_compare(0)(3) -radix hexadecimal} {/test_lvds_tb/m_rcv/m_deser/sr_train_compare(0)(2) -radix hexadecimal} {/test_lvds_tb/m_rcv/m_deser/sr_train_compare(0)(1) -radix hexadecimal} {/test_lvds_tb/m_rcv/m_deser/sr_train_compare(0)(0) -radix hexadecimal}}} /test_lvds_tb/m_rcv/m_deser/sr_train_compare(0)(9) {-height 15 -radix hexadecimal} /test_lvds_tb/m_rcv/m_deser/sr_train_compare(0)(8) {-height 15 -radix hexadecimal} /test_lvds_tb/m_rcv/m_deser/sr_train_compare(0)(7) {-height 15 -radix hexadecimal} /test_lvds_tb/m_rcv/m_deser/sr_train_compare(0)(6) {-height 15 -radix hexadecimal} /test_lvds_tb/m_rcv/m_deser/sr_train_compare(0)(5) {-height 15 -radix hexadecimal} /test_lvds_tb/m_rcv/m_deser/sr_train_compare(0)(4) {-height 15 -radix hexadecimal} /test_lvds_tb/m_rcv/m_deser/sr_train_compare(0)(3) {-height 15 -radix hexadecimal} /test_lvds_tb/m_rcv/m_deser/sr_train_compare(0)(2) {-height 15 -radix hexadecimal} /test_lvds_tb/m_rcv/m_deser/sr_train_compare(0)(1) {-height 15 -radix hexadecimal} /test_lvds_tb/m_rcv/m_deser/sr_train_compare(0)(0) {-height 15 -radix hexadecimal} /test_lvds_tb/m_rcv/m_deser/sr_train_compare(1) {-height 15 -radix hexadecimal} /test_lvds_tb/m_rcv/m_deser/sr_train_compare(2) {-height 15 -radix hexadecimal} /test_lvds_tb/m_rcv/m_deser/sr_train_compare(3) {-height 15 -radix hexadecimal} /test_lvds_tb/m_rcv/m_deser/sr_train_compare(4) {-height 15 -radix hexadecimal} /test_lvds_tb/m_rcv/m_deser/sr_train_compare(5) {-height 15 -radix hexadecimal} /test_lvds_tb/m_rcv/m_deser/sr_train_compare(6) {-height 15 -radix hexadecimal} /test_lvds_tb/m_rcv/m_deser/sr_train_compare(7) {-height 15 -radix hexadecimal} /test_lvds_tb/m_rcv/m_deser/sr_train_compare(8) {-height 15 -radix hexadecimal} /test_lvds_tb/m_rcv/m_deser/sr_train_compare(9) {-height 15 -radix hexadecimal}} /test_lvds_tb/m_rcv/m_deser/sr_train_compare
+add wave -noupdate -radix hexadecimal /test_lvds_tb/m_rcv/m_deser/i_cntdly
+add wave -noupdate -radix hexadecimal /test_lvds_tb/m_rcv/m_deser/i_cnt_align_retry
+add wave -noupdate -radix hexadecimal /test_lvds_tb/m_rcv/m_deser/i_cntwin
 TreeUpdate [SetDefaultTree]
 WaveRestoreCursors {{Cursor 1} {0 ps} 0}
 quietly wave cursor active 0
@@ -63,4 +50,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ps
 update
-WaveRestoreZoom {0 ps} {105 us}
+WaveRestoreZoom {15003145 ps} {15235881 ps}
