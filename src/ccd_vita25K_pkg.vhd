@@ -228,7 +228,8 @@ clk  : std_logic;
 end record;
 
 --CCD_FG
-constant C_CCD_FG_STATUS_ALIGN_OK_BIT : integer := 0;
+constant C_CCD_FG_STATUS_DRY_BIT      : integer := 0;
+constant C_CCD_FG_STATUS_ALIGN_OK_BIT : integer := 1;
 constant C_CCD_FG_STATUS_LAST_BIT : integer := C_CCD_FG_STATUS_ALIGN_OK_BIT;
 
 --CCD_GLOB

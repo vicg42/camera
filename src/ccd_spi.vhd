@@ -36,6 +36,7 @@ p_in_physpi     : in   TSPI_pinin;
 --p_out_fifo_rd   : out  std_logic;
 --p_in_fifo_empty : in   std_logic;
 
+p_in_deser_rdy  : in   std_logic;
 p_in_align      : in   std_logic;
 p_out_init_done : out  std_logic;
 p_out_err       : out  std_logic;
@@ -112,6 +113,8 @@ S_SET_EXPOSURE_2,
 --S_SET_STOP_2,
 
 S_ERR,
+
+S_START_ALIGN,
 S_WAIT_ALIGN
 );
 
@@ -133,6 +136,8 @@ signal i_regcnt         : unsigned(log2(C_CCD_REGINIT2'length) - 1 downto 0) := 
 signal i_init_done      : std_logic := '0';
 signal i_err            : std_logic := '0';
 signal i_align          : std_logic := '0';
+signal i_align_start    : std_logic := '0';
+signal i_deser_rdy      : std_logic := '0';
 
 signal sr_btn_push      : unsigned(0 to 1) := (others => '0');
 signal i_btn_push       : std_logic := '0';
@@ -142,15 +147,20 @@ signal i_spi_core_tst_out : std_logic_vector(31 downto 0) := (others => '0');
 signal i_ccd_readout    : std_logic;
 signal i_ccd_win    : TCCD_WinINIT;
 
+signal i_ccd_start      : std_logic;
+
+
+
 --MAIN
 begin
 
 p_out_tst(0) <= i_clkcnt(i_clkcnt'high);
-p_out_tst(1) <= OR_reduce(tst_fsmstate_dly) or i_align;
+p_out_tst(1) <= OR_reduce(tst_fsmstate_dly) or i_align or i_ccd_start;
 p_out_tst(2) <= i_spi_core_tst_out(1);
 p_out_tst(3) <= OR_reduce(i_rxd);
 p_out_tst(4) <= p_in_tst(0);
-p_out_tst(31 downto 5) <= (others => '0');
+p_out_tst(5) <= i_align_start;
+p_out_tst(31 downto 6) <= (others => '0');
 
 --p_out_ccdrst_n <= i_ccd_rst_n;
 
@@ -182,7 +192,8 @@ begin
       i_spi_core_start <= '0';
       i_init_done <= '0';
       i_err <= '0';
-      i_fsm_spi_cs <= S_IDLE; i_ccd_readout <= '1';
+      i_fsm_spi_cs <= S_IDLE; i_ccd_readout <= '1'; i_ccd_start <= '0';
+      i_align_start <= '0';
 
     else
       if i_clk_en = '1' then
@@ -273,7 +284,8 @@ begin
             if i_busy = '0' then
               if i_regcnt = TO_UNSIGNED(C_CCD_REGINIT'length - 1, i_regcnt'length) then
                 i_regcnt <= (others => '0');
-                i_fsm_spi_cs <= S_WAIT_ALIGN;
+                i_init_done <= '1';
+                i_fsm_spi_cs <= S_START_ALIGN;
 
               else
                 if i_rxd /= i_txd then
@@ -298,42 +310,48 @@ begin
           --------------------------------
           --CCD User Reg Control
           --------------------------------
+          when S_START_ALIGN =>
+
+            if i_deser_rdy = '1' then
+            i_align_start <= '1';
+            i_fsm_spi_cs <= S_WAIT_ALIGN;
+            end if;
+
           when S_WAIT_ALIGN =>
 
-            i_init_done <= '1';
+            i_align_start <= '0';
             i_spi_core_dir <= C_SPI_WRITE;
             i_spi_core_start <= '0';
 
---            if i_align = '1' then
-            if i_btn_push = '1' then
-              i_fsm_spi_cs <= S_SET_RIO;--S_SET_STOP;--S_WAIT_ALIGN;
+            if i_align = '1' then
+--            if i_btn_push = '1' then
+              i_fsm_spi_cs <= S_SET_RIO;--S_SET_STOP;--S_WAIT_ALIGN;--
             end if;
 
-
---          --------------------------------
---          --
---          --------------------------------
---          when S_SET_STOP =>
---
---            if i_btn_push = '1' then
---              i_adr <= std_logic_vector(TO_UNSIGNED(10#192#, C_CCD_SPI_AWIDTH - 1)) & CI_SPI_WRITE;
---              i_txd <= std_logic_vector(TO_UNSIGNED(16#0000#, C_CCD_SPI_DWIDTH));
---
---              i_spi_core_dir <= C_SPI_WRITE;
---              i_spi_core_start <= '1';
---              i_fsm_spi_cs <= S_SET_STOP_1;
---            end if;
---
---          when S_SET_STOP_1 =>
---
---            i_spi_core_start <= '0';
---            i_fsm_spi_cs <= S_SET_STOP_2;
---
---          when S_SET_STOP_2 =>
---
---            if i_busy = '0' then
---              i_fsm_spi_cs <= S_SET_RIO;
---            end if;
+----          --------------------------------
+----          --
+----          --------------------------------
+----          when S_SET_STOP =>
+----
+----            if i_btn_push = '1' then
+----              i_adr <= std_logic_vector(TO_UNSIGNED(10#192#, C_CCD_SPI_AWIDTH - 1)) & CI_SPI_WRITE;
+----              i_txd <= std_logic_vector(TO_UNSIGNED(16#0000#, C_CCD_SPI_DWIDTH));
+----
+----              i_spi_core_dir <= C_SPI_WRITE;
+----              i_spi_core_start <= '1';
+----              i_fsm_spi_cs <= S_SET_STOP_1;
+----            end if;
+----
+----          when S_SET_STOP_1 =>
+----
+----            i_spi_core_start <= '0';
+----            i_fsm_spi_cs <= S_SET_STOP_2;
+----
+----          when S_SET_STOP_2 =>
+----
+----            if i_busy = '0' then
+----              i_fsm_spi_cs <= S_SET_RIO;
+----            end if;
 
           --------------------------------
           --
@@ -436,6 +454,7 @@ begin
 
             if i_busy = '0' then
 --              i_ccd_readout <= not i_ccd_readout;
+              i_ccd_start <= '1';
               i_fsm_spi_cs <= S_WAIT2_BTN_2;
             end if;
 
@@ -477,6 +496,7 @@ process(p_in_clk)
 begin
   if rising_edge(p_in_clk) then
     i_align <= p_in_align;
+    i_deser_rdy <= p_in_deser_rdy;
   end if;
 end process;
 

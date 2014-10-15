@@ -125,7 +125,7 @@ NET "pin_in_ccd_data_n<32>"  LOC = "AD24" | IOSTANDARD = LVDS_25;
 
 INST "m_ccd/m_fg/gen_delayctrl[0].m_delayctrl"  LOC = IDELAYCTRL_X0Y0;
 INST "m_ccd/m_fg/gen_delayctrl[1].m_delayctrl"  LOC = IDELAYCTRL_X0Y1;
-INST "m_ccd/m_fg/m_clk_gen/m_clk_ccd2fpga"    DIFF_TERM = TRUE;
+INST "m_ccd/m_fg/m_clk_gen/gen_clkin_diff.m_clk_ccd2fpga"    DIFF_TERM = TRUE;
 INST "m_ccd/m_fg/gen_lvds_ch[*].m_deser/m_ibufds"  DIFF_TERM = TRUE;
 INST "m_ccd/m_fg/gen_lvds_ch[*].m_deser/m_idelaye2"  IODELAY_GROUP = "CCD_GROUP_DESER_LVDS";
 

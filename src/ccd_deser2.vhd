@@ -48,10 +48,11 @@ end ccd_deser;
 
 architecture xilinx of ccd_deser is
 
-constant CI_DATA_STABLE_TIME : integer := 256;
-constant CI_IDELAY_TAP_COUNT : integer := 30;
-constant CI_IDELAY_LATENCY   : integer := 10;
-constant CI_BITSLIP_DELAY    : integer := 5;
+constant CI_DATA_STABLE_COUNT : integer := 256;
+constant CI_IDELAY_TAP_COUNT : integer := 64;
+constant CI_IDELAY_LATENCY   : integer := 64;
+constant CI_BITSLIP_DELAY    : integer := 20;
+constant CI_TRY_COUNT        : integer := 50;
 --constant CI_BITSLIP_RETRY_COUNT : integer := 32;
 
 type TDataValid is array (0 to G_BIT_COUNT - 1 ) of unsigned(G_BIT_COUNT - 1 downto 0);
@@ -102,13 +103,12 @@ S_MDL_POINT       ,
 S_MDL_POINT_WAIT  ,
 S_ALIGN_START     ,
 S_ALIGN_WAIT      ,
-S_ALIGN_DONE      ,
-S_RST_DLY
+S_ALIGN_DONE
+--S_RST_DLY
 );
 signal i_fsm_align : TFsm_Align;
 
 signal sr_deser_d0       : unsigned (G_BIT_COUNT - 1 downto 0);
-signal sr_deser_d1       : unsigned (G_BIT_COUNT - 1 downto 0);
 signal i_data_chng       : std_logic := '0';
 
 signal i_align_start     : std_logic;
@@ -148,8 +148,8 @@ if rising_edge(p_in_clkdiv) then
 end if;
 end process;
 
-tst_fsm_align <= std_logic_vector(TO_UNSIGNED(16#0F#,tst_fsm_align'length)) when i_fsm_align = S_RST_DLY         else
-                 std_logic_vector(TO_UNSIGNED(16#0E#,tst_fsm_align'length)) when i_fsm_align = S_RST_DESER       else
+ --std_logic_vector(TO_UNSIGNED(16#0F#,tst_fsm_align'length)) when i_fsm_align = S_RST_DLY         else
+tst_fsm_align <= std_logic_vector(TO_UNSIGNED(16#0E#,tst_fsm_align'length)) when i_fsm_align = S_RST_DESER       else
                  std_logic_vector(TO_UNSIGNED(16#0D#,tst_fsm_align'length)) when i_fsm_align = S_DATA_CHNG       else
                  std_logic_vector(TO_UNSIGNED(16#0C#,tst_fsm_align'length)) when i_fsm_align = S_DATA_STBL       else
                  std_logic_vector(TO_UNSIGNED(16#0B#,tst_fsm_align'length)) when i_fsm_align = S_FIND_EDGE0      else
@@ -325,14 +325,12 @@ process(p_in_rst, p_in_clkdiv)
 begin
 if (p_in_rst = '1') then
   sr_deser_d0 <= (others => '0');
-  sr_deser_d1 <= (others => '0');
   i_data_chng <= '0';
 
 elsif rising_edge(p_in_clkdiv) then
   sr_deser_d0(G_BIT_COUNT - 1 downto 0) <= i_deser_d(G_BIT_COUNT - 1 downto 0);
-  sr_deser_d1(G_BIT_COUNT - 1 downto 0) <= sr_deser_d0(G_BIT_COUNT - 1 downto 0);
 
-  if sr_deser_d1 /= sr_deser_d0 then
+  if sr_deser_d0 /= i_deser_d(G_BIT_COUNT - 1 downto 0) then
     i_data_chng <= '1';
   else
     i_data_chng <= '0';
@@ -349,7 +347,7 @@ variable valid : std_logic;
 begin
 if (p_in_rst = '1') then
 
-    i_deser_rst    <= '1';
+    i_deser_rst    <= '0';
     i_idelaye2_inc <= '0';
     i_idelaye2_ce  <= '0';
     i_bitslip      <= '0';
@@ -367,9 +365,6 @@ if (p_in_rst = '1') then
     i_cnttap0_sv <= (others => '0');
     i_cnttap1_sv <= (others => '0');
     i_deser_d_sv <= (others => '0');
-
-    i_rst_width <= (others => '0');
---    i_idelaye2_ld <= '0';
 
     valid := '0';
 
@@ -390,8 +385,6 @@ elsif rising_edge(p_in_clkdiv) then
                 i_idelaye2_inc <= '0';
                 i_idelaye2_ce  <= '0';
 
-                i_rst_width <= TO_UNSIGNED(1, i_rst_width'length);
-
                 i_fsm_align <= S_RST_DESER;
 
             end if;
@@ -407,7 +400,6 @@ elsif rising_edge(p_in_clkdiv) then
 
             i_bitslip <= '0';
             i_bitslip_work <= '0';
---            i_idelaye2_ld <= '1';
             i_idelaye2_ce  <= '0';
             i_idelaye2_inc <= '0';
             i_deser_rst    <= '0';
@@ -416,8 +408,6 @@ elsif rising_edge(p_in_clkdiv) then
 
 
         when S_DATA_CHNG =>
-
---            i_idelaye2_ld <= '0';
 
             i_idelaye2_ce  <= '0';
             i_idelaye2_inc <= '0';
@@ -433,11 +423,11 @@ elsif rising_edge(p_in_clkdiv) then
 
             if (i_data_chng = '1') then
 
-              if i_cnttry = TO_UNSIGNED(47 - 1, i_cnttry'length) then
+              if i_cnttry = TO_UNSIGNED(CI_TRY_COUNT - 1, i_cnttry'length) then
                 i_cnttry <= (others => '0');
 
                 i_deser_rst <= '1';
-                i_fsm_align <= S_RST_DLY;
+                i_fsm_align <= S_RST_DESER;
 
               else
                 i_cnttry <= i_cnttry + 1;
@@ -449,33 +439,15 @@ elsif rising_edge(p_in_clkdiv) then
               end if;
 
             else
-                if i_cntdly = TO_UNSIGNED(CI_DATA_STABLE_TIME - 1, i_cntdly'length) then
+                if i_cntdly = TO_UNSIGNED(CI_DATA_STABLE_COUNT - 1, i_cntdly'length) then
                     i_cntdly <= (others => '0');
 
-                    i_deser_d_sv <= sr_deser_d1(G_BIT_COUNT - 1 downto 0);
+                    i_deser_d_sv <= i_deser_d(G_BIT_COUNT - 1 downto 0);
                     i_fsm_align <= S_FIND_EDGE0;
 
                 else
                     i_cntdly <= i_cntdly + 1;
                 end if;
-            end if;
-
-
-        when S_RST_DLY =>
-
-            if i_cntdly = RESIZE(i_rst_width, i_cntdly'length) then
-                i_cntdly <= (others => '0');
-
-                if i_rst_width = (i_rst_width'range => '1') then
-                  i_rst_width <= TO_UNSIGNED(1, i_rst_width'length);
-                else
-                  i_rst_width <= i_rst_width + 1;
-                end if;
-
-                i_fsm_align <= S_RST_DESER;
-
-            else
-                i_cntdly <= i_cntdly + 1;
             end if;
 
 
@@ -485,7 +457,6 @@ elsif rising_edge(p_in_clkdiv) then
 
             i_idelaye2_ce  <= '1';
             i_idelaye2_inc <= '0';
-            i_deser_rst    <= '0';
 
             i_cnttap0 <= i_cnttap0 + 1;
 
@@ -495,7 +466,6 @@ elsif rising_edge(p_in_clkdiv) then
         when S_FIND_EDGE0_WAIT =>
 
             i_idelaye2_ce <= '0';
-            i_deser_rst   <= '0';
 
             if i_cntdly = TO_UNSIGNED(CI_IDELAY_LATENCY - 1, i_cntdly'length) then
               i_cntdly <= (others => '0');
@@ -531,7 +501,6 @@ elsif rising_edge(p_in_clkdiv) then
 
             i_idelaye2_ce  <= '1';
             i_idelaye2_inc <= '1';
-            i_deser_rst    <= '0';
 
             i_cnttap0 <= i_cnttap0 - 1;
             i_cnttap <= i_cnttap + 1;
@@ -540,7 +509,6 @@ elsif rising_edge(p_in_clkdiv) then
         when S_CUR_POINT_WAIT =>
 
             i_idelaye2_ce  <= '0';
-            i_deser_rst    <= '0';
 
             if i_cntdly = TO_UNSIGNED(CI_IDELAY_LATENCY - 1, i_cntdly'length) then
               i_cntdly <= (others => '0');
@@ -567,7 +535,6 @@ elsif rising_edge(p_in_clkdiv) then
 
             i_idelaye2_ce  <= '1';
             i_idelaye2_inc <= '1';
-            i_deser_rst    <= '0';
 
             i_cnttap1 <= i_cnttap1 + 1;
             i_cnttap <= i_cnttap + 1;
@@ -578,7 +545,6 @@ elsif rising_edge(p_in_clkdiv) then
         when S_FIND_EDGE1_WAIT =>
 
             i_idelaye2_ce <= '0';
-            i_deser_rst   <= '0';
 
             if i_cntdly = TO_UNSIGNED(CI_IDELAY_LATENCY - 1, i_cntdly'length) then
               i_cntdly <= (others => '0');
@@ -617,7 +583,6 @@ elsif rising_edge(p_in_clkdiv) then
 
             i_idelaye2_ce  <= '1';
             i_idelaye2_inc <= '0';
-            i_deser_rst    <= '0';
 
             i_cnttap <= i_cnttap - 1;
             i_fsm_align <= S_MDL_POINT_WAIT;
@@ -626,7 +591,6 @@ elsif rising_edge(p_in_clkdiv) then
         when S_MDL_POINT_WAIT =>
 
             i_idelaye2_ce <= '0';
-            i_deser_rst   <= '0';
 
             if i_cntdly = TO_UNSIGNED(CI_IDELAY_LATENCY - 1, i_cntdly'length) then
               i_cntdly <= (others => '0');
@@ -655,7 +619,7 @@ elsif rising_edge(p_in_clkdiv) then
                 if i_bitslip_work = '1' and (i_deser_d_sv = i_deser_d(G_BIT_COUNT - 1 downto 0)) then
 
                   i_deser_rst <= '1';
-                  i_fsm_align <= S_RST_DLY;
+                  i_fsm_align <= S_RST_DESER;
 
                 else
                   i_bitslip <= '1';

@@ -80,6 +80,7 @@ end component ccd_deser;
 
 component ccd_deser_clk is
 generic (
+CLKIN_DIFF      : boolean := TRUE ;
 CLKIN_PERIOD    : real := 6.000 ;
 MMCM_MODE       : integer := 1 ;
 MMCM_MODE_REAL  : real := 1.000 ;
@@ -113,12 +114,15 @@ signal i_clk            : std_logic;
 signal i_clk_inv        : std_logic;
 signal i_clk_div        : std_logic;
 
+signal i_deser_rdy      : std_logic;
 signal i_deser_rst      : std_logic;
 type TDeserData is array (0 to G_LVDS_CH_COUNT - 1)
   of std_logic_vector(G_CCD_BIT_COUNT - 1 downto 0);
 signal i_deser_d        : TDeserData := (( others => (others => '0')));
 signal i_deser_dout     : TDeserData := (( others => (others => '0')));
 signal i_align_ok       : std_logic_vector(G_LVDS_CH_COUNT - 1 downto 0);
+signal tst_align_ok     : std_logic_vector(G_LVDS_CH_COUNT - 1 downto 0) := (others => '0');
+signal i_align_start    : std_logic := '0';
 
 type TRxD_sr is array (0 to G_LVDS_CH_COUNT - G_SYNC_LINE_COUNT - 1)
   of std_logic_vector(G_VD_BIT_COUNT - 1 downto 0);
@@ -145,6 +149,16 @@ signal i_kernel_pix     : TKernelPix;
 
 signal i_vfr_pix_out    : std_logic_vector(p_out_vfr_data'range);
 
+signal sr_btn_push      : unsigned(0 to 1) := (others => '0');
+signal i_btn_push       : std_logic := '0';
+signal tst_ccd_deser_in : std_logic_vector(31 downto 0);
+
+type TTstDeserData is array (0 to G_LVDS_CH_COUNT - 1)
+  of std_logic_vector(31 downto 0);
+signal tst_ccd_deser_out : TTstDeserData;
+
+signal i_align_ok_all  : std_logic := '0';
+
 
 begin
 
@@ -167,6 +181,7 @@ I  => p_in_ccdclk
 
 m_clk_gen : ccd_deser_clk
 generic map(
+CLKIN_DIFF      => TRUE   ,
 CLKIN_PERIOD    => 3.225  , -- clock period (ns) of input clock on clkin_p
 MMCM_MODE       => 1      ,
 MMCM_MODE_REAL  => 1.000  ,
@@ -194,7 +209,8 @@ reset     => i_mmcm_rst
 i_mmcm_rst <= not p_in_ccdinit;
 i_clk_inv <= not (i_clk);
 
-i_deser_rst <= not (i_mmcm_lckd and AND_Reduce(i_idelayctrl_rdy));
+i_deser_rdy <= i_mmcm_lckd and AND_Reduce(i_idelayctrl_rdy);
+i_deser_rst <= not i_deser_rdy;
 
 
 --###########################################
@@ -214,8 +230,8 @@ p_in_data_n    => p_in_ccd.data_n(lvds_ch),
 p_out_data     => i_deser_d(lvds_ch)(G_CCD_BIT_COUNT - 1 downto 0),
 p_out_align_ok => i_align_ok(lvds_ch),
 
-p_out_tst      => open,
-p_in_tst       => (others => '0'),
+p_out_tst      => tst_ccd_deser_out(lvds_ch),
+p_in_tst       => tst_ccd_deser_in,
 
 p_in_clken     => '1', --i_clk_en
 p_in_clkdiv    => i_clk_div,
@@ -311,14 +327,15 @@ end process;
 
 
 p_out_vfr_data <= i_vfr_pix_out;
-p_out_vfr_den  <= i_vfr_den_out and AND_reduce(i_align_ok);
+p_out_vfr_den  <= i_vfr_den_out and AND_reduce(tst_align_ok);
 p_out_vfr_vs   <= i_vfr_vs_out ;
 p_out_vfr_hs   <= i_vfr_hs_out ;
 p_out_vfr_clk  <= i_clk_div;
 
-p_out_status(C_CCD_FG_STATUS_ALIGN_OK_BIT) <= AND_reduce(i_align_ok);
+p_out_status(C_CCD_FG_STATUS_ALIGN_OK_BIT) <= AND_reduce(tst_align_ok);
+p_out_status(C_CCD_FG_STATUS_DRY_BIT) <= i_deser_rdy;
 
-p_out_tst(0) <= i_vfr_bl or i_crc;
+p_out_tst(0) <= i_vfr_bl or i_align_ok_all or tst_ccd_deser_out(0)(0) or tst_ccd_deser_out(15)(0);
 p_out_tst(31 downto 1) <= (others => '0');
 
 
@@ -387,6 +404,29 @@ i_vfr_pix_out((i_kernel_pix(lvds_ch)'length * (lvds_ch + 1)) - 1
                    downto (i_kernel_pix(lvds_ch)'length * lvds_ch)) <= i_kernel_pix(lvds_ch);
 end generate gen_fifo_di;
 
+
+
+process(i_clk_div)
+begin
+  if rising_edge(i_clk_div) then
+
+--    if p_in_ccdinit = '0' then
+--    sr_btn_push <= (others => '0');
+--    else
+--    sr_btn_push <= p_in_tst(0) & sr_btn_push(0 to 0);
+--    end if;
+--
+--    i_btn_push <= sr_btn_push(0) and not sr_btn_push(1);
+
+    i_align_start <= p_in_tst(5);
+    tst_align_ok <= i_align_ok(i_align_ok'high downto 16) & '1' & i_align_ok(14 downto 0);
+
+    i_align_ok_all <= AND_reduce(tst_align_ok);
+  end if;
+end process;
+
+tst_ccd_deser_in(0) <= i_align_start;
+tst_ccd_deser_in(31 downto 1) <= (others => '0');
 
 end xilinx;
 

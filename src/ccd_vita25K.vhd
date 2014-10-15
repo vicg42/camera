@@ -65,6 +65,7 @@ p_in_physpi     : in   TSPI_pinin;
 --p_out_fifo_rd   : out  std_logic;
 --p_in_fifo_empty : in   std_logic;
 
+p_in_deser_rdy  : in   std_logic;
 p_in_align      : in   std_logic;
 p_out_init_done : out  std_logic;
 p_out_err       : out  std_logic;
@@ -185,6 +186,7 @@ p_in_physpi     => i_spi_in ,
 --p_out_fifo_rd   => open,
 --p_in_fifo_empty => '0',
 
+p_in_deser_rdy  => i_ccd_fg_status(C_CCD_FG_STATUS_DRY_BIT),
 p_in_align      => i_ccd_fg_status(C_CCD_FG_STATUS_ALIGN_OK_BIT),
 p_out_init_done => i_ccd_init_done,
 p_out_err       => i_ccd_spi_err,
@@ -220,7 +222,7 @@ p_out_vfr_clk   => p_out_vfr_clk ,
 p_out_status    => i_ccd_fg_status,
 
 p_out_tst       => i_tst_fg_out,
-p_in_tst        => i_tst_spi_out,
+p_in_tst        => i_tst_spi_out,--p_in_tst(31 downto 0),
 
 p_in_ccdinit    => i_ccd_init_done,
 p_in_ccdclk     => p_in_ccdclk,
