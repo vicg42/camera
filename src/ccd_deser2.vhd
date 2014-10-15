@@ -48,7 +48,7 @@ end ccd_deser;
 
 architecture xilinx of ccd_deser is
 
-constant CI_DATA_STABLE_TIME : integer := 512;
+constant CI_DATA_STABLE_TIME : integer := 256;
 constant CI_IDELAY_TAP_COUNT : integer := 30;
 constant CI_IDELAY_LATENCY   : integer := 10;
 constant CI_BITSLIP_DELAY    : integer := 5;
@@ -69,7 +69,7 @@ TO_UNSIGNED(16#1D3#, G_BIT_COUNT)
 );
 
 signal i_ser_din             : std_logic;
-
+signal i_idelaye2_ld         : std_logic;
 signal i_idelaye2_dout       : std_logic;
 signal i_idelaye2_ce         : std_logic;
 signal i_idelaye2_inc        : std_logic;
@@ -125,25 +125,30 @@ signal i_cnttry          : unsigned (5 downto 0);
 
 signal i_bitslip_work    : std_logic;
 
-signal tst_fsm_align,tst_fsm_align_dly : std_logic_vector(3 downto 0);
+signal i_rst_width       : unsigned (3 downto 0);
 
+signal tst_fsm_align,tst_fsm_align_dly : std_logic_vector(3 downto 0);
+signal tst_align_dchng : std_logic;
 
 
 
 begin
 
 
-p_out_tst(0) <= OR_reduce(tst_fsm_align_dly);
+p_out_tst(0) <= OR_reduce(tst_fsm_align_dly) or tst_align_dchng;
+
+
 
 
 process(p_in_rst, p_in_clkdiv)
 begin
 if rising_edge(p_in_clkdiv) then
   tst_fsm_align_dly <= tst_fsm_align;
+  tst_align_dchng <= i_align_ok and i_data_chng;
 end if;
 end process;
 
-tst_fsm_align <= std_logic_vector(TO_UNSIGNED(16#0F#,tst_fsm_align'length)) when i_fsm_align = S_RST_DLY       else
+tst_fsm_align <= std_logic_vector(TO_UNSIGNED(16#0F#,tst_fsm_align'length)) when i_fsm_align = S_RST_DLY         else
                  std_logic_vector(TO_UNSIGNED(16#0E#,tst_fsm_align'length)) when i_fsm_align = S_RST_DESER       else
                  std_logic_vector(TO_UNSIGNED(16#0D#,tst_fsm_align'length)) when i_fsm_align = S_DATA_CHNG       else
                  std_logic_vector(TO_UNSIGNED(16#0C#,tst_fsm_align'length)) when i_fsm_align = S_DATA_STBL       else
@@ -178,7 +183,7 @@ CINVCTRL_SEL          => "FALSE"   ,-- Enable dynamic clock inversion (FALSE, TR
 DELAY_SRC             => "IDATAIN" ,-- Delay input (IDATAIN, DATAIN)
 HIGH_PERFORMANCE_MODE => "TRUE"    ,-- Reduced jitter ("TRUE"), Reduced power ("FALSE")
 IDELAY_TYPE           => "VARIABLE",-- FIXED, VARIABLE, VAR_LOAD, VAR_LOAD_PIPE
-IDELAY_VALUE          => 0         ,-- Input delay tap setting (0-31)
+IDELAY_VALUE          => 13         ,-- Input delay tap setting (0-31)
 PIPE_SEL              => "FALSE"   ,-- Select pipelined mode, FALSE, TRUE
 REFCLK_FREQUENCY      => 200.0     ,-- IDELAYCTRL clock input frequency in MHz (190.0-210.0, 290.0-310.0).
 SIGNAL_PATTERN        => "DATA"     -- DATA, CLOCK input signal
@@ -190,7 +195,7 @@ C                 => p_in_clkdiv,
 CE                => i_idelaye2_ce,
 INC               => i_idelaye2_inc,
 IDATAIN           => i_ser_din,
-LD                => '0',
+LD                => i_align_start,--i_idelaye2_ld,
 REGRST            => i_deser_rst, --p_in_rst,--
 LDPIPEEN          => '0',
 CNTVALUEIN        => (others => '0'),
@@ -338,6 +343,7 @@ end process;
 i_align_start <= p_in_tst(0);
 
 
+
 process(p_in_rst, p_in_clkdiv)
 variable valid : std_logic;
 begin
@@ -362,6 +368,9 @@ if (p_in_rst = '1') then
     i_cnttap1_sv <= (others => '0');
     i_deser_d_sv <= (others => '0');
 
+    i_rst_width <= (others => '0');
+--    i_idelaye2_ld <= '0';
+
     valid := '0';
 
     i_fsm_align <= S_IDLE;
@@ -381,6 +390,8 @@ elsif rising_edge(p_in_clkdiv) then
                 i_idelaye2_inc <= '0';
                 i_idelaye2_ce  <= '0';
 
+                i_rst_width <= TO_UNSIGNED(1, i_rst_width'length);
+
                 i_fsm_align <= S_RST_DESER;
 
             end if;
@@ -396,7 +407,7 @@ elsif rising_edge(p_in_clkdiv) then
 
             i_bitslip <= '0';
             i_bitslip_work <= '0';
-
+--            i_idelaye2_ld <= '1';
             i_idelaye2_ce  <= '0';
             i_idelaye2_inc <= '0';
             i_deser_rst    <= '0';
@@ -405,6 +416,8 @@ elsif rising_edge(p_in_clkdiv) then
 
 
         when S_DATA_CHNG =>
+
+--            i_idelaye2_ld <= '0';
 
             i_idelaye2_ce  <= '0';
             i_idelaye2_inc <= '0';
@@ -439,7 +452,7 @@ elsif rising_edge(p_in_clkdiv) then
 
                     else
 
-                      if i_cnttry = TO_UNSIGNED(31 - 1, i_cnttry'length) then
+                      if i_cnttry = TO_UNSIGNED(32 - 1, i_cnttry'length) then
                         i_cnttry <= (others => '0');
 
                         i_deser_rst <= '1';
@@ -464,8 +477,15 @@ elsif rising_edge(p_in_clkdiv) then
 
         when S_RST_DLY =>
 
-            if i_cntdly = TO_UNSIGNED(5 - 1, i_cntdly'length) then
+            if i_cntdly = RESIZE(i_rst_width, i_cntdly'length) then
                 i_cntdly <= (others => '0');
+
+                if i_rst_width = (i_rst_width'range => '1') then
+                  i_rst_width <= TO_UNSIGNED(1, i_rst_width'length);
+                else
+                  i_rst_width <= i_rst_width + 1;
+                end if;
+
                 i_fsm_align <= S_RST_DESER;
 
             else
@@ -688,6 +708,8 @@ elsif rising_edge(p_in_clkdiv) then
     end case;
 end if;
 end process;
+
+
 
 
 end xilinx;
