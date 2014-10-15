@@ -432,42 +432,28 @@ elsif rising_edge(p_in_clkdiv) then
             i_cnttap <= (others => '0');
 
             if (i_data_chng = '1') then
-              i_fsm_align <= S_DATA_CHNG;
+
+              if i_cnttry = TO_UNSIGNED(47 - 1, i_cnttry'length) then
+                i_cnttry <= (others => '0');
+
+                i_deser_rst <= '1';
+                i_fsm_align <= S_RST_DLY;
+
+              else
+                i_cnttry <= i_cnttry + 1;
+
+                i_idelaye2_ce  <= '1';
+                i_idelaye2_inc <= '0';
+                i_fsm_align <= S_DATA_CHNG;
+
+              end if;
 
             else
                 if i_cntdly = TO_UNSIGNED(CI_DATA_STABLE_TIME - 1, i_cntdly'length) then
                     i_cntdly <= (others => '0');
 
-                    for i in 0 to CI_VALID_DATA'length - 1 loop
-                      if CI_VALID_DATA(i) = sr_deser_d1(G_BIT_COUNT - 1 downto 0) then
-                        valid := '1';
-                      end if;
-                    end loop;
-
-                    if valid = '1' then
-                      i_cnttap <= (others => '0');
-                      i_deser_d_sv <= sr_deser_d1(G_BIT_COUNT - 1 downto 0);
-
-                      i_fsm_align <= S_FIND_EDGE0;
-
-                    else
-
-                      if i_cnttry = TO_UNSIGNED(32 - 1, i_cnttry'length) then
-                        i_cnttry <= (others => '0');
-
-                        i_deser_rst <= '1';
-                        i_fsm_align <= S_RST_DLY;
-
-                      else
-                        i_cnttry <= i_cnttry + 1;
-
-                        i_idelaye2_ce  <= '1';
-                        i_idelaye2_inc <= '0';
-                        i_fsm_align <= S_DATA_CHNG;
-
-                      end if;
-
-                    end if;
+                    i_deser_d_sv <= sr_deser_d1(G_BIT_COUNT - 1 downto 0);
+                    i_fsm_align <= S_FIND_EDGE0;
 
                 else
                     i_cntdly <= i_cntdly + 1;
