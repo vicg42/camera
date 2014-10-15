@@ -50,7 +50,7 @@ architecture xilinx of ccd_deser is
 
 constant CI_DATA_STABLE_TIME : integer := 512;
 constant CI_IDELAY_TAP_COUNT : integer := 30;
-constant CI_IDELAY_LATENCY   : integer := 5;
+constant CI_IDELAY_LATENCY   : integer := 10;
 constant CI_BITSLIP_DELAY    : integer := 5;
 --constant CI_BITSLIP_RETRY_COUNT : integer := 32;
 
@@ -102,7 +102,8 @@ S_MDL_POINT       ,
 S_MDL_POINT_WAIT  ,
 S_ALIGN_START     ,
 S_ALIGN_WAIT      ,
-S_ALIGN_DONE
+S_ALIGN_DONE      ,
+S_RST_DLY
 );
 signal i_fsm_align : TFsm_Align;
 
@@ -120,6 +121,7 @@ signal i_cnttap0_sv      : unsigned (5 downto 0);
 signal i_cnttap1_sv      : unsigned (5 downto 0);
 signal i_cnttap_midle    : unsigned (5 downto 0);
 signal i_deser_d_sv      : unsigned (G_BIT_COUNT - 1 downto 0);
+signal i_cnttry          : unsigned (5 downto 0);
 
 signal i_bitslip_work    : std_logic;
 
@@ -141,7 +143,8 @@ if rising_edge(p_in_clkdiv) then
 end if;
 end process;
 
-tst_fsm_align <= std_logic_vector(TO_UNSIGNED(16#0E#,tst_fsm_align'length)) when i_fsm_align = S_RST_DESER       else
+tst_fsm_align <= std_logic_vector(TO_UNSIGNED(16#0F#,tst_fsm_align'length)) when i_fsm_align = S_RST_DLY       else
+                 std_logic_vector(TO_UNSIGNED(16#0E#,tst_fsm_align'length)) when i_fsm_align = S_RST_DESER       else
                  std_logic_vector(TO_UNSIGNED(16#0D#,tst_fsm_align'length)) when i_fsm_align = S_DATA_CHNG       else
                  std_logic_vector(TO_UNSIGNED(16#0C#,tst_fsm_align'length)) when i_fsm_align = S_DATA_STBL       else
                  std_logic_vector(TO_UNSIGNED(16#0B#,tst_fsm_align'length)) when i_fsm_align = S_FIND_EDGE0      else
@@ -353,6 +356,7 @@ if (p_in_rst = '1') then
     i_cnttap1 <= (others => '0');
     i_cnttap  <= (others => '0');
     i_cnttap_midle <= (others => '0');
+    i_cnttry  <= (others => '0');
 
     i_cnttap0_sv <= (others => '0');
     i_cnttap1_sv <= (others => '0');
@@ -402,6 +406,9 @@ elsif rising_edge(p_in_clkdiv) then
 
         when S_DATA_CHNG =>
 
+            i_idelaye2_ce  <= '0';
+            i_idelaye2_inc <= '0';
+
             if (i_data_chng = '0') then
               i_fsm_align <= S_DATA_STBL;
             end if;
@@ -431,14 +438,38 @@ elsif rising_edge(p_in_clkdiv) then
                       i_fsm_align <= S_FIND_EDGE0;
 
                     else
-                      i_deser_rst <= '1';
-                      i_fsm_align <= S_RST_DESER;
+
+                      if i_cnttry = TO_UNSIGNED(31 - 1, i_cnttry'length) then
+                        i_cnttry <= (others => '0');
+
+                        i_deser_rst <= '1';
+                        i_fsm_align <= S_RST_DLY;
+
+                      else
+                        i_cnttry <= i_cnttry + 1;
+
+                        i_idelaye2_ce  <= '1';
+                        i_idelaye2_inc <= '0';
+                        i_fsm_align <= S_DATA_CHNG;
+
+                      end if;
 
                     end if;
 
                 else
                     i_cntdly <= i_cntdly + 1;
                 end if;
+            end if;
+
+
+        when S_RST_DLY =>
+
+            if i_cntdly = TO_UNSIGNED(5 - 1, i_cntdly'length) then
+                i_cntdly <= (others => '0');
+                i_fsm_align <= S_RST_DESER;
+
+            else
+                i_cntdly <= i_cntdly + 1;
             end if;
 
 
@@ -616,15 +647,16 @@ elsif rising_edge(p_in_clkdiv) then
 
             else
                 if i_bitslip_work = '1' and (i_deser_d_sv = i_deser_d(G_BIT_COUNT - 1 downto 0)) then
-                   i_fsm_align <= S_RST_DESER;
+
+                  i_deser_rst <= '1';
+                  i_fsm_align <= S_RST_DLY;
 
                 else
+                  i_bitslip <= '1';
+                  i_bitslip_work <= '1';
                   i_fsm_align <= S_ALIGN_WAIT;
 
                 end if;
-
-                i_bitslip <= '1';
-                i_bitslip_work <= '1';
 
             end if;
 
