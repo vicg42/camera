@@ -1,3 +1,8 @@
+FPGA configuration SPI x4
+ - ISE/ Generate Programming File - ConfigurationRate: 33
+ - ISE/ Generate Programming File - Set SPI Configuration Bus Width: 4
+
+
       OSERDESE2       -->          ISEDESE2
      ----------  H G F E D C B A  ----------
  A -|D1       Q|-----------------|D       Q1| - H

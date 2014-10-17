@@ -72,6 +72,7 @@ Type TWriterVCHParams is array (0 to C_VCTRL_VCH_COUNT - 1) of TWriterVCHParam;
 type TReaderVCHParam is record
 --mem_adr        : std_logic_vector(31 downto 0);
 fr_size        : TFrXYParam;
+frw_size       : TFrXYParam;
 --fr_mirror      : TFrXYMirror;
 end record;
 Type TReaderVCHParams is array (0 to C_VCTRL_VCH_COUNT - 1) of TReaderVCHParam;

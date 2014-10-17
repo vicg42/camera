@@ -24,6 +24,7 @@ entity video_ctrl is
 generic(
 G_USR_OPT : std_logic_vector(7 downto 0) := (others=>'0');
 G_DBGCS  : string := "OFF";
+G_VBUFI_DWIDTH : integer := 32;
 G_VBUFO_DWIDTH : integer := 32;
 G_MEM_AWIDTH : integer := 32;
 G_MEMWR_DWIDTH : integer := 32;
@@ -42,7 +43,7 @@ p_in_vread_prm        : in   TReaderVCHParams;
 -------------------------------
 --CCD
 -------------------------------
-p_in_ccd_d            : in    std_logic_vector(G_MEMWR_DWIDTH - 1 downto 0);
+p_in_ccd_d            : in    std_logic_vector(G_VBUFI_DWIDTH - 1 downto 0);
 p_in_ccd_den          : in    std_logic;
 p_in_ccd_hs           : in    std_logic;
 p_in_ccd_vs           : in    std_logic;
@@ -93,7 +94,7 @@ architecture behavioral of video_ctrl is
 
 component vbufi
 port(
-din         : IN  std_logic_vector(G_MEMWR_DWIDTH - 1 downto 0);
+din         : IN  std_logic_vector(G_VBUFI_DWIDTH - 1 downto 0);
 wr_en       : IN  std_logic;
 wr_clk      : IN  std_logic;
 
@@ -228,6 +229,7 @@ p_in_rst             : in    std_logic
 );
 end component;
 
+signal i_ccd_d_swap                      : std_logic_vector(p_in_ccd_d'range);
 signal i_vbuf_wr                         : TVfrBufs;
 signal i_vbuf_rd                         : TVfrBufs;
 signal i_vwrite_vfr_rdy                  : std_logic;
@@ -255,6 +257,7 @@ signal tst_vbufo_empty                   : std_logic;
 signal tst_vbufo_full                    : std_logic;
 
 
+
 --MAIN
 begin
 
@@ -266,7 +269,8 @@ gen_dbgcs_off : if strcmp(G_DBGCS,"OFF") generate
 p_out_tst(0) <= '0';
 p_out_tst(4 downto 1) <=tst_vwriter_out(4 downto 1);
 p_out_tst(8 downto 5) <=tst_vreader_out(3 downto 0);
-p_out_tst(15 downto 9) <= (others=>'0');
+p_out_tst(9)          <= i_vread_en;
+p_out_tst(15 downto 10) <= (others=>'0');
 p_out_tst(19 downto 16) <= (others=>'0');
 p_out_tst(25 downto 20) <= (others=>'0');
 p_out_tst(31 downto 26) <= tst_vwriter_out(31 downto 26);
@@ -276,7 +280,7 @@ gen_dbgcs_on : if strcmp(G_DBGCS,"ON") generate
 p_out_tst(0) <= OR_reduce(tst_vwriter_out) or OR_reduce(tst_vreader_out);
 p_out_tst(4 downto 1) <= tst_vwriter_out(3 downto 0);
 p_out_tst(8 downto 5) <= tst_vreader_out(3 downto 0);
-p_out_tst(9)          <= tst_vwriter_out(4);
+p_out_tst(9)          <= i_vread_en;
 p_out_tst(10)         <= tst_vreader_out(4)
 or tst_vbufi_empty
 or tst_vbufi_pfull
@@ -302,15 +306,15 @@ end generate gen_dbgcs_on;
 ----------------------------------------------------
 --Выходной видеобуфер
 ----------------------------------------------------
---gen_bufi_swap : for i in 0 to (G_MEMWR_DWIDTH / 128) - 1 generate begin
---i_ccd_d_swap((i_ccd_d_swap'length - (128 * i)) - 1 downto
---                              (i_ccd_d_swap'length - (128 * (i + 1)) ))
---                                      <= p_in_ccd_d(128 * (i + 1) - 1 downto (128 * i));
---end generate gen_bufi_swap;
+gen_bufi_swap : for i in 0 to (G_VBUFI_DWIDTH / G_MEMWR_DWIDTH) - 1 generate begin
+i_ccd_d_swap((i_ccd_d_swap'length - (G_MEMWR_DWIDTH * i)) - 1 downto
+                              (i_ccd_d_swap'length - (G_MEMWR_DWIDTH * (i + 1)) ))
+                                      <= p_in_ccd_d(G_MEMWR_DWIDTH * (i + 1) - 1 downto (G_MEMWR_DWIDTH * i));
+end generate gen_bufi_swap;
 
 m_bufi : vbufi
 port map(
-din         => p_in_ccd_d,
+din         => i_ccd_d_swap,
 wr_en       => p_in_ccd_den,
 wr_clk      => p_in_ccd_dclk,
 
@@ -319,13 +323,14 @@ rd_en       => i_vbufi_rd,
 rd_clk      => p_in_clk,
 
 empty       => i_vbufi_empty,
-full        => i_vbufi_full,
+full        => i_vbufi_full ,
 prog_full   => i_vbufi_pfull,
 
 rst         => i_vbufi_rst
 );
 
-i_vbufi_rst <= p_in_rst or not p_in_vwrite_en;
+i_vbufi_rst <= p_in_rst;-- or not p_in_vwrite_en;
+
 
 --###########################################
 --Запись видео информации в ОЗУ
@@ -387,7 +392,9 @@ if rising_edge(p_in_clk) then
     i_vwrite_en <= '0';
 
   else
-    i_vwrite_en <= p_in_vwrite_en;
+    if i_vbufi_empty = '0' then
+      i_vwrite_en <= '1';
+    end if;
 
     if i_vwrite_vfr_rdy = '1' then
       i_vfr_rdy <= '1';
