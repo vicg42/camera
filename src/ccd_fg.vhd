@@ -124,9 +124,13 @@ signal i_align_ok       : std_logic_vector(G_LVDS_CH_COUNT - 1 downto 0);
 signal tst_align_ok     : std_logic_vector(G_LVDS_CH_COUNT - 1 downto 0) := (others => '0');
 signal i_align_start    : std_logic := '0';
 
+
+type TPix_sr is array (0 to 2) of std_logic_vector(G_VD_BIT_COUNT - 1 downto 0);
+type TRxD2_sr is array (0 to G_LVDS_CH_COUNT - G_SYNC_LINE_COUNT - 1) of TPix_sr;
+
 type TRxD_sr is array (0 to G_LVDS_CH_COUNT - G_SYNC_LINE_COUNT - 1)
   of std_logic_vector(G_VD_BIT_COUNT - 1 downto 0);
-signal sr_rxd           : TRxD_sr;
+signal sr_rxd           : TRxD2_sr;
 signal i_vfr_pix        : TRxD_sr;
 signal sr_vfr_pix       : TRxD_sr;
 
@@ -158,6 +162,30 @@ type TTstDeserData is array (0 to G_LVDS_CH_COUNT - 1)
 signal tst_ccd_deser_out : TTstDeserData;
 
 signal i_align_ok_all  : std_logic := '0';
+signal sr_syn_fs       : std_logic_vector(0 to 1);
+signal sr_syn_ls       : std_logic_vector(0 to 1);
+
+signal i_pixen         : std_logic;
+signal sr_pixen        : std_logic_vector(0 to 1);
+
+signal i_syn_fs        : std_logic;
+signal i_syn_fe        : std_logic;
+signal i_syn_ls        : std_logic;
+signal i_syn_le        : std_logic;
+signal i_syn_img       : std_logic;
+signal i_syn_crc       : std_logic;
+signal i_syn_bl        : std_logic;
+
+signal tst_syn_fs      : std_logic;
+signal tst_syn_fe      : std_logic;
+signal tst_syn_ls      : std_logic;
+signal tst_syn_le      : std_logic;
+signal tst_syn_img     : std_logic;
+signal tst_syn_crc     : std_logic;
+signal tst_syn_bl      : std_logic;
+
+signal tt_vfr_den      : std_logic;
+signal tst_data        : unsigned(G_CCD_BIT_COUNT - 1 downto 0) := (others => '0');
 
 
 begin
@@ -254,72 +282,51 @@ end generate gen_lvds_ch;
 --###########################################
 --SYNC detect
 --###########################################
+i_sync_d <= UNSIGNED(i_deser_dout(0));
+
+i_syn_fs  <= '1' when (i_sync_d = TO_UNSIGNED(C_CCD_CHSYNC_FS      , i_sync_d'length)) else '0';
+i_syn_fe  <= '1' when (i_sync_d = TO_UNSIGNED(C_CCD_CHSYNC_FE      , i_sync_d'length)) else '0';
+i_syn_ls  <= '1' when (i_sync_d = TO_UNSIGNED(C_CCD_CHSYNC_LS      , i_sync_d'length)) else '0';
+i_syn_le  <= '1' when (i_sync_d = TO_UNSIGNED(C_CCD_CHSYNC_LE      , i_sync_d'length)) else '0';
+i_syn_img <= '1' when (i_sync_d = TO_UNSIGNED(C_CCD_CHSYNC_IMAGE   , i_sync_d'length)) else '0';
+i_syn_crc <= '1' when (i_sync_d = TO_UNSIGNED(C_CCD_CHSYNC_CRC     , i_sync_d'length)) else '0';
+i_syn_bl  <= '1' when (i_sync_d = TO_UNSIGNED(C_CCD_CHSYNC_BLACKPIX, i_sync_d'length)) else '0';
+
 process(i_clk_div)
 begin
   if rising_edge(i_clk_div) then
-    i_sync_d <= UNSIGNED(i_deser_dout(0));
-
     for lvds_ch in 1 to G_LVDS_CH_COUNT - 1 loop
-      --from Pix=10bit skip 2 lsb bit
       sr_rxd(lvds_ch - 1) <= i_deser_dout(lvds_ch)
-                                    (G_CCD_BIT_COUNT - 1 downto (G_CCD_BIT_COUNT - G_VD_BIT_COUNT));
-      i_vfr_pix(lvds_ch - 1) <= sr_rxd(lvds_ch - 1);
+                               (G_CCD_BIT_COUNT - 1 downto (G_CCD_BIT_COUNT - G_VD_BIT_COUNT)) & sr_rxd(lvds_ch - 1)(0 to 1);
+      i_vfr_pix(lvds_ch - 1) <= sr_rxd(lvds_ch - 1)(2);
+
     end loop;
   end if;
 end process;
-
 
 process(i_clk_div)
 begin
 if rising_edge(i_clk_div) then
   if i_deser_rst = '1' then
-    i_vfr_vs <= '0';
-    i_vfr_hs <= '0';
+    sr_syn_fs <= (others => '0');
+    sr_syn_ls <= (others => '0');
+    i_pixen <= '0';
+    sr_pixen <= (others => '0');
     i_vfr_den <= '0';
-    i_vfr_bl <= '0';
-    i_crc <= '0';
 
   else
 
-    if (i_sync_d = TO_UNSIGNED(C_CCD_CHSYNC_FS, i_sync_d'length)) then
-      i_vfr_vs <= '0';
-      i_vfr_hs <= '1';
-      i_vfr_den <= '1';
-      i_vfr_bl <= '0';
+      sr_syn_fs <= i_syn_fs & sr_syn_fs(0 to 0);
+      sr_syn_ls <= i_syn_ls & sr_syn_ls(0 to 0);
 
-    elsif (i_sync_d = TO_UNSIGNED(C_CCD_CHSYNC_FE, i_sync_d'length)) then
-      i_vfr_vs <= '1';
-      i_vfr_hs <= '0';
-      i_vfr_den <= '0';
-      i_vfr_bl <= '0';
+      if (sr_syn_fs(1) = '1' or sr_syn_ls(1) = '1') and i_syn_img = '1' then
+        i_pixen <= '1';
+      elsif i_syn_crc = '1' then
+        i_pixen <= '0';
+      end if;
 
-    elsif (i_sync_d = TO_UNSIGNED(C_CCD_CHSYNC_LS, i_sync_d'length)) then
-      i_vfr_vs <= '0';
-      i_vfr_hs <= '1';
-      i_vfr_den <= '1';
-      i_vfr_bl <= '0';
-
-    elsif (i_sync_d = TO_UNSIGNED(C_CCD_CHSYNC_LE, i_sync_d'length)) then
-      i_vfr_hs <= '0';
-      i_vfr_den <= '0';
-      i_vfr_bl <= '0';
-
-    elsif (i_sync_d = TO_UNSIGNED(C_CCD_CHSYNC_IMAGE, i_sync_d'length)) then
-      i_vfr_vs <= '0';
-      i_vfr_den <= '1';
-      i_vfr_bl <= '0';
-
-    elsif (i_sync_d = TO_UNSIGNED(C_CCD_CHSYNC_BLACKPIX, i_sync_d'length)) then
-      i_vfr_bl <= '1';
-
-    elsif (i_sync_d = TO_UNSIGNED(C_CCD_CHSYNC_CRC, i_sync_d'length)) then
-      i_crc <= '1';
-
-    else
-      i_vfr_bl <= '0';
-      i_crc <= '0';
-
-    end if;
+      sr_pixen <= i_pixen & sr_pixen(0 to 0);
+      i_vfr_den <= i_pixen or sr_pixen(1);
 
   end if;
 end if;
@@ -334,9 +341,6 @@ p_out_vfr_clk  <= i_clk_div;
 
 p_out_status(C_CCD_FG_STATUS_ALIGN_OK_BIT) <= AND_reduce(tst_align_ok);
 p_out_status(C_CCD_FG_STATUS_DRY_BIT) <= i_deser_rdy;
-
-p_out_tst(0) <= i_vfr_bl or i_align_ok_all or tst_ccd_deser_out(0)(0) or tst_ccd_deser_out(15)(0);
-p_out_tst(31 downto 1) <= (others => '0');
 
 
 
@@ -378,12 +382,12 @@ if rising_edge(i_clk_div) then
 
         else
 
-          i_kernel_pix(lvds_ch)(((i_kernel_pix(lvds_ch)'length / 2) * 1) - 1
+          i_kernel_pix(i_kernel_pix'length - 1 - lvds_ch)(((i_kernel_pix(lvds_ch)'length / 2) * 1) - 1
               downto (i_kernel_pix(lvds_ch)'length / 2) * 0)
                       <= std_logic_vector(RESIZE(UNSIGNED(i_vfr_pix(lvds_ch))
                                                   , (i_kernel_pix(lvds_ch)'length / 2)));
 
-          i_kernel_pix(lvds_ch)(((i_kernel_pix(lvds_ch)'length / 2) * 2) - 1
+          i_kernel_pix(i_kernel_pix'length - 1 - lvds_ch)(((i_kernel_pix(lvds_ch)'length / 2) * 2) - 1
               downto (i_kernel_pix(lvds_ch)'length / 2) * 1)
                       <= std_logic_vector(RESIZE(UNSIGNED(sr_vfr_pix(lvds_ch))
                                                   , (i_kernel_pix(lvds_ch)'length / 2)));
@@ -405,7 +409,20 @@ i_vfr_pix_out((i_kernel_pix(lvds_ch)'length * (lvds_ch + 1)) - 1
 end generate gen_fifo_di;
 
 
+process(i_clk_div)
+begin
+  if rising_edge(i_clk_div) then
+    i_align_start <= p_in_tst(5);
+  end if;
+end process;
 
+tst_ccd_deser_in(0) <= i_align_start; --i_btn_push
+tst_ccd_deser_in(31 downto 1) <= (others => '0');
+
+
+--################################################
+--DBG
+--################################################
 process(i_clk_div)
 begin
   if rising_edge(i_clk_div) then
@@ -418,15 +435,39 @@ begin
 --
 --    i_btn_push <= sr_btn_push(0) and not sr_btn_push(1);
 
-    i_align_start <= p_in_tst(5);
     tst_align_ok <= i_align_ok(i_align_ok'high downto 16) & '1' & i_align_ok(14 downto 0);
 
     i_align_ok_all <= AND_reduce(tst_align_ok);
+
+
+    tst_syn_fs  <= i_syn_fs ;
+    tst_syn_fe  <= i_syn_fe ;
+    tst_syn_bl  <= i_syn_bl ;
   end if;
 end process;
 
-tst_ccd_deser_in(0) <= i_align_start;
-tst_ccd_deser_in(31 downto 1) <= (others => '0');
+p_out_tst(0) <= i_vfr_bl or i_align_ok_all -- or tst_ccd_deser_out(0)(0) or tst_ccd_deser_out(15)(0);
+or tst_syn_fs
+or tst_syn_fe
+or tst_syn_bl;
+p_out_tst(31 downto 1) <= (others => '0');
+
+
+--process(i_clk_div)
+--begin
+--  if rising_edge(i_clk_div) then
+--      if i_pixen = '1' or sr_pixen(1) = '1' then
+--        tst_data <= tst_data + 1;
+--      else
+--        tst_data <= (others => '0');
+--      end if;
+--  end if;
+--end process;
+--
+--gen_dout_pix : for lvds_ch in 1 to G_LVDS_CH_COUNT - 1 generate
+--begin
+--i_vfr_pix(lvds_ch - 1) <= std_logic_vector(tst_data(G_CCD_BIT_COUNT - 1 downto (G_CCD_BIT_COUNT - G_VD_BIT_COUNT)));
+--end generate gen_dout_pix;
 
 end xilinx;
 

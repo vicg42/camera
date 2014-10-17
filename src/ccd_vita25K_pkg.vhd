@@ -78,33 +78,54 @@ std_logic_vector(TO_UNSIGNED(201, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_U
 type TCCD_WinINIT is array (0 to (2 + (3 * 4)) - 1)
   of std_logic_vector(C_CCD_SPI_AWIDTH - 1 + C_CCD_SPI_DWIDTH - 1 downto 0);
 
+--X0,X1 - must be multiples 64!!!
+constant C_CCD_DEFAULT_WIN0_X0 :integer := 0        ; --X_START
+constant C_CCD_DEFAULT_WIN0_Y0 :integer := 0        ; --X_END
+constant C_CCD_DEFAULT_WIN0_X1 :integer := C_PCFG_CCD_FULL_X / 64; --Y_START
+constant C_CCD_DEFAULT_WIN0_Y1 :integer := C_PCFG_CCD_FULL_Y     ; --Y_END
+
+constant C_CCD_DEFAULT_WIN1_X0 :integer := 0        ;
+constant C_CCD_DEFAULT_WIN1_Y0 :integer := 0        ;
+constant C_CCD_DEFAULT_WIN1_X1 :integer := 4096 / 64;
+constant C_CCD_DEFAULT_WIN1_Y1 :integer := 4096     ;
+
+constant C_CCD_DEFAULT_WIN2_X0 :integer := 0        ;
+constant C_CCD_DEFAULT_WIN2_Y0 :integer := 0        ;
+constant C_CCD_DEFAULT_WIN2_X1 :integer := 4096 / 64;
+constant C_CCD_DEFAULT_WIN2_Y1 :integer := 4096     ;
+
+constant C_CCD_DEFAULT_WIN3_X0 :integer := 0        ;
+constant C_CCD_DEFAULT_WIN3_Y0 :integer := 0        ;
+constant C_CCD_DEFAULT_WIN3_X1 :integer := 4096 / 64;
+constant C_CCD_DEFAULT_WIN3_Y1 :integer := 4096     ;
+
 constant C_CCD_WININIT : TCCD_WinINIT := (
 std_logic_vector(TO_UNSIGNED(195, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(16#0001#, C_CCD_SPI_DWIDTH)), --RIO_ACTIVE(15..0)
 std_logic_vector(TO_UNSIGNED(196, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(16#0000#, C_CCD_SPI_DWIDTH)), --RIO_ACTIVE(31..16)
 
 --RIO_0
-std_logic_vector(TO_UNSIGNED((256 + (3 * 0) + 0), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED((4096 / 64), C_CCD_SPI_DWIDTH / 2))  --X_END
-                                                                         & std_logic_vector(TO_UNSIGNED(0          , C_CCD_SPI_DWIDTH / 2)), --X_START
-std_logic_vector(TO_UNSIGNED((256 + (3 * 0) + 1), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(0          , C_CCD_SPI_DWIDTH)),     --Y_START
-std_logic_vector(TO_UNSIGNED((256 + (3 * 0) + 2), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(4096       , C_CCD_SPI_DWIDTH)),     --Y_END
+std_logic_vector(TO_UNSIGNED((256 + (3 * 0) + 0), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(C_CCD_DEFAULT_WIN0_X1 - 1, C_CCD_SPI_DWIDTH / 2))
+                                                                         & std_logic_vector(TO_UNSIGNED(C_CCD_DEFAULT_WIN0_X0    , C_CCD_SPI_DWIDTH / 2)),
+std_logic_vector(TO_UNSIGNED((256 + (3 * 0) + 1), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(C_CCD_DEFAULT_WIN0_Y0    , C_CCD_SPI_DWIDTH))    ,
+std_logic_vector(TO_UNSIGNED((256 + (3 * 0) + 2), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(C_CCD_DEFAULT_WIN0_Y1 - 1, C_CCD_SPI_DWIDTH))    ,
 
 --RIO_1
-std_logic_vector(TO_UNSIGNED((256 + (3 * 1) + 0), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED((4096 / 64), C_CCD_SPI_DWIDTH / 2))
-                                                                         & std_logic_vector(TO_UNSIGNED(0          , C_CCD_SPI_DWIDTH / 2)),
-std_logic_vector(TO_UNSIGNED((256 + (3 * 1) + 1), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(0          , C_CCD_SPI_DWIDTH)),
-std_logic_vector(TO_UNSIGNED((256 + (3 * 1) + 2), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(4096       , C_CCD_SPI_DWIDTH)),
+std_logic_vector(TO_UNSIGNED((256 + (3 * 1) + 0), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(C_CCD_DEFAULT_WIN1_X1 - 1, C_CCD_SPI_DWIDTH / 2))
+                                                                         & std_logic_vector(TO_UNSIGNED(C_CCD_DEFAULT_WIN1_X0    , C_CCD_SPI_DWIDTH / 2)),
+std_logic_vector(TO_UNSIGNED((256 + (3 * 1) + 1), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(C_CCD_DEFAULT_WIN1_Y0    , C_CCD_SPI_DWIDTH))    ,
+std_logic_vector(TO_UNSIGNED((256 + (3 * 1) + 2), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(C_CCD_DEFAULT_WIN1_Y1 - 1, C_CCD_SPI_DWIDTH))    ,
 
 --RIO_2
-std_logic_vector(TO_UNSIGNED((256 + (3 * 2) + 0), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED((4096 / 64), C_CCD_SPI_DWIDTH / 2))
-                                                                         & std_logic_vector(TO_UNSIGNED(0          , C_CCD_SPI_DWIDTH / 2)),
-std_logic_vector(TO_UNSIGNED((256 + (3 * 2) + 1), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(0          , C_CCD_SPI_DWIDTH)),
-std_logic_vector(TO_UNSIGNED((256 + (3 * 2) + 2), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(4096       , C_CCD_SPI_DWIDTH)),
+std_logic_vector(TO_UNSIGNED((256 + (3 * 2) + 0), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(C_CCD_DEFAULT_WIN2_X1 - 1, C_CCD_SPI_DWIDTH / 2))
+                                                                         & std_logic_vector(TO_UNSIGNED(C_CCD_DEFAULT_WIN2_X0    , C_CCD_SPI_DWIDTH / 2)),
+std_logic_vector(TO_UNSIGNED((256 + (3 * 2) + 1), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(C_CCD_DEFAULT_WIN2_Y0    , C_CCD_SPI_DWIDTH))    ,
+std_logic_vector(TO_UNSIGNED((256 + (3 * 2) + 2), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(C_CCD_DEFAULT_WIN2_Y1 - 1, C_CCD_SPI_DWIDTH))    ,
 
 --RIO_3
-std_logic_vector(TO_UNSIGNED((256 + (3 * 3) + 0), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED((4096 / 64), C_CCD_SPI_DWIDTH / 2))
-                                                                         & std_logic_vector(TO_UNSIGNED(0          , C_CCD_SPI_DWIDTH / 2)),
-std_logic_vector(TO_UNSIGNED((256 + (3 * 3) + 1), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(0          , C_CCD_SPI_DWIDTH)),
-std_logic_vector(TO_UNSIGNED((256 + (3 * 3) + 2), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(4096       , C_CCD_SPI_DWIDTH))
+std_logic_vector(TO_UNSIGNED((256 + (3 * 3) + 0), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(C_CCD_DEFAULT_WIN3_X1 - 1, C_CCD_SPI_DWIDTH / 2))
+                                                                         & std_logic_vector(TO_UNSIGNED(C_CCD_DEFAULT_WIN3_X0    , C_CCD_SPI_DWIDTH / 2)),
+std_logic_vector(TO_UNSIGNED((256 + (3 * 3) + 1), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(C_CCD_DEFAULT_WIN3_Y0    , C_CCD_SPI_DWIDTH))    ,
+std_logic_vector(TO_UNSIGNED((256 + (3 * 3) + 2), C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(C_CCD_DEFAULT_WIN3_Y1 - 1, C_CCD_SPI_DWIDTH))
 );
 
 

@@ -92,7 +92,7 @@ end video_ctrl;
 
 architecture behavioral of video_ctrl is
 
-component vbufi2
+component vbufi
 port(
 din         : IN  std_logic_vector(G_VBUFI_DWIDTH - 1 downto 0);
 wr_en       : IN  std_logic;
@@ -257,6 +257,7 @@ signal tst_vbufo_empty                   : std_logic;
 signal tst_vbufo_full                    : std_logic;
 
 
+
 --MAIN
 begin
 
@@ -311,9 +312,9 @@ i_ccd_d_swap((i_ccd_d_swap'length - (G_MEMWR_DWIDTH * i)) - 1 downto
                                       <= p_in_ccd_d(G_MEMWR_DWIDTH * (i + 1) - 1 downto (G_MEMWR_DWIDTH * i));
 end generate gen_bufi_swap;
 
-m_bufi : vbufi2
+m_bufi : vbufi
 port map(
-din         => i_ccd_d_swap,--p_in_ccd_d,
+din         => i_ccd_d_swap,
 wr_en       => p_in_ccd_den,
 wr_clk      => p_in_ccd_dclk,
 
@@ -322,13 +323,14 @@ rd_en       => i_vbufi_rd,
 rd_clk      => p_in_clk,
 
 empty       => i_vbufi_empty,
-full        => i_vbufi_full,
+full        => i_vbufi_full ,
 prog_full   => i_vbufi_pfull,
 
 rst         => i_vbufi_rst
 );
 
 i_vbufi_rst <= p_in_rst;-- or not p_in_vwrite_en;
+
 
 --###########################################
 --Запись видео информации в ОЗУ

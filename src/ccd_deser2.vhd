@@ -15,7 +15,6 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
---use ieee.std_logic_signed.all;
 
 library unisim;
 use unisim.vcomponents.all;
@@ -49,25 +48,10 @@ end ccd_deser;
 architecture xilinx of ccd_deser is
 
 constant CI_DATA_STABLE_COUNT : integer := 256;
-constant CI_IDELAY_TAP_COUNT : integer := 64;
-constant CI_IDELAY_LATENCY   : integer := 64;
-constant CI_BITSLIP_DELAY    : integer := 20;
-constant CI_TRY_COUNT        : integer := 50;
---constant CI_BITSLIP_RETRY_COUNT : integer := 32;
-
-type TDataValid is array (0 to G_BIT_COUNT - 1 ) of unsigned(G_BIT_COUNT - 1 downto 0);
-constant CI_VALID_DATA : TDataValid := (
-TO_UNSIGNED(16#3A6#, G_BIT_COUNT),
-TO_UNSIGNED(16#34D#, G_BIT_COUNT),
-TO_UNSIGNED(16#29B#, G_BIT_COUNT),
-TO_UNSIGNED(16#137#, G_BIT_COUNT),
-TO_UNSIGNED(16#26E#, G_BIT_COUNT),
-TO_UNSIGNED(16#0DD#, G_BIT_COUNT),
-TO_UNSIGNED(16#1BA#, G_BIT_COUNT),
-TO_UNSIGNED(16#374#, G_BIT_COUNT),
-TO_UNSIGNED(16#2E9#, G_BIT_COUNT),
-TO_UNSIGNED(16#1D3#, G_BIT_COUNT)
-);
+constant CI_IDELAY_TAP_COUNT  : integer := 64;
+constant CI_IDELAY_LATENCY    : integer := 64;
+constant CI_BITSLIP_DELAY     : integer := 20;
+constant CI_TRY_COUNT         : integer := 50;
 
 signal i_ser_din             : std_logic;
 signal i_idelaye2_ld         : std_logic;
@@ -76,15 +60,10 @@ signal i_idelaye2_ce         : std_logic;
 signal i_idelaye2_inc        : std_logic;
 signal i_idelaye2_tapcnt     : unsigned(5 downto 0);
 
+signal i_cascade             : std_logic_vector(1 downto 0);
 signal i_deser_rst           : std_logic;
 signal i_deser_d             : unsigned(13 downto 0);
-signal icascade1             : std_logic;
-signal icascade2             : std_logic;
-
-signal i_align_ok            : std_logic;
-signal i_bitslip_cnt         : unsigned(3 downto 0);
-signal i_bitslip             : std_logic;
-signal i_cntok               : unsigned(12 downto 0);
+signal sr_deser_d0           : unsigned (G_BIT_COUNT - 1 downto 0);
 
 signal i_cntdly              : unsigned(15 downto 0);
 
@@ -106,26 +85,25 @@ S_ALIGN_WAIT      ,
 S_ALIGN_DONE
 --S_RST_DLY
 );
-signal i_fsm_align : TFsm_Align;
+signal i_fsm_align           : TFsm_Align;
 
-signal sr_deser_d0       : unsigned (G_BIT_COUNT - 1 downto 0);
-signal i_data_chng       : std_logic := '0';
+signal i_data_chng           : std_logic := '0';
 
-signal i_align_start     : std_logic;
-signal i_align_done      : std_logic;
+signal i_align_start         : std_logic;
+signal i_align_done          : std_logic;
+signal i_align_ok            : std_logic;
 
-signal i_cnttap0         : unsigned (5 downto 0);
-signal i_cnttap1         : unsigned (5 downto 0);
-signal i_cnttap          : unsigned (7 downto 0);
-signal i_cnttap0_sv      : unsigned (5 downto 0);
-signal i_cnttap1_sv      : unsigned (5 downto 0);
-signal i_cnttap_midle    : unsigned (5 downto 0);
-signal i_deser_d_sv      : unsigned (G_BIT_COUNT - 1 downto 0);
-signal i_cnttry          : unsigned (5 downto 0);
+signal i_cnttap0             : unsigned (5 downto 0);
+signal i_cnttap1             : unsigned (5 downto 0);
+signal i_cnttap              : unsigned (7 downto 0);
+signal i_cnttap0_sv          : unsigned (5 downto 0);
+signal i_cnttap1_sv          : unsigned (5 downto 0);
+signal i_cnttap_midle        : unsigned (5 downto 0);
+signal i_deser_d_sv          : unsigned (G_BIT_COUNT - 1 downto 0);
+signal i_cnttry              : unsigned (5 downto 0);
 
-signal i_bitslip_work    : std_logic;
-
-signal i_rst_width       : unsigned (3 downto 0);
+signal i_bitslip             : std_logic;
+signal i_bitslip_work        : std_logic;
 
 signal tst_fsm_align,tst_fsm_align_dly : std_logic_vector(3 downto 0);
 signal tst_align_dchng : std_logic;
@@ -234,8 +212,8 @@ Q5                => i_deser_d(4),
 Q6                => i_deser_d(5),
 Q7                => i_deser_d(6),
 Q8                => i_deser_d(7),
-SHIFTOUT1         => icascade1,       -- Cascade connection to Slave
-SHIFTOUT2         => icascade2,       -- Cascade connection to Slave
+SHIFTOUT1         => i_cascade(0),       -- Cascade connection to Slave
+SHIFTOUT2         => i_cascade(1),       -- Cascade connection to Slave
 BITSLIP           => i_bitslip,       -- 1-bit Invoke Bitslip. This can be used with any
                                       -- DATA_WIDTH, cascaded or not.
 CE1               => p_in_clken,
@@ -291,8 +269,8 @@ Q7                => i_deser_d(12),
 Q8                => i_deser_d(13),
 SHIFTOUT1         => open,
 SHIFTOUT2         => open,
-SHIFTIN1          => icascade1,       -- Cascade connections from Master
-SHIFTIN2          => icascade2,       -- Cascade connections from Master
+SHIFTIN1          => i_cascade(0),       -- Cascade connections from Master
+SHIFTIN2          => i_cascade(1),       -- Cascade connections from Master
 BITSLIP           => i_bitslip,       -- 1-bit Invoke Bitslip. This can be used with any
                                       -- DATA_WIDTH, cascaded or not.
 CE1               => p_in_clken,
@@ -313,7 +291,7 @@ OCLKB             => '0',
 O                 => open             -- unregistered output of ISERDESE1
 );
 
-p_out_data <= std_logic_vector(i_deser_d(p_out_data'range));
+p_out_data <= std_logic_vector(sr_deser_d0(p_out_data'range));
 p_out_align_ok <= i_align_ok;
 
 

@@ -135,7 +135,7 @@ signal i_pixcnt           : std_logic_vector(15 downto 0);
 signal i_linecnt          : std_logic_vector(15 downto 0);
 --signal tst_char_screen_out: std_logic_vector(31 downto 0);
 --signal tst_vdtxt          : std_logic_vector(p_in_fifo_do'range);
-
+signal tst_vdout          : std_logic_vector(G_VDWIDTH - 1 downto 0);
 
 --MAIN
 begin
@@ -147,8 +147,15 @@ gen_vga : if strcmp(G_VOUT_TYPE, "VGA") generate
 begin
 
 p_out_tst(0) <= i_vga_vs;
-p_out_tst(1) <= OR_reduce(p_in_fifo_do);
+p_out_tst(1) <= OR_reduce(tst_vdout);
 p_out_tst(2) <= '0';--OR_reduce(tst_vdtxt);
+
+process(i_vga_pix_clk)
+begin
+if rising_edge(i_vga_pix_clk) then
+tst_vdout <= p_in_fifo_do((G_VDWIDTH * 1) - 1 downto (G_VDWIDTH * 0));
+end if;
+end process;
 
 i_vga_pix_clk <= p_in_clk;
 
@@ -223,9 +230,10 @@ begin
 --p_out_video.adv7123_dr <= p_in_fifo_do((10 * 3) - 1 downto (10 * 2));
 --p_out_video.adv7123_db <= p_in_fifo_do((10 * 2) - 1 downto (10 * 1));
 --p_out_video.adv7123_dg <= p_in_fifo_do((10 * 1) - 1 downto (10 * 0));
-p_out_video.adv7123_dr <= p_in_fifo_do((10 * 1) - 1 downto (10 * 0));
-p_out_video.adv7123_db <= p_in_fifo_do((10 * 1) - 1 downto (10 * 0));
-p_out_video.adv7123_dg <= p_in_fifo_do((10 * 1) - 1 downto (10 * 0));
+
+p_out_video.adv7123_dr <= std_logic_vector(RESIZE(UNSIGNED(p_in_fifo_do((G_VDWIDTH * 1) - 1 downto (G_VDWIDTH * 0))), p_out_video.adv7123_dr'length));
+p_out_video.adv7123_db <= std_logic_vector(RESIZE(UNSIGNED(p_in_fifo_do((G_VDWIDTH * 1) - 1 downto (G_VDWIDTH * 0))), p_out_video.adv7123_db'length));
+p_out_video.adv7123_dg <= std_logic_vector(RESIZE(UNSIGNED(p_in_fifo_do((G_VDWIDTH * 1) - 1 downto (G_VDWIDTH * 0))), p_out_video.adv7123_dg'length));
 --i_vdin <= p_in_fifo_do;
 
 end generate gen_tst_off;
@@ -391,9 +399,9 @@ begin
 --p_out_video.adv7123_dg(i) <= p_in_fifo_do(6);
 --p_out_video.adv7123_dr(i) <= p_in_fifo_do(7);
 --end generate;
-p_out_video.adv7123_dr <= p_in_fifo_do((10 * 3) - 1 downto (10 * 2));
-p_out_video.adv7123_db <= p_in_fifo_do((10 * 2) - 1 downto (10 * 1));
-p_out_video.adv7123_dg <= p_in_fifo_do((10 * 1) - 1 downto (10 * 0));
+p_out_video.adv7123_dr <= std_logic_vector(RESIZE(UNSIGNED(p_in_fifo_do((G_VDWIDTH * 1) - 1 downto (G_VDWIDTH * 0))), p_out_video.adv7123_dr'length));
+p_out_video.adv7123_db <= std_logic_vector(RESIZE(UNSIGNED(p_in_fifo_do((G_VDWIDTH * 1) - 1 downto (G_VDWIDTH * 0))), p_out_video.adv7123_db'length));
+p_out_video.adv7123_dg <= std_logic_vector(RESIZE(UNSIGNED(p_in_fifo_do((G_VDWIDTH * 1) - 1 downto (G_VDWIDTH * 0))), p_out_video.adv7123_dg'length));
 
 end generate gen_tst_off;
 

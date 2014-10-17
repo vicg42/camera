@@ -528,7 +528,7 @@ pin_out_video <= i_video_out;
 --***********************************************************
 i_vctrl_vwrite_en    <= tst_vtest_en;
 i_vctrl_memtrn_lenwr <= std_logic_vector(TO_UNSIGNED(16#E0#, 8));
-i_vctrl_memtrn_lenrd <= std_logic_vector(TO_UNSIGNED(16#80#, 8));
+i_vctrl_memtrn_lenrd <= std_logic_vector(TO_UNSIGNED(16#10#, 8));
 --i_vctrl_memtrn_lenwr <= i_dbg_ctrl_out.vout_memtrn_lenwr;
 --i_vctrl_memtrn_lenrd <= i_dbg_ctrl_out.vout_memtrn_lenrd;
 

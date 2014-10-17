@@ -89,7 +89,8 @@ port(
 p_in_ccd        : in    TCCD_pinin;
 p_out_ccd       : out   TCCD_pinout;
 
-p_out_vfr_data  : out   std_logic_vector((((G_LVDS_CH_COUNT - G_SYNC_LINE_COUNT)) * 32) - 1 downto 0);
+p_out_vfr_data  : out  std_logic_vector(((G_LVDS_CH_COUNT - G_SYNC_LINE_COUNT)
+                                          * selval(16, 32, G_VD_BIT_COUNT = 8)) - 1 downto 0);
 p_out_vfr_den   : out   std_logic;
 p_out_vfr_vs    : out   std_logic;
 p_out_vfr_hs    : out   std_logic;

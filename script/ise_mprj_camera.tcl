@@ -129,6 +129,11 @@ set _projects [ list \
       [ list "../../src/clocks.vhd" $_VHDMod ] \
       [ list "../../src/clocks_pkg.vhd" $_VHDPkg ] \
       [ list "../../src/ccd_vita25k_pkg.vhd" $_VHDPkg ] \
+      [ list "../../src/ccd_vita25K.vhd" $_VHDMod ] \
+      [ list "../../src/ccd_spi.vhd" $_VHDMod ] \
+      [ list "../../src/ccd_fg.vhd" $_VHDMod ] \
+      [ list "../../src/ccd_deser_clk.vhd" $_VHDMod ] \
+      [ list "../../src/ccd_deser2.vhd" $_VHDMod ] \
       [ list "../../src/vout_pkg.vhd" $_VHDPkg ] \
       [ list "../../src/vout.vhd" $_VHDMod ] \
       [ list "../../src/video_ctrl_pkg.vhd" $_VHDPkg ] \

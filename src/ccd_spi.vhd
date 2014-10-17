@@ -145,7 +145,6 @@ signal tst_fsmstate,tst_fsmstate_dly : std_logic_vector(3 downto 0) := (others =
 signal i_spi_core_tst_out : std_logic_vector(31 downto 0) := (others => '0');
 
 signal i_ccd_readout    : std_logic;
-signal i_ccd_win    : TCCD_WinINIT;
 
 signal i_ccd_start      : std_logic;
 
@@ -365,12 +364,6 @@ begin
                 i_txd <= C_CCD_WININIT(i)(15 downto 0);
               end if;
             end loop;
---            for i in 0 to i_ccd_win'length - 1 loop
---              if i_regcnt = i then
---                i_adr <= i_ccd_win(i)(24 downto 16) & CI_SPI_WRITE;
---                i_txd <= i_ccd_win(i)(15 downto 0);
---              end if;
---            end loop;
 
             i_spi_core_dir <= C_SPI_WRITE;
             i_spi_core_start <= '1';
@@ -438,7 +431,7 @@ begin
 
 --            if i_btn_push = '1' then
               i_adr <= std_logic_vector(TO_UNSIGNED(10#192#, C_CCD_SPI_AWIDTH - 1)) & CI_SPI_WRITE;
-              i_txd <= std_logic_vector(TO_UNSIGNED(16#0001#, C_CCD_SPI_DWIDTH));
+              i_txd <= std_logic_vector(TO_UNSIGNED(16#0000#, C_CCD_SPI_DWIDTH - 1)) & i_ccd_readout;
 
               i_spi_core_dir <= C_SPI_WRITE;
               i_spi_core_start <= '1';
@@ -453,9 +446,11 @@ begin
           when S_WAIT2_BTN_2 =>
 
             if i_busy = '0' then
---              i_ccd_readout <= not i_ccd_readout;
+              if i_btn_push = '1' then
+              i_ccd_readout <= not i_ccd_readout;
               i_ccd_start <= '1';
-              i_fsm_spi_cs <= S_WAIT2_BTN_2;
+              i_fsm_spi_cs <= S_WAIT2_BTN;
+              end if;
             end if;
 
         end case;
