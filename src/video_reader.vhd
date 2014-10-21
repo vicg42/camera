@@ -98,6 +98,7 @@ signal i_adr_vfr_line              : unsigned((16 * 2) - 1 downto 0) := (others 
 signal i_vfr_skip_row              : unsigned(i_vfr_rowcnt'range) := (others => '0');
 signal i_vfr_skip_pix              : unsigned(i_vfr_pix_count_byte'range) := (others => '0');
 signal i_vfr_row_count             : unsigned(i_vfr_rowcnt'range) := (others => '0');
+signal i_vfr_mirror                : TFrXYMirror;
 signal i_padding                   : std_logic := '0';
 signal i_upp_buf_full              : std_logic;
 signal i_data_null                 : std_logic_vector(G_MEM_DWIDTH - 1 downto 0);
@@ -140,9 +141,9 @@ tst_fsmstate <= TO_UNSIGNED(16#01#,tst_fsmstate'length) when i_fsm_state_cs = S_
 p_out_vch_fr_new <= '0';
 p_out_vch_rd_done <= '0';
 p_out_vch <= (others=>'0');
-p_out_vch_active_pix <= (others=>'0');
-p_out_vch_active_row <= (others=>'0');
-p_out_vch_mirx  <= '0';
+p_out_vch_active_pix <= std_logic_vector(i_vfr_pix_count_byte);
+p_out_vch_active_row <= std_logic_vector(i_vfr_row_count);
+p_out_vch_mirx  <= i_vfr_mirror.x;
 
 
 ------------------------------------------------
@@ -171,6 +172,9 @@ if rising_edge(p_in_clk) then
     i_vfr_row_count <= (others => '0');
     i_vfrw_pix_count_byte <= (others => '0');
 
+    i_vfr_mirror.x <= '0';
+    i_vfr_mirror.y <= '0';
+
   else
 
     case i_fsm_state_cs is
@@ -181,14 +185,22 @@ if rising_edge(p_in_clk) then
       when S_IDLE =>
 
         i_padding <= '0';
-        i_vfr_rowcnt <= (others=>'0');
 
         if p_in_work_en = '1' then
           i_vfr_skip_row <= UNSIGNED(p_in_prm_vch(0).fr_size.skip.row(i_vfr_skip_row'range));
           i_vfr_skip_pix <= UNSIGNED(p_in_prm_vch(0).fr_size.skip.pix(i_vfr_skip_pix'range));
           i_vfr_pix_count_byte <= UNSIGNED(p_in_prm_vch(0).fr_size.activ.pix(i_vfr_pix_count_byte'range));
-          i_vfr_row_count <= UNSIGNED(p_in_prm_vch(0).fr_size.activ.row(i_vfr_row_count'range));
           i_vfrw_pix_count_byte <= UNSIGNED(p_in_prm_vch(0).frw_size.activ.pix(i_vfrw_pix_count_byte'range));
+
+          if p_in_prm_vch(0).fr_mirror.y = '0' then
+            i_vfr_row_count <= UNSIGNED(p_in_prm_vch(0).fr_size.activ.row(i_vfr_row_count'range));
+            i_vfr_rowcnt <= (others=>'0');
+          else
+            i_vfr_row_count <= UNSIGNED(p_in_prm_vch(0).fr_size.activ.row(i_vfr_row_count'range));
+            i_vfr_rowcnt <= UNSIGNED(p_in_prm_vch(0).fr_size.activ.row(i_vfr_row_count'range)) - 1;
+          end if;
+
+          i_vfr_mirror <= p_in_prm_vch(0).fr_mirror;
 
           i_fsm_state_cs <= S_MEM_START;
         end if;
@@ -229,12 +241,21 @@ if rising_edge(p_in_clk) then
 
         i_mem_start <= '0';
         if i_mem_done = '1' then
-          if i_vfr_rowcnt = (i_vfr_row_count - 1) or i_padding = '1' then
+          if (i_vfr_rowcnt = (i_vfr_row_count - 1) and i_vfr_mirror.y = '0')
+            or (i_vfr_rowcnt = (i_vfr_rowcnt'range => '0') and i_vfr_mirror.y = '1')
+            or i_padding = '1' then
 
             i_fsm_state_cs <= S_IDLE;
+
           else
-            i_vfr_rowcnt <= i_vfr_rowcnt + 1;
+            if i_vfr_mirror.y = '0' then
+              i_vfr_rowcnt <= i_vfr_rowcnt + 1;
+            else
+              i_vfr_rowcnt <= i_vfr_rowcnt - 1;
+            end if;
+
             i_fsm_state_cs <= S_MEM_START;
+
           end if;
         end if;
 

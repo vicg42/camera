@@ -27,8 +27,8 @@ constant C_VCTRL_MEM_VFR_M_BIT    : integer:=26;
 --constant C_VCTRL_MEM_VCH_M_BIT    : integer:=31;
 
 type TFrXYMirror is record
-pix : std_logic;
-row : std_logic;
+x : std_logic;
+y : std_logic;
 end record;
 
 --координаты
@@ -73,7 +73,7 @@ type TReaderVCHParam is record
 --mem_adr        : std_logic_vector(31 downto 0);
 fr_size        : TFrXYParam;
 frw_size       : TFrXYParam;
---fr_mirror      : TFrXYMirror;
+fr_mirror      : TFrXYMirror;
 end record;
 Type TReaderVCHParams is array (0 to C_VCTRL_VCH_COUNT - 1) of TReaderVCHParam;
 
