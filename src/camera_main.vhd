@@ -400,6 +400,11 @@ signal i_ccd_clk         : std_logic;
 signal i_dbg_ctrl_out    : TDGB_ctrl_out;
 signal i_dbg_ctrl_in     : TDGB_ctrl_in;
 
+signal i_cntdiv_memclkin : unsigned(10 downto 0);
+signal i_cntdiv_memclkout : unsigned(10 downto 0);
+
+signal tst_mem_rdy : std_logic;
+
 --signal i_xps_led          : std_logic_vector(7 downto 0);
 --
 --signal i_xps_osdin_axi_tvalid : std_logic;
@@ -537,22 +542,20 @@ i_vctrl_vwrite_prm(0).fr_size.skip.row  <= std_logic_vector(TO_UNSIGNED(10#00#, 
 i_vctrl_vwrite_prm(0).fr_size.activ.pix <= std_logic_vector(TO_UNSIGNED(C_PCFG_CCD_FULL_X, 16));
 i_vctrl_vwrite_prm(0).fr_size.activ.row <= std_logic_vector(TO_UNSIGNED(C_PCFG_CCD_FULL_Y, 16));
 
-gen_tv1 : if strcmp(C_PCGF_VOUT_TYPE, "TV") generate begin
+i_vctrl_vread_prm(0).frw_size <= i_vctrl_vwrite_prm(0).fr_size;
 i_vctrl_vread_prm(0).fr_size.skip.pix  <= std_logic_vector(TO_UNSIGNED(C_PCFG_VOUT_START_X, 16));
 i_vctrl_vread_prm(0).fr_size.skip.row  <= std_logic_vector(TO_UNSIGNED(C_PCFG_VOUT_START_Y, 16));
+i_vctrl_vread_prm(0).fr_mirror.x <= '0';
+i_vctrl_vread_prm(0).fr_mirror.y <= '1';
+gen_tv1 : if strcmp(C_PCGF_VOUT_TYPE, "TV") generate begin
 i_vctrl_vread_prm(0).fr_size.activ.pix <= std_logic_vector(TO_UNSIGNED(10#896#, 16));
 i_vctrl_vread_prm(0).fr_size.activ.row <= std_logic_vector(TO_UNSIGNED(10#576#, 16));
-i_vctrl_vread_prm(0).frw_size <= i_vctrl_vwrite_prm(0).fr_size;
 end generate gen_tv1;
-
 gen_vga : if strcmp(C_PCGF_VOUT_TYPE, "VGA") generate begin
 --i_vctrl_vread_prm(0).fr_size.skip.pix  <= i_dbg_ctrl_out.vout_start_x;
 --i_vctrl_vread_prm(0).fr_size.skip.row  <= i_dbg_ctrl_out.vout_start_y;
-i_vctrl_vread_prm(0).fr_size.skip.pix  <= std_logic_vector(TO_UNSIGNED(C_PCFG_VOUT_START_X, 16));
-i_vctrl_vread_prm(0).fr_size.skip.row  <= std_logic_vector(TO_UNSIGNED(C_PCFG_VOUT_START_Y, 16));
 i_vctrl_vread_prm(0).fr_size.activ.pix <= std_logic_vector(TO_UNSIGNED(10#800#, 16));
 i_vctrl_vread_prm(0).fr_size.activ.row <= std_logic_vector(TO_UNSIGNED(10#600#, 16));
-i_vctrl_vread_prm(0).frw_size <= i_vctrl_vwrite_prm(0).fr_size;
 end generate gen_vga;
 
 m_vctrl : video_ctrl
@@ -700,9 +703,9 @@ p_in_sys        => i_mem_ctrl_sysin
 --pin_out_led(0) <= OR_reduce(i_video_d) or OR_reduce(i_ccd_tst_out) or i_ccd_init_done;-- or -- or i_video_vs or i_video_hs or i_video_den;-- or sr_tst_ccd_syn;--OR_reduce(i_mem_ctrl_status.rdy);
 pin_out_led(0) <= i_test_led(0);-- or OR_reduce(i_video_d);--OR_reduce(tst_vbufo_do) or
 
-pin_out_TP2(0) <= i_video_out.vga_vs;--
-pin_out_TP2(1) <= i_video_out.vga_hs or i_video_vs or i_video_hs;--i_ccd_status(C_CCD_STATUS_ALIGN_OK_BIT);--tmp_vbufo_empty;--tst_vctrl_in(0);--i_video_vs;
-pin_out_TP2(2) <= OR_reduce(i_ccd_tst_out) or OR_reduce(tst_vout_out) or OR_reduce(tst_vctrl_out) or i_ccd_status(C_CCD_STATUS_ALIGN_OK_BIT);
+pin_out_TP2(0) <= i_cntdiv_memclkin(8);
+pin_out_TP2(1) <= i_cntdiv_memclkout(8);
+pin_out_TP2(2) <= OR_reduce(i_ccd_tst_out) or OR_reduce(tst_vout_out) or OR_reduce(tst_vctrl_out) or i_ccd_status(C_CCD_STATUS_ALIGN_OK_BIT) or tst_mem_rdy;
 --tst_xps_osdin_axi_tlast
 --or tst_xps_osdin_axi_tuser
 --or tst_xps_osdin_axi_tvalid
@@ -909,6 +912,21 @@ i_ccd_tst_in(i_ccd_tst_in'length - 1 downto 1) <= (others => '0');
 --
 --  end if;
 --end process;
+
+process(g_usrclk(4))
+begin
+  if rising_edge(g_usrclk(4)) then
+    i_cntdiv_memclkin <= i_cntdiv_memclkin + 1;
+  end if;
+end process;
+
+process(g_usr_highclk)
+begin
+  if rising_edge(g_usr_highclk) then
+    i_cntdiv_memclkout <= i_cntdiv_memclkout + 1;
+    tst_mem_rdy <= OR_reduce(i_mem_ctrl_status.rdy);
+  end if;
+end process;
 
 
 --END MAIN
