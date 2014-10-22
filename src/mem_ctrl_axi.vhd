@@ -50,7 +50,7 @@ p_out_status   : out   TMEMCTRL_status;
 p_out_sys      : out   TMEMCTRL_sysout;
 p_in_sys       : in    TMEMCTRL_sysin
 );
-end;
+end entity mem_ctrl;
 
 architecture synth of mem_ctrl is
 
@@ -66,8 +66,8 @@ type Tclk_opt is array (0 to C_MEM_BANK_COUNT - 1)
 
 signal i_mmcm_locked : std_logic_vector(C_MEM_BANK_COUNT - 1 downto 0);
 
---MAIN
-begin
+
+begin --architecture synth
 
 p_out_sys.clk <= i_clk(0);
 p_out_sys.gusrclk_locked <= i_mmcm_locked(0);
@@ -180,6 +180,4 @@ end process;
 end generate gen_bank;
 
 
---END MAIN
-end;
-
+end architecture synth;

@@ -43,7 +43,7 @@ p_in_clk       : in    std_logic;
 p_in_clkinv    : in    std_logic;
 p_in_rst       : in    std_logic
 );
-end ccd_deser;
+end entity ccd_deser;
 
 architecture xilinx of ccd_deser is
 
@@ -110,7 +110,7 @@ signal tst_align_dchng : std_logic;
 
 
 
-begin
+begin --architecture xilinx
 
 
 p_out_tst(0) <= OR_reduce(tst_fsm_align_dly) or tst_align_dchng;
@@ -161,7 +161,7 @@ CINVCTRL_SEL          => "FALSE"   ,-- Enable dynamic clock inversion (FALSE, TR
 DELAY_SRC             => "IDATAIN" ,-- Delay input (IDATAIN, DATAIN)
 HIGH_PERFORMANCE_MODE => "TRUE"    ,-- Reduced jitter ("TRUE"), Reduced power ("FALSE")
 IDELAY_TYPE           => "VARIABLE",-- FIXED, VARIABLE, VAR_LOAD, VAR_LOAD_PIPE
-IDELAY_VALUE          => 13         ,-- Input delay tap setting (0-31)
+IDELAY_VALUE          => 0         ,-- Input delay tap setting (0-31)
 PIPE_SEL              => "FALSE"   ,-- Select pipelined mode, FALSE, TRUE
 REFCLK_FREQUENCY      => 200.0     ,-- IDELAYCTRL clock input frequency in MHz (190.0-210.0, 290.0-310.0).
 SIGNAL_PATTERN        => "DATA"     -- DATA, CLOCK input signal
@@ -173,8 +173,8 @@ C                 => p_in_clkdiv,
 CE                => i_idelaye2_ce,
 INC               => i_idelaye2_inc,
 IDATAIN           => i_ser_din,
-LD                => i_align_start,--i_idelaye2_ld,
-REGRST            => i_deser_rst, --p_in_rst,--
+LD                => i_deser_rst, --i_align_start,--i_idelaye2_ld,
+REGRST            => p_in_rst,--i_deser_rst, --
 LDPIPEEN          => '0',
 CNTVALUEIN        => (others => '0'),
 CNTVALUEOUT       => open,
@@ -388,7 +388,7 @@ elsif rising_edge(p_in_clkdiv) then
         when S_DATA_CHNG =>
 
             i_idelaye2_ce  <= '0';
-            i_idelaye2_inc <= '0';
+--            i_idelaye2_inc <= '0';
 
             if (i_data_chng = '0') then
               i_fsm_align <= S_DATA_STBL;
@@ -405,13 +405,14 @@ elsif rising_edge(p_in_clkdiv) then
                 i_cnttry <= (others => '0');
 
                 i_deser_rst <= '1';
+                i_idelaye2_inc <= not i_idelaye2_inc;
                 i_fsm_align <= S_RST_DESER;
 
               else
                 i_cnttry <= i_cnttry + 1;
 
                 i_idelaye2_ce  <= '1';
-                i_idelaye2_inc <= '0';
+--                i_idelaye2_inc <= '0';
                 i_fsm_align <= S_DATA_CHNG;
 
               end if;
@@ -638,9 +639,4 @@ end if;
 end process;
 
 
-
-
-end xilinx;
-
-
-
+end architecture xilinx;

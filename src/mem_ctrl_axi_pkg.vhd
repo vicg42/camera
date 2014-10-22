@@ -36,7 +36,7 @@ type TAXIS_DWIDTH is array (0 to C_MEMCH_COUNT_MAX - 1) of integer;
 ------------------------------------------------------------------------------------------------------------
 constant C_AXIS_DWIDTH     : TAXIS_DWIDTH := (
 256,
-64,
+32,
 C_PCGF_MEMCTRL_DWIDTH,
 C_PCGF_MEMCTRL_DWIDTH,
 C_PCGF_MEMCTRL_DWIDTH,
@@ -138,7 +138,7 @@ p_out_status   : out   TMEMCTRL_status;
 p_out_sys      : out   TMEMCTRL_sysout;
 p_in_sys       : in    TMEMCTRL_sysin
 );
-end component;
+end component mem_ctrl;
 
 component mem_arb
 generic(
@@ -171,7 +171,7 @@ p_out_tst   : out   std_logic_vector(31 downto 0);
 p_in_clk    : in    std_logic;
 p_in_rst    : in    std_logic
 );
-end component;
+end component mem_arb;
 
 component mem_ctrl_core_axi
 generic(
@@ -260,7 +260,7 @@ app_ref_ack         : out    std_logic;
 app_zq_req          : in     std_logic;
 app_zq_ack          : out    std_logic
 );
-end component;
+end component mem_ctrl_core_axi;
 
 
 COMPONENT mem_achcount2
@@ -391,10 +391,9 @@ COMPONENT mem_achcount2
 END COMPONENT;
 
 
-end; --package mem_ctrl_pkg is
+end package mem_ctrl_pkg;
 
 
-package body mem_ctrl_pkg is
-
-
-end;
+--package body mem_ctrl_pkg is
+--
+--end package body mem_ctrl_pkg;

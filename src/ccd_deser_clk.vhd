@@ -18,13 +18,12 @@
 --Revision History:
 --    Rev 1.0 - First created (nicks)
 ------------------------------------------------------------------------------
-
-library IEEE;
-use IEEE.std_logic_1164.all;
-use IEEE.std_logic_unsigned.all ;
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
 
 library unisim ;
-use unisim.vcomponents.all ;
+use unisim.vcomponents.all;
 
 library work;
 use work.reduce_pack.all;
@@ -65,7 +64,7 @@ signal pixel_clk_int : std_logic ;
 signal clkint_tmp    : std_logic ;
 
 
-begin
+begin --architecture xilinx
 
 
 p_out_tst <= (others => '0');
@@ -346,4 +345,4 @@ loop10b : if TX_CLOCK = "BUF_H" generate
 end generate ;
 end generate ;--loop2 : if USE_PLL = TRUE generate
 
-end xilinx ;
+end architecture xilinx;

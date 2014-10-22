@@ -70,7 +70,7 @@ p_out_tst            : out   std_logic_vector(31 downto 0);
 p_in_clk             : in    std_logic;
 p_in_rst             : in    std_logic
 );
-end video_reader;
+end entity video_reader;
 
 architecture behavioral of video_reader is
 
@@ -80,7 +80,8 @@ constant dly : time := 1 ps;
 type TFsm_state is (
 S_IDLE,
 S_MEM_START,
-S_MEM_RD
+S_MEM_RD,
+S_ROW_NXT
 );
 signal i_fsm_state_cs              : TFsm_state;
 
@@ -94,7 +95,7 @@ signal i_vfr_pix_count_byte        : unsigned(15 downto 0) := (others => '0');
 signal i_vfrw_pix_count_byte       : unsigned(15 downto 0) := (others => '0');
 signal i_vfr_rowcnt                : unsigned(15 downto 0) := (others => '0');
 signal i_vfr_rowcnt_tmp            : unsigned(15 downto 0) := (others => '0');
-signal i_adr_vfr_line              : unsigned((16 * 2) - 1 downto 0) := (others => '0');
+signal i_mem_adr_t                  : unsigned(31 downto 0) := (others => '0');
 signal i_vfr_skip_row              : unsigned(i_vfr_rowcnt'range) := (others => '0');
 signal i_vfr_skip_pix              : unsigned(i_vfr_pix_count_byte'range) := (others => '0');
 signal i_vfr_row_count             : unsigned(i_vfr_rowcnt'range) := (others => '0');
@@ -107,8 +108,7 @@ signal tst_mem_wr_out              : std_logic_vector(31 downto 0);
 signal tst_fsmstate,tst_fsm_cs_dly : unsigned(3 downto 0) := (others => '0');
 
 
---MAIN
-begin
+begin --architecture behavioral
 
 
 i_data_null <= (others=>'0');
@@ -150,7 +150,6 @@ p_out_vch_mirx  <= i_vfr_mirror.x;
 --Автомат Чтения видео кадра
 ------------------------------------------------
 i_vfr_rowcnt_tmp <= i_vfr_rowcnt + i_vfr_skip_row;
-i_adr_vfr_line <= i_vfrw_pix_count_byte * i_vfr_rowcnt_tmp;
 
 process(p_in_clk)
 begin
@@ -191,12 +190,11 @@ if rising_edge(p_in_clk) then
           i_vfr_skip_pix <= UNSIGNED(p_in_prm_vch(0).fr_size.skip.pix(i_vfr_skip_pix'range));
           i_vfr_pix_count_byte <= UNSIGNED(p_in_prm_vch(0).fr_size.activ.pix(i_vfr_pix_count_byte'range));
           i_vfrw_pix_count_byte <= UNSIGNED(p_in_prm_vch(0).frw_size.activ.pix(i_vfrw_pix_count_byte'range));
+          i_vfr_row_count <= UNSIGNED(p_in_prm_vch(0).fr_size.activ.row(i_vfr_row_count'range));
 
           if p_in_prm_vch(0).fr_mirror.y = '0' then
-            i_vfr_row_count <= UNSIGNED(p_in_prm_vch(0).fr_size.activ.row(i_vfr_row_count'range));
             i_vfr_rowcnt <= (others=>'0');
           else
-            i_vfr_row_count <= UNSIGNED(p_in_prm_vch(0).fr_size.activ.row(i_vfr_row_count'range));
             i_vfr_rowcnt <= UNSIGNED(p_in_prm_vch(0).fr_size.activ.row(i_vfr_row_count'range)) - 1;
           end if;
 
@@ -215,7 +213,7 @@ if rising_edge(p_in_clk) then
 
         else
 
-          i_mem_adr <= i_adr_vfr_line + RESIZE(UNSIGNED(i_vfr_skip_pix), i_mem_adr'length);
+          i_mem_adr <= i_vfrw_pix_count_byte * i_vfr_rowcnt_tmp;
 
           i_mem_dlen_rq <= RESIZE(i_vfr_pix_count_byte(i_vfr_pix_count_byte'high downto log2(G_MEM_DWIDTH / 8))
                                                                                 , i_mem_dlen_rq'length)
@@ -235,15 +233,25 @@ if rising_edge(p_in_clk) then
       ------------------------------------------------
       when S_MEM_RD =>
 
+        i_mem_start <= '0';
+
+        if i_mem_done = '1' then
+          i_fsm_state_cs <= S_ROW_NXT;
+        end if;
+
+      ------------------------------------------------
+      --Ждем запроса на чтение следующей строки
+      ------------------------------------------------
+      when S_ROW_NXT =>
+
         if p_in_work_en = '0' then
           i_padding <= '1';
         end if;
 
-        i_mem_start <= '0';
-        if i_mem_done = '1' then
+        if p_in_vfr_nrow = '1' then
           if (i_vfr_rowcnt = (i_vfr_row_count - 1) and i_vfr_mirror.y = '0')
             or (i_vfr_rowcnt = (i_vfr_rowcnt'range => '0') and i_vfr_mirror.y = '1')
-            or i_padding = '1' then
+              or i_padding = '1' then
 
             i_fsm_state_cs <= S_IDLE;
 
@@ -271,6 +279,8 @@ end process;
 --------------------------------------------------------
 i_upp_buf_full <= p_in_upp_buf_full and not i_padding;
 
+i_mem_adr_t <= i_mem_adr + RESIZE(UNSIGNED(i_vfr_skip_pix), i_mem_adr_t'length);
+
 m_mem_wr : mem_wr
 generic map(
 --G_USR_OPT        => G_USR_OPT,
@@ -284,7 +294,7 @@ port map
 -------------------------------
 --Конфигурирование
 -------------------------------
-p_in_cfg_mem_adr     => std_logic_vector(i_mem_adr)    ,
+p_in_cfg_mem_adr     => std_logic_vector(i_mem_adr_t)    ,
 p_in_cfg_mem_trn_len => std_logic_vector(i_mem_trn_len),
 p_in_cfg_mem_dlen_rq => std_logic_vector(i_mem_dlen_rq),
 p_in_cfg_mem_wr      => i_mem_dir,
@@ -319,8 +329,4 @@ p_in_rst             => p_in_rst
 );
 
 
-
---END MAIN
-end behavioral;
-
-
+end architecture behavioral;

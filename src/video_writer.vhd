@@ -64,7 +64,7 @@ p_out_tst             : out   std_logic_vector(31 downto 0);
 p_in_clk              : in    std_logic;
 p_in_rst              : in    std_logic
 );
-end video_writer;
+end entity video_writer;
 
 architecture behavioral of video_writer is
 
@@ -86,6 +86,7 @@ signal i_mem_dir                   : std_logic;
 signal i_mem_done                  : std_logic;
 signal i_pix_count_byte            : unsigned(15 downto 0) := (others => '0');
 signal i_vfr_rowcnt                : unsigned(15 downto 0) := (others => '0');
+signal i_vfr_row_count             : unsigned(15 downto 0) := (others => '0');
 signal i_padding                   : std_logic;
 signal i_upp_buf_empty             : std_logic;
 signal i_vfr_rdy                   : std_logic;
@@ -95,8 +96,8 @@ signal tst_fsmstate,tst_fsm_cs_dly : unsigned(3 downto 0) := (others => '0');
 signal tst_upp_data                : std_logic_vector(p_in_upp_data'range);
 signal tst_upp_data_rd,i_upp_data_rd : std_logic;
 
---MAIN
-begin
+
+begin --architecture behavioral
 
 
 ------------------------------------
@@ -133,8 +134,6 @@ p_out_vfr_rdy <= i_vfr_rdy;
 ------------------------------------------------
 --Автомат записи видео информации
 ------------------------------------------------
-i_pix_count_byte <= UNSIGNED(p_in_prm_vch(0).fr_size.activ.pix);
-
 process(p_in_clk)
 begin
 if rising_edge(p_in_clk) then
@@ -149,6 +148,8 @@ if rising_edge(p_in_clk) then
     i_vfr_rowcnt <= (others=>'0');
     i_padding <= '0';
     i_vfr_rdy <= '0';
+    i_pix_count_byte <= (others => '0');
+    i_vfr_row_count <= (others => '0');
 
   else
 
@@ -164,6 +165,8 @@ if rising_edge(p_in_clk) then
         i_vfr_rdy <= '0';
 
         if p_in_upp_buf_empty = '0' and p_in_work_en = '1' then
+          i_pix_count_byte <= UNSIGNED(p_in_prm_vch(0).fr_size.activ.pix);
+          i_vfr_row_count <= UNSIGNED(p_in_prm_vch(0).fr_size.activ.row(i_vfr_row_count'range));
           i_fsm_state_cs <= S_MEM_START;
         end if;
 
@@ -203,8 +206,7 @@ if rising_edge(p_in_clk) then
 
         i_mem_start <= '0';
         if i_mem_done = '1' then
-          if i_vfr_rowcnt = (UNSIGNED(p_in_prm_vch(0).fr_size.activ.row) - 1)
-              or i_padding = '1' then
+          if (i_vfr_rowcnt = (i_vfr_row_count - 1)) or i_padding = '1' then
 
             i_vfr_rdy <= '1';
             i_fsm_state_cs <= S_IDLE;
@@ -275,6 +277,6 @@ p_in_rst             => p_in_rst
 );
 p_out_upp_data_rd <= i_upp_data_rd;
 
---END MAIN
-end behavioral;
+
+end architecture behavioral;
 

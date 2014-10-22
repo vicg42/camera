@@ -39,7 +39,7 @@ p_in_rdy      : in   std_logic;
 p_in_clk      : in   std_logic;
 p_in_rst      : in   std_logic
 );
-end entity;
+end entity vout;
 
 architecture behavioral of vout is
 
@@ -91,7 +91,7 @@ p_out_linecnt : out  std_logic_vector(15 downto 0);
 p_in_clk      : in   std_logic;
 p_in_rst      : in   std_logic
 );
-end component;
+end component vga_gen;
 
 component tv_gen is
 generic(
@@ -114,7 +114,7 @@ p_in_clk_en: in std_logic;
 p_in_clk   : in std_logic;
 p_in_rst   : in std_logic
 );
-end component;
+end component tv_gen;
 
 signal i_tv_ss            : std_logic;
 signal i_tv_field         : std_logic;
@@ -137,8 +137,8 @@ signal i_linecnt          : std_logic_vector(15 downto 0);
 --signal tst_vdtxt          : std_logic_vector(p_in_fifo_do'range);
 signal tst_vdout          : std_logic_vector(G_VDWIDTH - 1 downto 0);
 
---MAIN
-begin
+
+begin --architecture behavioral
 
 --################################
 --VGA
@@ -429,5 +429,4 @@ end generate gen_tst_on;
 end generate gen_tv;
 
 
---END MAIN
-end architecture;
+end architecture behavioral;

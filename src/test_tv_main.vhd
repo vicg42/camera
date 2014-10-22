@@ -37,7 +37,7 @@ pin_out_video       : out  TVout_pinout;
 --------------------------------------------------
 pin_in_refclk       : in    TRefclk_pinin
 );
-end entity;
+end entity test_tv_main;
 
 architecture struct of test_tv_main is
 
@@ -51,7 +51,7 @@ p_out_gclk : out   std_logic_vector(7 downto 0);
 
 p_in_clk   : in    TRefclk_pinin
 );
-end component;
+end component clocks;
 
 component fpga_test_01
 generic(
@@ -71,7 +71,7 @@ p_out_1ms      : out   std_logic;
 p_in_clk       : in    std_logic;
 p_in_rst       : in    std_logic
 );
-end component;
+end component fpga_test_01;
 
 component vout is
 generic(
@@ -95,20 +95,20 @@ p_in_rdy      : in   std_logic;
 p_in_clk      : in   std_logic;
 p_in_rst      : in   std_logic
 );
-end component;
+end component vout;
 
 signal i_rst              : std_logic;
 signal g_usrclk           : std_logic_vector(7 downto 0);
 signal i_test_led         : std_logic_vector(1 downto 0);
 signal i_1ms              : std_logic;
 
+signal i_cntdiv_memclkin  : unsigned(10 downto 0);
 
 attribute keep : string;
 attribute keep of g_usrclk : signal is "true";
 
 
---MAIN
-begin
+begin --architecture struct
 
 --***********************************************************
 --Установка частот проекта:
@@ -129,7 +129,7 @@ p_in_clk   => pin_in_refclk
 --Технологический порт
 --***********************************************************
 pin_out_led(0) <= i_test_led(0);
-pin_out_led(1) <= i_test_led(0);
+pin_out_led(1) <= i_cntdiv_memclkin(8);
 
 
 m_led1_tst: fpga_test_01
@@ -177,5 +177,13 @@ p_in_clk      => g_usrclk(2),
 p_in_rst      => i_rst
 );
 
---END MAIN
-end architecture;
+
+process(g_usrclk(4))
+begin
+  if rising_edge(g_usrclk(4)) then
+    i_cntdiv_memclkin <= i_cntdiv_memclkin + 1;
+  end if;
+end process;
+
+
+end architecture struct;

@@ -1,7 +1,7 @@
 ##############################################################
 #
 # Xilinx Core Generator version 14.6
-# Date: Tue Oct 21 08:41:50 2014
+# Date: Wed Oct 22 08:40:12 2014
 #
 ##############################################################
 #
@@ -68,7 +68,7 @@ CSET s00_axi_write_fifo_delay=false
 CSET s00_axi_write_fifo_depth=0_(none)
 CSET s01_axi_aclk_ratio=1:1
 CSET s01_axi_arb_priority=0_(Round-Robin)
-CSET s01_axi_data_width=64
+CSET s01_axi_data_width=32
 CSET s01_axi_is_aclk_async=false
 CSET s01_axi_read_acceptance=4
 CSET s01_axi_read_fifo_delay=false
@@ -252,4 +252,4 @@ CSET thread_id_width=4
 MISC pkg_timestamp=2013-05-16T18:37:17Z
 # END Extra information
 GENERATE
-# CRC: 3fa18c31
+# CRC: b06feed2

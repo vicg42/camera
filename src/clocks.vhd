@@ -35,9 +35,9 @@ p_out_gclk : out   std_logic_vector(7 downto 0);
 --p_out_clk  : out   TRefClkPinOUT;
 p_in_clk   : in    TRefclk_pinin
 );
-end entity;
+end entity clocks;
 
-architecture behavior of clocks is
+architecture xilinx of clocks is
 
 signal g_clkin       : std_logic_vector(2 downto 0);
 
@@ -48,7 +48,8 @@ signal i_clk0_out    : std_logic_vector(2 downto 0);
 signal i_clk1_out    : std_logic_vector(1 downto 0);
 signal i_clk2_out    : std_logic_vector(0 downto 0);
 
-begin
+
+begin --architecture xilinx
 
 
 p_out_rst <= not (AND_reduce(i_pll_locked));
@@ -368,4 +369,4 @@ g_clk_fb(2) <= i_clk_fb(2);
 
 end generate gen_tv2;
 
-end architecture;
+end architecture xilinx;

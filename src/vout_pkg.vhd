@@ -40,5 +40,4 @@ ad723_fcs4      : std_logic;
 ad723_term      : std_logic;
 end record;
 
-end vout_pkg;
-
+end package vout_pkg;

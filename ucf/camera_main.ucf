@@ -282,7 +282,7 @@ INST "*/ddr_phy_4lanes_0.u_ddr_phy_4lanes/ddr_byte_lane_C.ddr_byte_lane_C/ddr_by
 
 INST "*/u_ddr3_infrastructure/plle2_i" LOC=PLLE2_ADV_X1Y0;
 INST "*/u_ddr3_infrastructure/gen_mmcm.mmcm_i" LOC=MMCME2_ADV_X1Y0;
-
+#INST "*/u_ddr3_infrastructure/gen_ui_extra_clocks.mmcm_i" LOC=MMCME2_ADV_X1Y0;
 
 NET "*/iserdes_clk" TNM_NET = "TNM_ISERDES_CLK";
 INST "*/mc0/mc_read_idle_r" TNM = "TNM_SOURCE_IDLE";

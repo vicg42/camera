@@ -47,7 +47,7 @@ p_in_tst        : in   std_logic_vector(31 downto 0);
 p_in_clk        : in   std_logic;
 p_in_rst        : in   std_logic
 );
-end;
+end entity ccd_spi;
 
 architecture behavior of ccd_spi is
 
@@ -79,7 +79,7 @@ p_in_clk_en : in   std_logic;
 p_in_clk    : in   std_logic;
 p_in_rst    : in   std_logic
 );
-end component;
+end component spi_core;
 
 type TFsm_spireg is (
 S_IDLE,
@@ -149,9 +149,7 @@ signal i_ccd_readout    : std_logic;
 signal i_ccd_start      : std_logic;
 
 
-
---MAIN
-begin
+begin --architecture behavior
 
 p_out_tst(0) <= i_clkcnt(i_clkcnt'high);
 p_out_tst(1) <= OR_reduce(tst_fsmstate_dly) or i_align or i_ccd_start;
@@ -528,6 +526,4 @@ tst_fsmstate <= std_logic_vector(TO_UNSIGNED(16#0B#,tst_fsmstate'length)) when i
 --                std_logic_vector(TO_UNSIGNED(16#0C#,tst_fsmstate'length)) when i_fsm_spi_cs = S_CCD_RST       else
 
 
---END MAIN
-end architecture;
-
+end architecture behavior;

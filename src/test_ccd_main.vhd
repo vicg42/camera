@@ -40,7 +40,7 @@ pin_out_ccd         : out  TCCD_pinout;
 --------------------------------------------------
 pin_in_refclk       : in   TRefclk_pinin
 );
-end entity;
+end entity test_ccd_main;
 
 architecture struct of test_ccd_main is
 
@@ -85,7 +85,7 @@ p_out_btn : out   std_logic;
 p_in_clk_en : in    std_logic;
 p_in_clk    : in    std_logic
 );
-end component;
+end component debounce;
 
 component fpga_test_01
 generic(
@@ -105,7 +105,7 @@ p_out_1ms      : out   std_logic;
 p_in_clk       : in    std_logic;
 p_in_rst       : in    std_logic
 );
-end component;
+end component fpga_test_01;
 
 component clocks is
 generic(
@@ -117,7 +117,7 @@ p_out_gclk : out   std_logic_vector(7 downto 0);
 
 p_in_clk   : in    TRefclk_pinin
 );
-end component;
+end component clocks;
 
 component ccd_vita25K is
 generic(
@@ -143,7 +143,7 @@ p_in_refclk    : in   std_logic;
 p_in_ccdclk    : in   std_logic;
 p_in_rst       : in   std_logic
 );
-end component;
+end component ccd_vita25K;
 
 
 signal i_rst              : std_logic;
@@ -202,8 +202,8 @@ attribute keep of g_usrclk : signal is "true";
 
 signal i_ccd_tst2        : std_logic_vector(47 downto 0);
 
---MAIN
-begin
+
+begin --architecture struct
 
 
 --***********************************************************

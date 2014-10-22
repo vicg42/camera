@@ -1,5 +1,5 @@
 #ChipScope Core Inserter Project File Version 3.0
-#Tue Oct 21 05:18:27 VET 2014
+#Wed Oct 22 04:43:59 VET 2014
 Project.device.designInputFile=D\:\\Work\\Yansar\\camera\\ise\\prj\\camera_main_cs.ngc
 Project.device.designOutputFile=D\:\\Work\\Yansar\\camera\\ise\\prj\\camera_main_cs.ngc
 Project.device.deviceFamily=20

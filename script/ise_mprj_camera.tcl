@@ -125,6 +125,7 @@ set _projects [ list \
       [ list "../core_gen/vbufi.vhd" $_VHDMod ] \
       [ list "../core_gen/vbufo.vhd" $_VHDMod ] \
       [ list "../core_gen/mem_achcount2_synth.vhd" $_VHDMod ] \
+      [ list "../core_gen/vmirx_bram.vhd" $_VHDMod ] \
       [ list "../../src/dbg_pkg.vhd" $_VHDPkg ] \
       [ list "../../src/clocks.vhd" $_VHDMod ] \
       [ list "../../src/clocks_pkg.vhd" $_VHDPkg ] \
@@ -140,6 +141,7 @@ set _projects [ list \
       [ list "../../src/video_ctrl.vhd" $_VHDMod ] \
       [ list "../../src/video_writer.vhd" $_VHDMod ] \
       [ list "../../src/video_reader.vhd" $_VHDMod ] \
+      [ list "../../src/vmirx_main.vhd" $_VHDMod ] \
       [ list "../../src/prj_cfg.vhd" $_VHDPkg ] \
       [ list "../../src/camera_main.vhd" $_VHDMod ] \
       [ list "../../ucf/camera_main.ucf" "camera_main" ] \

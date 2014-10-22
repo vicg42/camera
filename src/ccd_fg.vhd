@@ -52,7 +52,7 @@ p_in_ccdclk     : in    std_logic;
 p_in_refclk     : in    std_logic;
 p_in_rst        : in    std_logic
 );
-end ccd_fg;
+end entity ccd_fg;
 
 architecture xilinx of ccd_fg is
 
@@ -102,7 +102,7 @@ status    : out std_logic_vector(6 downto 0);
 p_in_tst  : in  std_logic_vector(31 downto 0);
 p_out_tst : out std_logic_vector(31 downto 0)
 );
-end component;
+end component ccd_deser_clk;
 
 signal i_mmcm_lckd      : std_logic;
 signal i_mmcm_rst       : std_logic;
@@ -188,7 +188,7 @@ signal tt_vfr_den      : std_logic;
 signal tst_data        : unsigned(G_CCD_BIT_COUNT - 1 downto 0) := (others => '0');
 
 
-begin
+begin --architecture xilinx
 
 -- IDELAYCTRL is needed for calibration
 gen_delayctrl: for i in 0 to 1 generate begin
@@ -469,5 +469,5 @@ p_out_tst(31 downto 1) <= (others => '0');
 --i_vfr_pix(lvds_ch - 1) <= std_logic_vector(tst_data(G_CCD_BIT_COUNT - 1 downto (G_CCD_BIT_COUNT - G_VD_BIT_COUNT)));
 --end generate gen_dout_pix;
 
-end xilinx;
+end architecture xilinx;
 

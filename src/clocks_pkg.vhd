@@ -20,9 +20,5 @@ type TRefclk_pinin is record
 clk : std_logic_vector(2 downto 0);
 end record;
 
---type TRefClkPinOUT is record
---oe : std_logic_vector(0 downto 0);
---end record;
-
-end clocks_pkg;
+end package clocks_pkg;
 

@@ -47,7 +47,7 @@ p_in_refclk    : in   std_logic;
 p_in_ccdclk    : in   std_logic;
 p_in_rst       : in   std_logic
 );
-end;
+end entity ccd_vita25K;
 
 architecture behavior of ccd_vita25K is
 
@@ -76,7 +76,7 @@ p_in_tst        : in    std_logic_vector(31 downto 0);
 p_in_clk        : in   std_logic;
 p_in_rst        : in   std_logic
 );
-end component;
+end component ccd_spi;
 
 component ccd_fg
 generic(
@@ -106,7 +106,7 @@ p_in_ccdclk     : in    std_logic;
 p_in_refclk     : in    std_logic;
 p_in_rst        : in    std_logic
 );
-end component;
+end component ccd_fg;
 
 signal i_ccd_out        : TCCD_pinout;
 signal i_spi_out        : TSPI_pinout;
@@ -124,10 +124,7 @@ signal i_tst_spi_out    : std_logic_vector(31 downto 0);
 signal i_tst_fg_out     : std_logic_vector(31 downto 0);
 
 
-
-
---MAIN
-begin
+begin --architecture behavior
 
 p_out_tst(3 downto 0) <= i_tst_fg_out(3 downto 0);
 p_out_tst(7 downto 4) <= (others => '0');
@@ -231,5 +228,5 @@ p_in_refclk     => p_in_refclk,
 p_in_rst        => p_in_rst
 );
 
---END MAIN
-end architecture;
+
+end architecture behavior;

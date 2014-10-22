@@ -79,10 +79,10 @@ type TCCD_WinINIT is array (0 to (2 + (3 * 4)) - 1)
   of std_logic_vector(C_CCD_SPI_AWIDTH - 1 + C_CCD_SPI_DWIDTH - 1 downto 0);
 
 --X0,X1 - must be multiples 64!!!
-constant C_CCD_DEFAULT_WIN0_X0 :integer := 0        ; --X_START
-constant C_CCD_DEFAULT_WIN0_Y0 :integer := 0        ; --X_END
-constant C_CCD_DEFAULT_WIN0_X1 :integer := C_PCFG_CCD_FULL_X / 64; --Y_START
-constant C_CCD_DEFAULT_WIN0_Y1 :integer := C_PCFG_CCD_FULL_Y     ; --Y_END
+constant C_CCD_DEFAULT_WIN0_X0 :integer := ((5120 / 64) / 2) - ((C_PCFG_CCD_WIN_X / 64) / 2); --X_START
+constant C_CCD_DEFAULT_WIN0_Y0 :integer :=  (5120 / 2)       - (C_PCFG_CCD_WIN_Y / 2);        --X_END
+constant C_CCD_DEFAULT_WIN0_X1 :integer := ((5120 / 64) / 2) + ((C_PCFG_CCD_WIN_X / 64) / 2); --Y_START
+constant C_CCD_DEFAULT_WIN0_Y1 :integer :=  (5120 / 2)       + (C_PCFG_CCD_WIN_Y / 2);        --Y_END
 
 constant C_CCD_DEFAULT_WIN1_X0 :integer := 0        ;
 constant C_CCD_DEFAULT_WIN1_Y0 :integer := 0        ;
@@ -258,5 +258,5 @@ constant C_CCD_STATUS_INIT_OK_BIT  : integer := 0;
 constant C_CCD_STATUS_ALIGN_OK_BIT : integer := 1;
 constant C_CCD_STATUS_LAST_BIT : integer := C_CCD_STATUS_ALIGN_OK_BIT;
 
-end ccd_pkg;
+end package ccd_pkg;
 

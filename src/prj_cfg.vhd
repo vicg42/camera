@@ -22,8 +22,8 @@ constant C_PCFG_SIM : string := "OFF";
 constant C_PCFG_CCD_BIT_PER_PIXEL   : integer := 10;
 constant C_PCFG_CCD_DATA_LINE_COUNT : integer := 32;
 constant C_PCFG_CCD_SYNC_LINE_COUNT : integer := 1;
-constant C_PCFG_CCD_FULL_X          : integer := 1024;
-constant C_PCFG_CCD_FULL_Y          : integer := 1024;
+constant C_PCFG_CCD_WIN_X           : integer := 1024;--must be multiples 64!!!
+constant C_PCFG_CCD_WIN_Y           : integer := 1024;--must be multiples 64!!!
 
 constant C_PCFG_CCD_LVDS_COUNT : integer := C_PCFG_CCD_DATA_LINE_COUNT
                                             + C_PCFG_CCD_SYNC_LINE_COUNT;
@@ -43,5 +43,5 @@ constant C_CGF_VBUFO_DWIDTH   : integer := 8;
 constant C_PCFG_VOUT_START_X  : integer := 0;
 constant C_PCFG_VOUT_START_Y  : integer := 0;
 
-end prj_cfg;
+end package prj_cfg;
 
