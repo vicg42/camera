@@ -26,7 +26,8 @@ use work.vicg_common_pkg.all;
 
 entity clocks is
 generic(
-G_VOUT_TYPE : string := "VGA"
+G_VOUT_TYPE : string := "VGA";
+G_CCD_PIXBIT : integer := 10
 );
 port(
 p_out_rst  : out   std_logic;
@@ -160,9 +161,11 @@ m_mmcm_clk_62MHz : MMCME2_BASE
 generic map(
 BANDWIDTH          => "OPTIMIZED", -- string := "OPTIMIZED"
 CLKIN1_PERIOD      => 16.129,      -- real := 0.0
+
 DIVCLK_DIVIDE      => 1,           -- integer := 1 (1 to 128)
-CLKFBOUT_MULT_F    => 10.000,      -- real := 1.0  (5.0 to 64.0)
-CLKOUT0_DIVIDE_F   => 2.000,       -- real := 1.0  (1.0 to 128.0)
+CLKFBOUT_MULT_F    => Real(selval(10, 16, G_CCD_PIXBIT = 10)), -- real := 1.0  (5.0 to 64.0)
+CLKOUT0_DIVIDE_F   => Real(selval(2 , 4 , G_CCD_PIXBIT = 10)), -- real := 1.0  (1.0 to 128.0)
+
 CLKOUT1_DIVIDE     => 10,           -- integer := 1
 CLKOUT2_DIVIDE     => 1,           -- integer := 1
 CLKOUT3_DIVIDE     => 1,           -- integer := 1

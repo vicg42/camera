@@ -39,6 +39,7 @@ p_in_memtrn_lenwr     : in   std_logic_vector(7 downto 0);
 p_in_memtrn_lenrd     : in   std_logic_vector(7 downto 0);
 p_in_vwrite_prm       : in   TWriterVCHParams;
 p_in_vread_prm        : in   TReaderVCHParams;
+p_in_vread_sync       : in   std_logic;
 
 -------------------------------
 --CCD
@@ -192,6 +193,7 @@ p_in_prm_vch         : in    TReaderVCHParams;
 p_in_work_en         : in    std_logic;
 p_in_vfr_buf         : in    TVfrBufs;
 p_in_vfr_nrow        : in    std_logic;
+p_in_vread_sync      : in    std_logic;
 
 --Статусы
 p_out_vch_fr_new     : out   std_logic;
@@ -273,10 +275,56 @@ p_in_rst            : in    std_logic
 );
 end component vmirx_main;
 
+component vcoldemosaic_main
+generic(
+G_BRAM_AWIDTH : integer := 10;
+G_DOUT_WIDTH : integer:=32;
+G_SIM : string:="OFF"
+);
+port(
+-------------------------------
+-- Управление
+-------------------------------
+p_in_cfg_bypass    : in    std_logic;
+p_in_cfg_colorfst  : in    std_logic_vector(1 downto 0);
+p_in_cfg_pix_count : in    std_logic_vector(15 downto 0);
+p_in_cfg_row_count : in    std_logic_vector(15 downto 0);
+p_in_cfg_init      : in    std_logic;
+
+----------------------------
+--Upstream Port (входные данные)
+----------------------------
+p_in_upp_data      : in    std_logic_vector(31 downto 0);
+p_in_upp_wd        : in    std_logic;
+p_out_upp_rdy_n    : out   std_logic;
+
+----------------------------
+--Downstream Port (результат)
+----------------------------
+p_out_dwnp_data    : out   std_logic_vector(127 downto 0);
+p_out_dwnp_wd      : out   std_logic;
+p_in_dwnp_rdy_n    : in    std_logic;
+
+-------------------------------
+--Технологический
+-------------------------------
+p_in_tst           : in    std_logic_vector(31 downto 0);
+p_out_tst          : out   std_logic_vector(31 downto 0);
+
+-------------------------------
+--System
+-------------------------------
+p_in_clk           : in    std_logic;
+p_in_rst           : in    std_logic
+);
+end component vcoldemosaic_main;
+
+
 signal i_ccd_d_swap                      : std_logic_vector(p_in_ccd_d'range);
 signal i_vbuf_wr                         : TVfrBufs;
 signal i_vbuf_rd                         : TVfrBufs;
 signal i_vwrite_vfr_rdy                  : std_logic;
+signal i_vbufo_wr                        : std_logic;
 signal i_vbufo_di                        : std_logic_vector(G_MEMRD_DWIDTH - 1 downto 0);
 signal i_vbufo_full                      : std_logic;
 signal i_vbufo_rst                       : std_logic;
@@ -293,10 +341,15 @@ signal i_vreader_dout                    : std_logic_vector(G_MEMRD_DWIDTH - 1 d
 signal i_vreader_dout_en                 : std_logic;
 signal i_vreader_rq_next_line            : std_logic;
 signal i_vreader_active_pix              : std_logic_vector(15 downto 0);
+signal i_vreader_active_row              : std_logic_vector(15 downto 0);
+signal i_vreader_vfr_new                 : std_logic;
 signal i_vreader_mirx                    : std_logic;
-signal i_vmir_rdy_n                      : std_logic;
-signal i_vmir_dout                       : std_logic_vector(G_MEMRD_DWIDTH - 1 downto 0);
-signal i_vmir_dout_en                    : std_logic;
+signal i_mirx_rdy_n                      : std_logic;
+signal i_mirx_do                         : std_logic_vector(G_MEMRD_DWIDTH - 1 downto 0);
+signal i_mirx_den                        : std_logic;
+signal i_bayer_rdy_n                     : std_logic;
+signal i_bayer_do                        : std_logic_vector(127 downto 0);
+signal i_bayer_den                       : std_logic;
 
 signal tst_vwriter_out                   : std_logic_vector(31 downto 0);
 signal tst_vreader_out                   : std_logic_vector(31 downto 0);
@@ -482,13 +535,14 @@ p_in_prm_vch          => p_in_vread_prm,
 p_in_work_en          => i_vread_en,
 p_in_vfr_buf          => i_vbuf_rd,
 p_in_vfr_nrow         => i_vreader_rq_next_line,
+p_in_vread_sync       => p_in_vread_sync,
 
 --Статусы
-p_out_vch_fr_new      => open,
+p_out_vch_fr_new      => i_vreader_vfr_new,
 p_out_vch_rd_done     => open,
 p_out_vch             => open,
 p_out_vch_active_pix  => i_vreader_active_pix,
-p_out_vch_active_row  => open,
+p_out_vch_active_row  => i_vreader_active_row,
 p_out_vch_mirx        => i_vreader_mirx,
 
 ----------------------------
@@ -541,14 +595,14 @@ p_out_cfg_mirx_done => i_vreader_rq_next_line,
 ----------------------------
 p_in_upp_data       => i_vreader_dout,
 p_in_upp_wd         => i_vreader_dout_en,
-p_out_upp_rdy_n     => i_vmir_rdy_n,
+p_out_upp_rdy_n     => i_mirx_rdy_n,
 
 ----------------------------
 --Downstream Port
 ----------------------------
-p_out_dwnp_data     => i_vmir_dout,
-p_out_dwnp_wd       => i_vmir_dout_en,
-p_in_dwnp_rdy_n     => i_vbufo_full,
+p_out_dwnp_data     => i_mirx_do,
+p_out_dwnp_wd       => i_mirx_den,
+p_in_dwnp_rdy_n     => i_bayer_rdy_n,
 
 -------------------------------
 --Технологический
@@ -563,19 +617,67 @@ p_in_clk            => p_in_clk,
 p_in_rst            => p_in_rst
 );
 
+
+m_bayer : vcoldemosaic_main
+generic map (
+G_BRAM_AWIDTH => 11,
+G_DOUT_WIDTH => 8,
+G_SIM => "OFF"
+)
+port map(
+-------------------------------
+-- Управление
+-------------------------------
+p_in_cfg_bypass    => tst_vreader_out(31),
+p_in_cfg_colorfst  => tst_vreader_out(30 downto 29),
+p_in_cfg_pix_count => ("00" & i_vreader_active_pix(15 downto 2)),
+p_in_cfg_row_count => i_vreader_active_row,
+p_in_cfg_init      => i_vreader_vfr_new,
+
+----------------------------
+--Upstream Port (входные данные)
+----------------------------
+p_in_upp_data      => i_mirx_do,
+p_in_upp_wd        => i_mirx_den,
+p_out_upp_rdy_n    => i_bayer_rdy_n,
+
+----------------------------
+--Downstream Port (результат)
+----------------------------
+p_out_dwnp_data    => i_bayer_do,
+p_out_dwnp_wd      => i_bayer_den,
+p_in_dwnp_rdy_n    => i_vbufo_full,
+
+-------------------------------
+--Технологический
+-------------------------------
+p_in_tst           => (others => '0'),
+p_out_tst          => open,
+
+-------------------------------
+--System
+-------------------------------
+p_in_clk            => p_in_clk,
+p_in_rst            => p_in_rst
+);
+
+
 ----------------------------------------------------
 --Выходной видеобуфер
 ----------------------------------------------------
-gen_bufo_swap : for i in 0 to (G_MEMRD_DWIDTH / p_out_vbufo_do'length) - 1 generate begin
-i_vbufo_di((i_vbufo_di'length - (p_out_vbufo_do'length * i)) - 1 downto
-                              (i_vbufo_di'length - (p_out_vbufo_do'length * (i + 1)) ))
-                                      <= i_vmir_dout(p_out_vbufo_do'length * (i + 1) - 1 downto (p_out_vbufo_do'length * i));
-end generate gen_bufo_swap;
+--gen_bufo_swap : for i in 0 to (G_MEMRD_DWIDTH / p_out_vbufo_do'length) - 1 generate begin
+--i_vbufo_di((i_vbufo_di'length - (p_out_vbufo_do'length * i)) - 1 downto
+--                              (i_vbufo_di'length - (p_out_vbufo_do'length * (i + 1)) ))
+--                                      <= i_mirx_do(p_out_vbufo_do'length * (i + 1) - 1 downto (p_out_vbufo_do'length * i));
+--end generate gen_bufo_swap;
+
+i_vbufo_di <= i_bayer_do(i_vbufo_di'range);
+i_vbufo_wr <= i_bayer_den;
 
 m_bufo : vbufo
 port map(
 din         => i_vbufo_di,
-wr_en       => i_vmir_dout_en,
+wr_en       => i_vbufo_wr,
 wr_clk      => p_in_clk,
 
 dout        => p_out_vbufo_do,

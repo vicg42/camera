@@ -105,6 +105,9 @@ signal i_cnttry              : unsigned (5 downto 0);
 signal i_bitslip             : std_logic;
 signal i_bitslip_work        : std_logic;
 
+signal sr_idelaye2_ce        : std_logic_vector(0 to 1) := (others => '0');
+signal i_idelaye2_ce_t       : std_logic := '0';
+
 signal tst_fsm_align,tst_fsm_align_dly : std_logic_vector(3 downto 0);
 signal tst_align_dchng : std_logic;
 
@@ -169,8 +172,8 @@ SIGNAL_PATTERN        => "DATA"     -- DATA, CLOCK input signal
 port map (
 DATAOUT           => i_idelaye2_dout,
 DATAIN            => '0',
-C                 => p_in_clkdiv,
-CE                => i_idelaye2_ce,
+C                 => p_in_clk,
+CE                => i_idelaye2_ce_t,
 INC               => i_idelaye2_inc,
 IDATAIN           => i_ser_din,
 LD                => i_deser_rst, --i_align_start,--i_idelaye2_ld,
@@ -181,11 +184,19 @@ CNTVALUEOUT       => open,
 CINVCTRL          => '0'
 );
 
+process(p_in_clk)
+begin
+if rising_edge(p_in_clk) then
+  sr_idelaye2_ce <= i_idelaye2_ce & sr_idelaye2_ce(0 to 0);
+  i_idelaye2_ce_t <= sr_idelaye2_ce(0) and not sr_idelaye2_ce(1);
+end if;
+end process;
+
 
 m_iserdese2_master : ISERDESE2
 generic map (
 DATA_RATE         => "DDR",
-DATA_WIDTH        => 10,
+DATA_WIDTH        => G_BIT_COUNT,
 INIT_Q1           => '0',
 INIT_Q2           => '0',
 INIT_Q3           => '0',
@@ -236,11 +247,11 @@ OCLKB             => '0',
 O                 => open -- unregistered output of ISERDESE1
 );
 
-
+gen_slv : if G_BIT_COUNT > 8 generate begin
 m_iserdese2_slave : ISERDESE2
 generic map (
 DATA_RATE         => "DDR",
-DATA_WIDTH        => 10,
+DATA_WIDTH        => G_BIT_COUNT,
 INIT_Q1           => '0',
 INIT_Q2           => '0',
 INIT_Q3           => '0',
@@ -290,6 +301,7 @@ OCLK              => '0',
 OCLKB             => '0',
 O                 => open             -- unregistered output of ISERDESE1
 );
+end  generate gen_slv;
 
 p_out_data <= std_logic_vector(sr_deser_d0(p_out_data'range));
 p_out_align_ok <= i_align_ok;

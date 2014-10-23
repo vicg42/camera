@@ -127,7 +127,7 @@ port(
 p_in_ccd       : in   TCCD_pinin;
 p_out_ccd      : out  TCCD_pinout;
 
-p_out_vfr_data : out  std_logic_vector(((C_PCFG_CCD_LVDS_COUNT - C_PCFG_CCD_SYNC_LINE_COUNT) * selval(16, 32, C_PCFG_VD_BIT_PER_PIXEL = 8)) - 1 downto 0);
+p_out_vfr_data : out  std_logic_vector(((C_PCFG_CCD_LVDS_COUNT - C_PCFG_CCD_SYNC_LINE_COUNT) * selval(16, 32, C_PCFG_VDATA_PIXBIT = 8)) - 1 downto 0);
 p_out_vfr_den  : out  std_logic;
 p_out_vfr_vs   : out  std_logic;
 p_out_vfr_hs   : out  std_logic;
@@ -150,8 +150,8 @@ signal i_rst              : std_logic;
 signal g_usrclk           : std_logic_vector(7 downto 0);
 signal g_usr_highclk      : std_logic;
 --signal i_video_d          : std_logic_vector((C_PCFG_CCD_LVDS_COUNT
---                                               * C_PCFG_CCD_BIT_PER_PIXEL) - 1 downto 0);
-signal i_video_d          : std_logic_vector(((C_PCFG_CCD_LVDS_COUNT - C_PCFG_CCD_SYNC_LINE_COUNT) * selval(16, 32, C_PCFG_VD_BIT_PER_PIXEL = 8)) - 1 downto 0);
+--                                               * C_PCFG_CCD_PIXBIT) - 1 downto 0);
+signal i_video_d          : std_logic_vector(((C_PCFG_CCD_LVDS_COUNT - C_PCFG_CCD_SYNC_LINE_COUNT) * selval(16, 32, C_PCFG_VDATA_PIXBIT = 8)) - 1 downto 0);
 --signal i_video_d          : std_logic_vector(256 - 1 downto 0);
 signal i_video_d_clk      : std_logic;
 signal i_video_vs         : std_logic;
@@ -262,7 +262,7 @@ p_in_rst       => i_rst
 --Технологический порт
 --***********************************************************
 --gen_tp : for i in 1 to (C_PCFG_CCD_LVDS_COUNT - 1) generate
---pin_out_TP(i - 1) <= OR_reduce(i_video_d((C_PCFG_CCD_BIT_PER_PIXEL * (i + 1)) - 1 downto (C_PCFG_CCD_BIT_PER_PIXEL * i)));
+--pin_out_TP(i - 1) <= OR_reduce(i_video_d((C_PCFG_CCD_PIXBIT * (i + 1)) - 1 downto (C_PCFG_CCD_PIXBIT * i)));
 --end generate;
 --pin_out_TP2(0) <= i_ccd_tst_out(16);--spi --OR_reduce(i_mem_ctrl_status.rdy);--
 --pin_out_TP2(1) <= i_ccd_tst_out(3);--clk:fpga -> ccd --i_video_vs;--

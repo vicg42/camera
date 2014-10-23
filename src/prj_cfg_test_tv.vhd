@@ -19,7 +19,7 @@ package prj_cfg is
 constant C_PCFG_SIM : string := "OFF";
 
 --cfg CCD
-constant C_PCFG_CCD_BIT_PER_PIXEL   : integer := 10;
+constant C_PCFG_CCD_PIXBIT   : integer := 10;
 constant C_PCFG_CCD_DATA_LINE_COUNT : integer := 0;
 constant C_PCFG_CCD_SYNC_LINE_COUNT : integer := 1;
 constant C_PCFG_CCD_WIN_X          : integer := 4096;

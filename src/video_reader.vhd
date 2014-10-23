@@ -35,6 +35,7 @@ p_in_prm_vch         : in    TReaderVCHParams;
 p_in_work_en         : in    std_logic;
 p_in_vfr_buf         : in    TVfrBufs;                    --Номер видеобувера с готовым кадром для соответствующего видеоканала
 p_in_vfr_nrow        : in    std_logic;                   --Разрешение чтения следующей строки
+p_in_vread_sync      : in    std_logic;
 
 --Статусы
 p_out_vch_fr_new     : out   std_logic;
@@ -95,18 +96,23 @@ signal i_vfr_pix_count_byte        : unsigned(15 downto 0) := (others => '0');
 signal i_vfrw_pix_count_byte       : unsigned(15 downto 0) := (others => '0');
 signal i_vfr_rowcnt                : unsigned(15 downto 0) := (others => '0');
 signal i_vfr_rowcnt_tmp            : unsigned(15 downto 0) := (others => '0');
-signal i_mem_adr_t                  : unsigned(31 downto 0) := (others => '0');
+signal i_mem_adr_t                 : unsigned(31 downto 0) := (others => '0');
 signal i_vfr_skip_row              : unsigned(i_vfr_rowcnt'range) := (others => '0');
 signal i_vfr_skip_pix              : unsigned(i_vfr_pix_count_byte'range) := (others => '0');
 signal i_vfr_row_count             : unsigned(i_vfr_rowcnt'range) := (others => '0');
 signal i_vfr_mirror                : TFrXYMirror;
+signal i_vfr_new                   : std_logic;
 signal i_padding                   : std_logic := '0';
 signal i_upp_buf_full              : std_logic;
 signal i_data_null                 : std_logic_vector(G_MEM_DWIDTH - 1 downto 0);
+signal sr_vread_sync               : std_logic_vector(0 to 1);
+signal i_vread_sync                : std_logic;
 
 signal tst_mem_wr_out              : std_logic_vector(31 downto 0);
 signal tst_fsmstate,tst_fsm_cs_dly : unsigned(3 downto 0) := (others => '0');
 
+signal i_debayer_colorfst          : std_logic_vector(1 downto 0);
+signal i_debayer_off               : std_logic;
 
 begin --architecture behavioral
 
@@ -121,7 +127,9 @@ p_out_tst(5 downto 0) <= tst_mem_wr_out(5 downto 0);
 p_out_tst(7 downto 6) <= (others=>'0');
 p_out_tst(10 downto 8) <= std_logic_vector(tst_fsm_cs_dly(2 downto 0));
 p_out_tst(11) <= '0';
-p_out_tst(31 downto 12) <= (others=>'0');
+p_out_tst(28 downto 12) <= (others => '0');
+p_out_tst(30 downto 29) <= i_debayer_colorfst;
+p_out_tst(31) <= i_debayer_off;
 
 
 process(p_in_clk)
@@ -138,7 +146,7 @@ tst_fsmstate <= TO_UNSIGNED(16#01#,tst_fsmstate'length) when i_fsm_state_cs = S_
 ------------------------------------------------
 --Статусы
 ------------------------------------------------
-p_out_vch_fr_new <= '0';
+p_out_vch_fr_new <= i_vfr_new;
 p_out_vch_rd_done <= '0';
 p_out_vch <= (others=>'0');
 p_out_vch_active_pix <= std_logic_vector(i_vfr_pix_count_byte);
@@ -174,7 +182,18 @@ if rising_edge(p_in_clk) then
     i_vfr_mirror.x <= '0';
     i_vfr_mirror.y <= '0';
 
+    i_vfr_new <= '0';
+
+    sr_vread_sync <= (others => '0');
+    i_vread_sync <= '0';
+
+    i_debayer_colorfst <= (others => '0');
+    i_debayer_off <= '0';
+
   else
+
+    sr_vread_sync <= p_in_vread_sync & sr_vread_sync(0 to 0);
+    i_vread_sync <= sr_vread_sync(0) and not sr_vread_sync(1);
 
     case i_fsm_state_cs is
 
@@ -185,12 +204,15 @@ if rising_edge(p_in_clk) then
 
         i_padding <= '0';
 
-        if p_in_work_en = '1' then
+        if p_in_work_en = '1' and i_vread_sync = '1' then
           i_vfr_skip_row <= UNSIGNED(p_in_prm_vch(0).fr_size.skip.row(i_vfr_skip_row'range));
           i_vfr_skip_pix <= UNSIGNED(p_in_prm_vch(0).fr_size.skip.pix(i_vfr_skip_pix'range));
           i_vfr_pix_count_byte <= UNSIGNED(p_in_prm_vch(0).fr_size.activ.pix(i_vfr_pix_count_byte'range));
           i_vfrw_pix_count_byte <= UNSIGNED(p_in_prm_vch(0).frw_size.activ.pix(i_vfrw_pix_count_byte'range));
           i_vfr_row_count <= UNSIGNED(p_in_prm_vch(0).fr_size.activ.row(i_vfr_row_count'range));
+
+          i_debayer_colorfst <= p_in_prm_vch(0).debayer_colorfst;
+          i_debayer_off <= p_in_prm_vch(0).debayer_off;
 
           if p_in_prm_vch(0).fr_mirror.y = '0' then
             i_vfr_rowcnt <= (others=>'0');
@@ -200,6 +222,8 @@ if rising_edge(p_in_clk) then
 
           i_vfr_mirror <= p_in_prm_vch(0).fr_mirror;
 
+          i_vfr_new <= '1';
+
           i_fsm_state_cs <= S_MEM_START;
         end if;
 
@@ -207,6 +231,8 @@ if rising_edge(p_in_clk) then
       --Запускаем операцию чтения ОЗУ
       --------------------------------------
       when S_MEM_START =>
+
+        i_vfr_new <= '0';
 
         if p_in_work_en = '0' then
           i_fsm_state_cs <= S_IDLE;

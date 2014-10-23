@@ -63,7 +63,8 @@ begin
 
 
 p_out_usr.glob.start_vout <= i_usrctrl_out(0);
-p_out_usr.vout_memtrn_lenwr <= i_vout(7 downto 0);
+p_out_usr.debayer_off <= i_vout(0);
+p_out_usr.debayer_colorfst <= i_vout(2 downto 1);
 p_out_usr.vout_memtrn_lenrd <= i_vout(15 downto 8);
 p_out_usr.vout_start_x <= i_vout(31 downto 16);
 p_out_usr.vout_start_y <= i_vout(47 downto 32);

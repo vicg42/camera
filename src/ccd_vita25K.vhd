@@ -32,7 +32,7 @@ p_in_ccd       : in   TCCD_pinin;
 p_out_ccd      : out  TCCD_pinout;
 
 p_out_vfr_data : out  std_logic_vector(((C_PCFG_CCD_LVDS_COUNT - C_PCFG_CCD_SYNC_LINE_COUNT)
-                                          * selval(16, 32, C_PCFG_VD_BIT_PER_PIXEL = 8)) - 1 downto 0);
+                                          * selval(16, 32, C_PCFG_VDATA_PIXBIT = 8)) - 1 downto 0);
 p_out_vfr_den  : out  std_logic;
 p_out_vfr_vs   : out  std_logic;
 p_out_vfr_hs   : out  std_logic;
@@ -204,8 +204,8 @@ m_fg : ccd_fg
 generic map(
 G_SYNC_LINE_COUNT => C_PCFG_CCD_SYNC_LINE_COUNT,
 G_LVDS_CH_COUNT => C_PCFG_CCD_LVDS_COUNT,
-G_CCD_BIT_COUNT => C_PCFG_CCD_BIT_PER_PIXEL,
-G_VD_BIT_COUNT => C_PCFG_VD_BIT_PER_PIXEL
+G_CCD_BIT_COUNT => C_PCFG_CCD_PIXBIT,
+G_VD_BIT_COUNT => C_PCFG_VDATA_PIXBIT
 )
 port map(
 p_in_ccd        => p_in_ccd,

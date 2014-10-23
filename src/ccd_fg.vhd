@@ -82,8 +82,10 @@ component ccd_deser_clk is
 generic (
 CLKIN_DIFF      : boolean := TRUE ;
 CLKIN_PERIOD    : real := 6.000 ;
-MMCM_MODE       : integer := 1 ;
-MMCM_MODE_REAL  : real := 1.000 ;
+MULT_F          : integer := 1 ;
+MULT_F_REAL     : real := 1.000 ;
+DIVIDE_F_REAL   : real := 1.000 ;
+DIVIDE_1        : integer := 1 ;
 TX_CLOCK        : string := "BUFIO" ;
 INTER_CLOCK     : string := "BUF_R" ;
 PIXEL_CLOCK     : string := "BUF_G" ;
@@ -211,13 +213,16 @@ m_clk_gen : ccd_deser_clk
 generic map(
 CLKIN_DIFF      => TRUE   ,
 CLKIN_PERIOD    => 3.225  , -- clock period (ns) of input clock on clkin_p
-MMCM_MODE       => 1      ,
-MMCM_MODE_REAL  => 1.000  ,
+MULT_F          => 1,
+MULT_F_REAL     => Real(selval(2, 4, G_CCD_BIT_COUNT = 10)),
+DIVIDE_F_REAL   => Real(selval(2, 32, G_CCD_BIT_COUNT = 10)),
+DIVIDE_1        => selval(10, 16, G_CCD_BIT_COUNT = 10),
 TX_CLOCK        => "BUF_G",
 INTER_CLOCK     => "BUF_G",
 PIXEL_CLOCK     => "BUF_G",
 USE_PLL         => FALSE  ,
 DIFF_TERM       => TRUE
+
 )
 port map(
 clkin_p   => p_in_ccd.clk_p,

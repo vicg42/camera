@@ -17,19 +17,39 @@ use ieee.numeric_std.all;
 
 library work;
 use work.prj_cfg.all;
+use work.vicg_common_pkg.all;
 
 package ccd_pkg is
 
---Codes SYNC Channel:
 --10Bit per pix
-constant C_CCD_CHSYNC_TRAINING : integer := 16#3A6#;
-constant C_CCD_CHSYNC_BLACKPIX : integer := 16#015#;
-constant C_CCD_CHSYNC_CRC      : integer := 16#059#;
-constant C_CCD_CHSYNC_IMAGE    : integer := 16#035#;
-constant C_CCD_CHSYNC_FS       : integer := 16#2AA#;-- 10_1010_1010
-constant C_CCD_CHSYNC_FE       : integer := 16#32A#;-- 11_0010_1010
-constant C_CCD_CHSYNC_LS       : integer := 16#0AA#;-- 00_1010_1010
-constant C_CCD_CHSYNC_LE       : integer := 16#12A#;-- 01_0010_1010
+constant C_CCD10BIT_CHSYNC_TRAINING : integer := 16#3A6#;
+constant C_CCD10BIT_CHSYNC_BLACKPIX : integer := 16#015#;
+constant C_CCD10BIT_CHSYNC_CRC      : integer := 16#059#;
+constant C_CCD10BIT_CHSYNC_IMAGE    : integer := 16#035#;
+constant C_CCD10BIT_CHSYNC_FS       : integer := 16#2AA#;-- 10_1010_1010
+constant C_CCD10BIT_CHSYNC_FE       : integer := 16#32A#;-- 11_0010_1010
+constant C_CCD10BIT_CHSYNC_LS       : integer := 16#0AA#;-- 00_1010_1010
+constant C_CCD10BIT_CHSYNC_LE       : integer := 16#12A#;-- 01_0010_1010
+
+--8Bit per pix
+constant C_CCD8BIT_CHSYNC_TRAINING : integer := 16#E9#;
+constant C_CCD8BIT_CHSYNC_BLACKPIX : integer := 16#05#;
+constant C_CCD8BIT_CHSYNC_CRC      : integer := 16#16#;
+constant C_CCD8BIT_CHSYNC_IMAGE    : integer := 16#0D#;
+constant C_CCD8BIT_CHSYNC_FS       : integer := 16#5A#;-- 0101_1010
+constant C_CCD8BIT_CHSYNC_FE       : integer := 16#6A#;-- 0110_1010
+constant C_CCD8BIT_CHSYNC_LS       : integer := 16#1A#;-- 0001_1010
+constant C_CCD8BIT_CHSYNC_LE       : integer := 16#2A#;-- 0010_1010
+
+--Codes SYNC Channel:
+constant C_CCD_CHSYNC_TRAINING : integer := selval(C_CCD10BIT_CHSYNC_TRAINING, C_CCD8BIT_CHSYNC_TRAINING, C_PCFG_CCD_PIXBIT = 10);
+constant C_CCD_CHSYNC_BLACKPIX : integer := selval(C_CCD10BIT_CHSYNC_BLACKPIX, C_CCD8BIT_CHSYNC_BLACKPIX, C_PCFG_CCD_PIXBIT = 10);
+constant C_CCD_CHSYNC_CRC      : integer := selval(C_CCD10BIT_CHSYNC_CRC     , C_CCD8BIT_CHSYNC_CRC     , C_PCFG_CCD_PIXBIT = 10);
+constant C_CCD_CHSYNC_IMAGE    : integer := selval(C_CCD10BIT_CHSYNC_IMAGE   , C_CCD8BIT_CHSYNC_IMAGE   , C_PCFG_CCD_PIXBIT = 10);
+constant C_CCD_CHSYNC_FS       : integer := selval(C_CCD10BIT_CHSYNC_FS      , C_CCD8BIT_CHSYNC_FS      , C_PCFG_CCD_PIXBIT = 10);
+constant C_CCD_CHSYNC_FE       : integer := selval(C_CCD10BIT_CHSYNC_FE      , C_CCD8BIT_CHSYNC_FE      , C_PCFG_CCD_PIXBIT = 10);
+constant C_CCD_CHSYNC_LS       : integer := selval(C_CCD10BIT_CHSYNC_LS      , C_CCD8BIT_CHSYNC_LS      , C_PCFG_CCD_PIXBIT = 10);
+constant C_CCD_CHSYNC_LE       : integer := selval(C_CCD10BIT_CHSYNC_LE      , C_CCD8BIT_CHSYNC_LE      , C_PCFG_CCD_PIXBIT = 10);
 
 constant C_CCD_SPI_AWIDTH : integer := 9 + 1;--9 bit - Adress Registers + 1 bit command(write/read)
 constant C_CCD_SPI_DWIDTH : integer := 16;
@@ -51,7 +71,8 @@ std_logic_vector(TO_UNSIGNED(10#128#, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(
 std_logic_vector(TO_UNSIGNED(10#204#, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(16#09E5#, C_CCD_SPI_DWIDTH)),
 std_logic_vector(TO_UNSIGNED(10#224#, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(16#3E04#, C_CCD_SPI_DWIDTH)),
 std_logic_vector(TO_UNSIGNED(10#225#, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(16#6733#, C_CCD_SPI_DWIDTH)),
-std_logic_vector(TO_UNSIGNED(10#129#, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(16#C001#, C_CCD_SPI_DWIDTH)),
+std_logic_vector(TO_UNSIGNED(10#129#, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(
+                                                                 TO_UNSIGNED(selval(16#C001#,16#E001#, C_PCFG_CCD_PIXBIT = 10), C_CCD_SPI_DWIDTH)),
 std_logic_vector(TO_UNSIGNED(10#447#, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(16#0BF1#, C_CCD_SPI_DWIDTH)),
 std_logic_vector(TO_UNSIGNED(10#448#, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(16#0BC3#, C_CCD_SPI_DWIDTH)),
 std_logic_vector(TO_UNSIGNED(10#032#, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(16#2003#, C_CCD_SPI_DWIDTH)),
@@ -241,7 +262,7 @@ end record;
 
 
 type TCCD_vout is record
-data : std_logic_vector((C_PCFG_CCD_LVDS_COUNT * C_PCFG_CCD_BIT_PER_PIXEL) - 1 downto 0);
+data : std_logic_vector((C_PCFG_CCD_LVDS_COUNT * C_PCFG_CCD_PIXBIT) - 1 downto 0);
 den  : std_logic;
 vs   : std_logic;
 hs   : std_logic;

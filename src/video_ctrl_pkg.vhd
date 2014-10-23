@@ -50,6 +50,8 @@ type TReaderVCHParam is record
 fr_size        : TFrXYParam;
 frw_size       : TFrXYParam;
 fr_mirror      : TFrXYMirror;
+debayer_colorfst : std_logic_vector(1 downto 0);
+debayer_off      : std_logic;
 end record;
 Type TReaderVCHParams is array (0 to C_VCTRL_VCH_COUNT - 1) of TReaderVCHParam;
 

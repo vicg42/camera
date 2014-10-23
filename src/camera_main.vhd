@@ -36,7 +36,7 @@ port(
 --Технологический порт
 --------------------------------------------------
 --pin_out_TP          : out std_logic_vector(((C_PCFG_CCD_LVDS_COUNT - 1)
---                                          * C_PCFG_CCD_BIT_PER_PIXEL) - 1 downto 0);
+--                                          * C_PCFG_CCD_PIXBIT) - 1 downto 0);
 pin_out_TP2         : out   std_logic_vector(2 downto 0);
 pin_out_led         : out   std_logic_vector(0 downto 0);
 pin_in_btn          : in    std_logic;
@@ -206,7 +206,8 @@ end component fpga_test_01;
 
 component clocks is
 generic(
-G_VOUT_TYPE : string := "VGA"
+G_VOUT_TYPE : string := "VGA";
+G_CCD_PIXBIT : integer := 10
 );
 port(
 p_out_rst  : out   std_logic;
@@ -225,7 +226,7 @@ p_in_ccd       : in   TCCD_pinin;
 p_out_ccd      : out  TCCD_pinout;
 
 p_out_vfr_data : out  std_logic_vector(((C_PCFG_CCD_LVDS_COUNT - C_PCFG_CCD_SYNC_LINE_COUNT)
-                                    * selval(16, 32, C_PCFG_VD_BIT_PER_PIXEL = 8)) - 1 downto 0);
+                                    * selval(16, 32, C_PCFG_VDATA_PIXBIT = 8)) - 1 downto 0);
 p_out_vfr_den  : out  std_logic;
 p_out_vfr_vs   : out  std_logic;
 p_out_vfr_hs   : out  std_logic;
@@ -285,6 +286,7 @@ p_in_memtrn_lenwr     : in   std_logic_vector(7 downto 0);
 p_in_memtrn_lenrd     : in   std_logic_vector(7 downto 0);
 p_in_vwrite_prm       : in   TWriterVCHParams;
 p_in_vread_prm        : in   TReaderVCHParams;
+p_in_vread_sync       : in   std_logic;
 
 -------------------------------
 --CCD
@@ -332,7 +334,7 @@ signal g_usrclk           : std_logic_vector(7 downto 0);
 signal g_usr_highclk      : std_logic;
 
 signal i_video_d          : std_logic_vector(((C_PCFG_CCD_LVDS_COUNT - C_PCFG_CCD_SYNC_LINE_COUNT)
-                                          * selval(16, 32, C_PCFG_VD_BIT_PER_PIXEL = 8)) - 1 downto 0);
+                                          * selval(16, 32, C_PCFG_VDATA_PIXBIT = 8)) - 1 downto 0);
 signal i_video_d_clk      : std_logic;
 signal i_video_vs         : std_logic;
 signal i_video_hs         : std_logic;
@@ -347,6 +349,7 @@ signal i_vctrl_memtrn_lenwr : std_logic_vector(7 downto 0);
 signal i_vctrl_memtrn_lenrd : std_logic_vector(7 downto 0);
 signal i_vctrl_vwrite_prm   : TWriterVCHParams;
 signal i_vctrl_vread_prm    : TReaderVCHParams;
+signal i_vctrl_sync         : std_logic;
 
 signal i_memin_ch         : TMemINCh;
 signal i_memout_ch        : TMemOUTCh;
@@ -447,7 +450,8 @@ begin --architecture struct
 --***********************************************************
 m_clocks : clocks
 generic map(
-G_VOUT_TYPE => C_PCGF_VOUT_TYPE
+G_VOUT_TYPE => C_PCGF_VOUT_TYPE,
+G_CCD_PIXBIT => C_PCFG_CCD_PIXBIT
 )
 port map(
 p_out_rst  => i_rst,
@@ -531,6 +535,8 @@ pin_out_video <= i_video_out;
 --***********************************************************
 --
 --***********************************************************
+i_vctrl_sync <= i_video_out.vga_vs;
+
 i_vctrl_vwrite_en    <= tst_vtest_en;
 i_vctrl_memtrn_lenwr <= std_logic_vector(TO_UNSIGNED(16#E0#, 8));
 i_vctrl_memtrn_lenrd <= std_logic_vector(TO_UNSIGNED(16#10#, 8));
@@ -542,6 +548,8 @@ i_vctrl_vwrite_prm(0).fr_size.skip.row  <= std_logic_vector(TO_UNSIGNED(10#00#, 
 i_vctrl_vwrite_prm(0).fr_size.activ.pix <= std_logic_vector(TO_UNSIGNED(C_PCFG_CCD_WIN_X, 16));
 i_vctrl_vwrite_prm(0).fr_size.activ.row <= std_logic_vector(TO_UNSIGNED(C_PCFG_CCD_WIN_Y, 16));
 
+i_vctrl_vread_prm(0).debayer_off <= i_dbg_ctrl_out.debayer_off;
+i_vctrl_vread_prm(0).debayer_colorfst <= i_dbg_ctrl_out.debayer_colorfst;
 i_vctrl_vread_prm(0).frw_size <= i_vctrl_vwrite_prm(0).fr_size;
 i_vctrl_vread_prm(0).fr_size.skip.pix  <= std_logic_vector(TO_UNSIGNED(C_PCFG_VOUT_START_X, 16));
 i_vctrl_vread_prm(0).fr_size.skip.row  <= std_logic_vector(TO_UNSIGNED(C_PCFG_VOUT_START_Y, 16));
@@ -577,6 +585,7 @@ p_in_memtrn_lenwr     => i_vctrl_memtrn_lenwr,
 p_in_memtrn_lenrd     => i_vctrl_memtrn_lenrd,
 p_in_vwrite_prm       => i_vctrl_vwrite_prm  ,
 p_in_vread_prm        => i_vctrl_vread_prm   ,
+p_in_vread_sync       => i_vctrl_sync,
 
 -------------------------------
 --CCD
@@ -693,7 +702,7 @@ p_in_sys        => i_mem_ctrl_sysin
 --Технологический порт
 --***********************************************************
 --gen_tp : for i in 1 to (C_PCFG_CCD_LVDS_COUNT - 1) generate
---pin_out_TP(i - 1) <= OR_reduce(i_video_d((C_PCFG_CCD_BIT_PER_PIXEL * (i + 1)) - 1 downto (C_PCFG_CCD_BIT_PER_PIXEL * i)));
+--pin_out_TP(i - 1) <= OR_reduce(i_video_d((C_PCFG_CCD_PIXBIT * (i + 1)) - 1 downto (C_PCFG_CCD_PIXBIT * i)));
 --end generate;
 --pin_out_TP2(0) <= i_ccd_tst_out(16);--spi --OR_reduce(i_mem_ctrl_status.rdy);--
 --pin_out_TP2(1) <= i_ccd_tst_out(3);--clk:fpga -> ccd --i_video_vs;--
@@ -818,15 +827,15 @@ i_ccd_tst_in(i_ccd_tst_in'length - 1 downto 1) <= (others => '0');
 --end process;
 
 
---m_dbg_ctrl : dbg_ctrl
---port map(
---p_out_usr => i_dbg_ctrl_out,
---p_in_usr  => i_dbg_ctrl_in,
---
---p_in_clk => g_usrclk(6)
---);
---
---i_dbg_ctrl_in.tv_detect <= pin_in_tv_det;
+m_dbg_ctrl : dbg_ctrl
+port map(
+p_out_usr => i_dbg_ctrl_out,
+p_in_usr  => i_dbg_ctrl_in,
+
+p_in_clk => g_usrclk(6)
+);
+
+i_dbg_ctrl_in.tv_detect <= '0';
 
 
 --m_d2axistream : data2axistream

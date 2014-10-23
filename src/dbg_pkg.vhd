@@ -26,6 +26,8 @@ vout_start_x : std_logic_vector(15 downto 0);
 vout_start_y : std_logic_vector(15 downto 0);
 vout_memtrn_lenwr: std_logic_vector(7 downto 0);
 vout_memtrn_lenrd: std_logic_vector(7 downto 0);
+debayer_colorfst: std_logic_vector(1 downto 0);
+debayer_off: std_logic;
 end record;
 
 type TDGB_ctrl_in is record

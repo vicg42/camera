@@ -231,9 +231,13 @@ begin
 --p_out_video.adv7123_db <= p_in_fifo_do((10 * 2) - 1 downto (10 * 1));
 --p_out_video.adv7123_dg <= p_in_fifo_do((10 * 1) - 1 downto (10 * 0));
 
-p_out_video.adv7123_dr <= std_logic_vector(RESIZE(UNSIGNED(p_in_fifo_do((G_VDWIDTH * 1) - 1 downto (G_VDWIDTH * 0))), p_out_video.adv7123_dr'length));
-p_out_video.adv7123_db <= std_logic_vector(RESIZE(UNSIGNED(p_in_fifo_do((G_VDWIDTH * 1) - 1 downto (G_VDWIDTH * 0))), p_out_video.adv7123_db'length));
-p_out_video.adv7123_dg <= std_logic_vector(RESIZE(UNSIGNED(p_in_fifo_do((G_VDWIDTH * 1) - 1 downto (G_VDWIDTH * 0))), p_out_video.adv7123_dg'length));
+--p_out_video.adv7123_dr <= std_logic_vector(RESIZE(UNSIGNED(p_in_fifo_do((G_VDWIDTH * 1) - 1 downto (G_VDWIDTH * 0))), p_out_video.adv7123_dr'length));
+--p_out_video.adv7123_db <= std_logic_vector(RESIZE(UNSIGNED(p_in_fifo_do((G_VDWIDTH * 1) - 1 downto (G_VDWIDTH * 0))), p_out_video.adv7123_db'length));
+--p_out_video.adv7123_dg <= std_logic_vector(RESIZE(UNSIGNED(p_in_fifo_do((G_VDWIDTH * 1) - 1 downto (G_VDWIDTH * 0))), p_out_video.adv7123_dg'length));
+p_out_video.adv7123_db <= p_in_fifo_do((8 * 3) - 1 downto (8 * 2)) & "00";
+p_out_video.adv7123_dg <= p_in_fifo_do((8 * 2) - 1 downto (8 * 1)) & "00";
+p_out_video.adv7123_dr <= p_in_fifo_do((8 * 1) - 1 downto (8 * 0)) & "00";
+
 --i_vdin <= p_in_fifo_do;
 
 end generate gen_tst_off;

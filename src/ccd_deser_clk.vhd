@@ -32,8 +32,10 @@ entity ccd_deser_clk is
 generic (
 CLKIN_DIFF      : boolean := TRUE ;
 CLKIN_PERIOD    : real := 6.000 ;     -- clock period (ns) of input clock on clkin_p
-MMCM_MODE       : integer := 1 ;      -- Parameter to set multiplier for MMCM either 1 or 2 to get VCO in correct operating range. 1 multiplies clock by 7, 2 multiplies clock by 14
-MMCM_MODE_REAL  : real := 1.000 ;     -- Parameter to set multiplier for MMCM either 1 or 2 to get VCO in correct operating range. 1 multiplies clock by 7, 2 multiplies clock by 14
+MULT_F          : integer := 1 ;
+MULT_F_REAL     : real := 1.000 ;
+DIVIDE_F_REAL   : real := 1.000 ;
+DIVIDE_1        : integer := 1 ;
 TX_CLOCK        : string := "BUFIO" ; -- Parameter to set transmission clock buffer type, BUFIO, BUF_H, BUF_G
 INTER_CLOCK     : string := "BUF_R" ; -- Parameter to set intermediate clock buffer type, BUFR, BUF_H, BUF_G
 PIXEL_CLOCK     : string := "BUF_G" ; -- Parameter to set final clock buffer type, BUF_R, BUF_H, BUF_G
@@ -54,7 +56,7 @@ p_out_tst : out std_logic_vector(31 downto 0)
 );
 end entity ccd_deser_clk ;
 
-architecture xilinx of ccd_deser_clk is
+architecture xilinx_kintex7 of ccd_deser_clk is
 
 signal g_ccd2fpga    : std_logic ;
 signal mmcmout_xn    : std_logic ;
@@ -64,7 +66,7 @@ signal pixel_clk_int : std_logic ;
 signal clkint_tmp    : std_logic ;
 
 
-begin --architecture xilinx
+begin --architecture xilinx_kintex7
 
 
 p_out_tst <= (others => '0');
@@ -110,14 +112,14 @@ BANDWIDTH       => "OPTIMIZED",  -- "high", "low" or "optimized"
 CLKIN1_PERIOD   => CLKIN_PERIOD, -- clock period (ns) of input clock on clkin1
 CLKIN2_PERIOD   => CLKIN_PERIOD, -- clock period (ns) of input clock on clkin2
 
-CLKFBOUT_MULT_F => (2.000 * MMCM_MODE_REAL), -- multiplication factor for all output clocks
+CLKFBOUT_MULT_F => (MULT_F_REAL), -- multiplication factor for all output clocks
 DIVCLK_DIVIDE   => 1,                        -- division factor for all clocks (1 to 52)
 CLKFBOUT_PHASE  => 0.0,                      -- phase shift (degrees) of all output clocks
 
-CLKOUT0_DIVIDE_F   => (2.000 * MMCM_MODE_REAL), -- division factor for clkout0 (1 to 128)
+CLKOUT0_DIVIDE_F   => (DIVIDE_F_REAL), -- division factor for clkout0 (1 to 128)
 CLKOUT0_DUTY_CYCLE => 0.5,              -- duty cycle for clkout0 (0.01 to 0.99)
 CLKOUT0_PHASE      => 0.0,              -- phase shift (degrees) for clkout0 (0.0 to 360.0)
-CLKOUT1_DIVIDE     => (10 * MMCM_MODE), -- division factor for clkout1 (1 to 128)
+CLKOUT1_DIVIDE     => (DIVIDE_1), -- division factor for clkout1 (1 to 128)
 CLKOUT1_DUTY_CYCLE => 0.5,              -- duty cycle for clkout1 (0.01 to 0.99)
 CLKOUT1_PHASE      => 0.0,              -- phase shift (degrees) for clkout1 (0.0 to 360.0)
 CLKOUT2_DIVIDE     => 8,                -- division factor for clkout2 (1 to 128)
@@ -242,13 +244,13 @@ REF_JITTER1     => 0.100,
 CLKIN1_PERIOD   => CLKIN_PERIOD,
 CLKIN2_PERIOD   => CLKIN_PERIOD,
 DIVCLK_DIVIDE   => 1,
-CLKFBOUT_MULT   => (7 * MMCM_MODE),
+CLKFBOUT_MULT   => MULT_F,
 CLKFBOUT_PHASE  => 0.0,
 
-CLKOUT0_DIVIDE     => (2 * MMCM_MODE),
+CLKOUT0_DIVIDE     => DIVIDE_1,
 CLKOUT0_DUTY_CYCLE => 0.5,
 CLKOUT0_PHASE      => 0.0,
-CLKOUT1_DIVIDE     => (14 * MMCM_MODE),
+CLKOUT1_DIVIDE     => DIVIDE_1,
 CLKOUT1_DUTY_CYCLE => 0.5,
 CLKOUT1_PHASE      => 0.0,
 CLKOUT2_DIVIDE     => 7,
@@ -345,4 +347,4 @@ loop10b : if TX_CLOCK = "BUF_H" generate
 end generate ;
 end generate ;--loop2 : if USE_PLL = TRUE generate
 
-end architecture xilinx;
+end architecture xilinx_kintex7;
