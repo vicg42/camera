@@ -44,6 +44,7 @@ p_out_vch            : out   std_logic_vector(3 downto 0);
 p_out_vch_active_pix : out   std_logic_vector(15 downto 0);
 p_out_vch_active_row : out   std_logic_vector(15 downto 0);
 p_out_vch_mirx       : out   std_logic;
+p_out_vch_eof        : out   std_logic;
 
 ----------------------------
 --Upstream Port
@@ -107,6 +108,7 @@ signal i_upp_buf_full              : std_logic;
 signal i_data_null                 : std_logic_vector(G_MEM_DWIDTH - 1 downto 0);
 signal sr_vread_sync               : std_logic_vector(0 to 1);
 signal i_vread_sync                : std_logic;
+signal i_vfr_eof                   : std_logic;
 
 signal tst_mem_wr_out              : std_logic_vector(31 downto 0);
 signal tst_fsmstate,tst_fsm_cs_dly : unsigned(3 downto 0) := (others => '0');
@@ -152,6 +154,7 @@ p_out_vch <= (others=>'0');
 p_out_vch_active_pix <= std_logic_vector(i_vfr_pix_count_byte);
 p_out_vch_active_row <= std_logic_vector(i_vfr_row_count);
 p_out_vch_mirx  <= i_vfr_mirror.x;
+p_out_vch_eof <= i_vfr_eof;
 
 
 ------------------------------------------------
@@ -182,7 +185,7 @@ if rising_edge(p_in_clk) then
     i_vfr_mirror.x <= '0';
     i_vfr_mirror.y <= '0';
 
-    i_vfr_new <= '0';
+    i_vfr_new <= '0'; i_vfr_eof <= '0';
 
     sr_vread_sync <= (others => '0');
     i_vread_sync <= '0';
@@ -265,6 +268,12 @@ if rising_edge(p_in_clk) then
           i_fsm_state_cs <= S_ROW_NXT;
         end if;
 
+        if (i_vfr_rowcnt = (i_vfr_row_count - 1) and i_vfr_mirror.y = '0')
+          or (i_vfr_rowcnt = (i_vfr_rowcnt'range => '0') and i_vfr_mirror.y = '1') then
+
+          i_vfr_eof <= '1';
+        end if;
+
       ------------------------------------------------
       --Ждем запроса на чтение следующей строки
       ------------------------------------------------
@@ -279,7 +288,7 @@ if rising_edge(p_in_clk) then
             or (i_vfr_rowcnt = (i_vfr_rowcnt'range => '0') and i_vfr_mirror.y = '1')
               or i_padding = '1' then
 
-            i_fsm_state_cs <= S_IDLE;
+            i_fsm_state_cs <= S_IDLE; i_vfr_eof <= '0';
 
           else
             if i_vfr_mirror.y = '0' then
@@ -320,7 +329,7 @@ port map
 -------------------------------
 --Конфигурирование
 -------------------------------
-p_in_cfg_mem_adr     => std_logic_vector(i_mem_adr_t)    ,
+p_in_cfg_mem_adr     => std_logic_vector(i_mem_adr_t)  ,
 p_in_cfg_mem_trn_len => std_logic_vector(i_mem_trn_len),
 p_in_cfg_mem_dlen_rq => std_logic_vector(i_mem_dlen_rq),
 p_in_cfg_mem_wr      => i_mem_dir,
