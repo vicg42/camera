@@ -548,8 +548,8 @@ i_vctrl_vwrite_prm(0).fr_size.skip.row  <= std_logic_vector(TO_UNSIGNED(10#00#, 
 i_vctrl_vwrite_prm(0).fr_size.activ.pix <= std_logic_vector(TO_UNSIGNED(C_PCFG_CCD_WIN_X, 16));
 i_vctrl_vwrite_prm(0).fr_size.activ.row <= std_logic_vector(TO_UNSIGNED(C_PCFG_CCD_WIN_Y, 16));
 
-i_vctrl_vread_prm(0).debayer_off <= i_dbg_ctrl_out.debayer_off;
-i_vctrl_vread_prm(0).debayer_colorfst <= i_dbg_ctrl_out.debayer_colorfst;
+i_vctrl_vread_prm(0).debayer_off <= '0';--i_dbg_ctrl_out.debayer_off;
+i_vctrl_vread_prm(0).debayer_colorfst <= (others => '0');--i_dbg_ctrl_out.debayer_colorfst;
 i_vctrl_vread_prm(0).frw_size <= i_vctrl_vwrite_prm(0).fr_size;
 i_vctrl_vread_prm(0).fr_size.skip.pix  <= std_logic_vector(TO_UNSIGNED(C_PCFG_VOUT_START_X, 16));
 i_vctrl_vread_prm(0).fr_size.skip.row  <= std_logic_vector(TO_UNSIGNED(C_PCFG_VOUT_START_Y, 16));
@@ -827,15 +827,15 @@ i_ccd_tst_in(i_ccd_tst_in'length - 1 downto 1) <= (others => '0');
 --end process;
 
 
-m_dbg_ctrl : dbg_ctrl
-port map(
-p_out_usr => i_dbg_ctrl_out,
-p_in_usr  => i_dbg_ctrl_in,
-
-p_in_clk => g_usrclk(6)
-);
-
-i_dbg_ctrl_in.tv_detect <= '0';
+--m_dbg_ctrl : dbg_ctrl
+--port map(
+--p_out_usr => i_dbg_ctrl_out,
+--p_in_usr  => i_dbg_ctrl_in,
+--
+--p_in_clk => g_usrclk(6)
+--);
+--
+--i_dbg_ctrl_in.tv_detect <= '0';
 
 
 --m_d2axistream : data2axistream

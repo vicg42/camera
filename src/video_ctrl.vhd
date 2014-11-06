@@ -131,6 +131,24 @@ rst         : IN  std_logic
 );
 end component vbufo;
 
+component vbufo2
+port(
+din         : IN  std_logic_vector(G_VBUFO_DWIDTH - 1 downto 0);
+wr_en       : IN  std_logic;
+wr_clk      : IN  std_logic;
+
+dout        : OUT std_logic_vector(G_VBUFO_DWIDTH - 1 downto 0);
+rd_en       : IN  std_logic;
+rd_clk      : IN  std_logic;
+
+empty       : OUT std_logic;
+full        : OUT std_logic;
+prog_full   : OUT std_logic;
+
+rst         : IN  std_logic
+);
+end component vbufo2;
+
 component video_writer
 generic(
 G_USR_OPT         : std_logic_vector(3 downto 0):=(others=>'0');
@@ -247,8 +265,6 @@ port(
 p_in_cfg_mirx       : in    std_logic;
 p_in_cfg_pix_count  : in    std_logic_vector(15 downto 0);
 
-p_out_cfg_mirx_done : out   std_logic;
-
 ----------------------------
 --Upstream Port (IN)
 ----------------------------
@@ -264,6 +280,7 @@ p_out_dwnp_data     : out   std_logic_vector(G_DO_WIDTH - 1 downto 0);
 p_out_dwnp_wr       : out   std_logic;
 p_in_dwnp_rdy_n     : in    std_logic;
 p_out_dwnp_eof      : out   std_logic;
+p_out_dwnp_eol      : out   std_logic;
 
 -------------------------------
 --DBG
@@ -281,7 +298,7 @@ end component vmirx_main;
 
 component bayer_main is
 generic(
-G_BRAM_AWIDTH : integer := 12;
+G_BRAM_SIZE_BYTE : integer := 12;
 G_DWIDTH : integer := 8
 );
 port(
@@ -307,6 +324,7 @@ p_out_dwnp_data    : out   std_logic_vector((G_DWIDTH * 3) - 1 downto 0);
 p_out_dwnp_wr      : out   std_logic;
 p_in_dwnp_rdy_n    : in    std_logic;
 p_out_dwnp_eof     : out   std_logic;
+p_out_dwnp_eol     : out   std_logic;
 
 -------------------------------
 --DBG
@@ -343,7 +361,6 @@ signal i_vwrite_en                       : std_logic := '0';
 signal i_vreader_do                      : std_logic_vector(G_MEMRD_DWIDTH - 1 downto 0);
 signal i_vreader_den                     : std_logic;
 signal i_vreader_eof                     : std_logic;
-signal i_vreader_rq_next_line            : std_logic;
 signal i_vreader_active_pix              : std_logic_vector(15 downto 0);
 signal i_vreader_active_row              : std_logic_vector(15 downto 0);
 signal i_vreader_vfr_new                 : std_logic;
@@ -352,6 +369,7 @@ signal i_mirx_rdy_n                      : std_logic;
 signal i_mirx_do                         : std_logic_vector(8 - 1 downto 0);
 signal i_mirx_den                        : std_logic;
 signal i_mirx_eof                        : std_logic;
+signal i_mirx_eol                        : std_logic;
 signal i_bayer_rdy_n                     : std_logic;
 signal i_bayer_do                        : std_logic_vector((8 * 3) - 1 downto 0);
 signal i_bayer_den                       : std_logic;
@@ -540,7 +558,7 @@ p_in_mem_trn_len      => p_in_memtrn_lenrd,
 p_in_prm_vch          => p_in_vread_prm,
 p_in_work_en          => i_vread_en,
 p_in_vfr_buf          => i_vbuf_rd,
-p_in_vfr_nrow         => i_vreader_rq_next_line,
+p_in_vfr_nrow         => i_mirx_eol,
 p_in_vread_sync       => p_in_vread_sync,
 
 --Статусы
@@ -558,7 +576,7 @@ p_out_vch_eof         => i_vreader_eof,
 p_out_upp_data        => i_vreader_do,
 p_out_upp_data_wd     => i_vreader_den,
 p_in_upp_buf_empty    => '0',
-p_in_upp_buf_full     => i_vbufo_full,
+p_in_upp_buf_full     => i_mirx_rdy_n, --i_vbufo_full,
 
 ---------------------------------
 --Связь с mem_ctrl.vhd
@@ -596,8 +614,6 @@ port map(
 p_in_cfg_mirx       => i_vreader_mirx,
 p_in_cfg_pix_count  => i_vreader_active_pix,
 
-p_out_cfg_mirx_done => i_vreader_rq_next_line,
-
 ----------------------------
 --Upstream Port (IN)
 ----------------------------
@@ -609,10 +625,11 @@ p_in_upp_eof        => i_vreader_eof,
 ----------------------------
 --Downstream Port (OUT)
 ----------------------------
-p_out_dwnp_data     => i_mirx_do,
-p_out_dwnp_wr       => i_mirx_den,
-p_in_dwnp_rdy_n     => i_bayer_rdy_n,
-p_out_dwnp_eof      => i_mirx_eof,
+p_out_dwnp_data     => i_mirx_do,     --i_mirx_do,    --
+p_out_dwnp_wr       => i_mirx_den,    --i_mirx_den,   --
+p_in_dwnp_rdy_n     => i_bayer_rdy_n, --i_vbufo_full, --
+p_out_dwnp_eof      => i_mirx_eof,    --i_mirx_eof,   --
+p_out_dwnp_eol      => i_mirx_eol,    --i_mirx_eol,   --
 
 -------------------------------
 --DBG
@@ -630,7 +647,7 @@ p_in_rst            => i_vbufo_rst
 
 m_bayer : bayer_main
 generic map(
-G_BRAM_AWIDTH => CI_FILTER_BRAM_SIZE_BYTE,
+G_BRAM_SIZE_BYTE => CI_FILTER_BRAM_SIZE_BYTE,
 G_DWIDTH => 8
 )
 port map(
@@ -656,6 +673,7 @@ p_out_dwnp_data    => i_bayer_do,
 p_out_dwnp_wr      => i_bayer_den,
 p_in_dwnp_rdy_n    => i_vbufo_full,
 p_out_dwnp_eof     => i_bayer_eof,
+p_out_dwnp_eol     => open,
 
 -------------------------------
 --DBG
@@ -682,6 +700,8 @@ p_in_rst           => i_vbufo_rst
 
 i_vbufo_di <= std_logic_vector(RESIZE(UNSIGNED(i_bayer_do), i_vbufo_di'length));
 i_vbufo_wr <= i_bayer_den;
+--i_vbufo_di <= std_logic_vector(RESIZE(UNSIGNED(i_mirx_do), i_vbufo_di'length));
+--i_vbufo_wr <= i_mirx_den;
 
 m_bufo : vbufo
 port map(
