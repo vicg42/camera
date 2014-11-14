@@ -35,6 +35,11 @@ set _projects [ list \
       [ list "../../../../lib/common/hw/mem/mem_glob_pkg.vhd" $_VHDPkg ] \
       [ list "../../../../lib/common/hw/mem/xilinx/mem_wr_axi_pkg.vhd" $_VHDPkg ] \
       [ list "../../../../lib/common/hw/mem/xilinx/mem_wr_axi.vhd" $_VHDMod ] \
+      [ list "../../src/vfilter_core_pkg.vhd" $_VHDPkg ] \
+      [ list "../../../../lib/common/hw/video/vfilter_core.vhd" $_VHDMod ] \
+      [ list "../../../../lib/common/hw/video/vmirx_main.vhd" $_VHDMod ] \
+      [ list "../../../../lib/common/hw/video/vdebayer_main.vhd" $_VHDMod ] \
+      [ list "../../../../lib/common/hw/video/vmedian_main.vhd" $_VHDMod ] \
       [ list "../../src/mem_core/rtl/axi/mig_7series_v1_9_axi_ctrl_addr_decode.v" $_VMod ] \
       [ list "../../src/mem_core/rtl/axi/mig_7series_v1_9_axi_ctrl_read.v" $_VMod ] \
       [ list "../../src/mem_core/rtl/axi/mig_7series_v1_9_axi_ctrl_reg.v" $_VMod ] \
@@ -125,8 +130,13 @@ set _projects [ list \
       [ list "../core_gen/vbufi.vhd" $_VHDMod ] \
       [ list "../core_gen/vbufo.vhd" $_VHDMod ] \
       [ list "../core_gen/mem_achcount2_synth.vhd" $_VHDMod ] \
-      [ list "../core_gen/vmirx_bram.vhd" $_VHDMod ] \
+      [ list "../core_gen/bram_mirx.vhd" $_VHDMod ] \
+      [ list "../core_gen/bram_filter_core.vhd" $_VHDMod ] \
+      [ list "../core_gen/dbg_icon.vhd" $_VHDMod ] \
+      [ list "../core_gen/dbg_vio_usrctrl.vhd" $_VHDMod ] \
+      [ list "../core_gen/dbg_vio_vout.vhd" $_VHDMod ] \
       [ list "../../src/dbg_pkg.vhd" $_VHDPkg ] \
+      [ list "../../src/dbg_ctrl.vhd" $_VHDMod ] \
       [ list "../../src/clocks.vhd" $_VHDMod ] \
       [ list "../../src/clocks_pkg.vhd" $_VHDPkg ] \
       [ list "../../src/ccd_vita25k_pkg.vhd" $_VHDPkg ] \
@@ -141,7 +151,6 @@ set _projects [ list \
       [ list "../../src/video_ctrl.vhd" $_VHDMod ] \
       [ list "../../src/video_writer.vhd" $_VHDMod ] \
       [ list "../../src/video_reader.vhd" $_VHDMod ] \
-      [ list "../../src/vmirx_main.vhd" $_VHDMod ] \
       [ list "../../src/prj_cfg.vhd" $_VHDPkg ] \
       [ list "../../src/camera_main.vhd" $_VHDMod ] \
       [ list "../../ucf/camera_main.ucf" "camera_main" ] \

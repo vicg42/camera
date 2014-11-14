@@ -189,6 +189,8 @@ signal tst_syn_bl      : std_logic;
 signal tt_vfr_den      : std_logic;
 signal tst_data        : unsigned(G_CCD_BIT_COUNT - 1 downto 0) := (others => '0');
 
+signal tst_fr          : std_logic;
+
 
 begin --architecture xilinx
 
@@ -418,6 +420,13 @@ process(i_clk_div)
 begin
   if rising_edge(i_clk_div) then
     i_align_start <= p_in_tst(5);
+
+    if i_syn_fs = '1' then
+    tst_fr <= '1';
+    elsif i_syn_fe = '1' then
+    tst_fr <= '0';
+    end if;
+
   end if;
 end process;
 
@@ -455,7 +464,10 @@ p_out_tst(0) <= i_vfr_bl or i_align_ok_all -- or tst_ccd_deser_out(0)(0) or tst_
 or tst_syn_fs
 or tst_syn_fe
 or tst_syn_bl;
-p_out_tst(31 downto 1) <= (others => '0');
+
+p_out_tst(1) <= tst_fr;
+p_out_tst(2) <= i_pixen;
+p_out_tst(31 downto 3) <= (others => '0');
 
 
 --process(i_clk_div)

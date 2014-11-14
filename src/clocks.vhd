@@ -234,22 +234,22 @@ generic map(
 BANDWIDTH          => "OPTIMIZED", -- string := "OPTIMIZED"
 
 ----VGA(600x480)
---CLKIN1_PERIOD      => 18.518,      -- real := 0.0 --54MHz
+--CLKIN1_PERIOD      => 18.518,      -- real := 0.0 --CLKIN=54MHz
 --DIVCLK_DIVIDE      => 1,           -- integer := 1 (1 to 128)
 --CLKFBOUT_MULT_F    => 18.375,      -- real := 1.0  (5.0 to 64.0)
 --CLKOUT0_DIVIDE_F   => 31.500,      -- real := 1.0  (1.0 to 128.0)
 
 --VGA(800x600)
-CLKIN1_PERIOD      => 18.518,      -- real := 0.0 --54MHz
+CLKIN1_PERIOD      => 18.518,      -- real := 0.0 --CLKIN=54MHz
 DIVCLK_DIVIDE      => 1,           -- integer := 1 (1 to 128)
 CLKFBOUT_MULT_F    => 18.750,      -- real := 1.0  (5.0 to 64.0)
 CLKOUT0_DIVIDE_F   => 20.250,      -- real := 1.0  (1.0 to 128.0)
 
 ----VGA(1024x768)
---CLKIN1_PERIOD      => 16.129,      -- real := 0.0 --62MHz
+--CLKIN1_PERIOD      => 18.518,      -- real := 0.0 --CLKIN=54MHz
 --DIVCLK_DIVIDE      => 1,           -- integer := 1 (1 to 128)
---CLKFBOUT_MULT_F    => 16.875,      -- real := 1.0  (5.0 to 64.0)
---CLKOUT0_DIVIDE_F   => 7.750,       -- real := 1.0  (1.0 to 128.0)
+--CLKFBOUT_MULT_F    => 18.750,      -- real := 1.0  (5.0 to 64.0)
+--CLKOUT0_DIVIDE_F   => 13.500,      -- real := 1.0  (1.0 to 128.0)
 
 CLKOUT1_DIVIDE     => 1,           -- integer := 1
 CLKOUT2_DIVIDE     => 1,           -- integer := 1
@@ -273,7 +273,7 @@ CLKOUT4_DUTY_CYCLE => 0.500,       -- real := 0.5
 CLKOUT5_DUTY_CYCLE => 0.500,       -- real := 0.5
 CLKOUT6_DUTY_CYCLE => 0.500,       -- real := 0.5
 CLKOUT4_CASCADE    => FALSE,       -- boolean := FALSE
-REF_JITTER1        => 0.0,         -- real := 0.0
+REF_JITTER1        => 0.010,       -- real := 0.0
 STARTUP_WAIT       => FALSE)       -- boolean := FALSE
 port map(
 RST       => '0',

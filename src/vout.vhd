@@ -133,6 +133,10 @@ signal i_vdin             : std_logic_vector(p_in_fifo_do'range);
 signal i_vdtxt            : std_logic_vector(p_in_fifo_do'range);
 signal i_pixcnt           : std_logic_vector(15 downto 0);
 signal i_linecnt          : std_logic_vector(15 downto 0);
+
+type TMult is array (0 to 3) of unsigned((p_out_video.adv7123_dg'length * 2) - 1 downto 0);
+signal i_mult_tmp         : TMult;
+
 --signal tst_char_screen_out: std_logic_vector(31 downto 0);
 --signal tst_vdtxt          : std_logic_vector(p_in_fifo_do'range);
 signal tst_vdout          : std_logic_vector(G_VDWIDTH - 1 downto 0);
@@ -231,12 +235,22 @@ begin
 --p_out_video.adv7123_db <= p_in_fifo_do((10 * 2) - 1 downto (10 * 1));
 --p_out_video.adv7123_dg <= p_in_fifo_do((10 * 1) - 1 downto (10 * 0));
 
---p_out_video.adv7123_dr <= std_logic_vector(RESIZE(UNSIGNED(p_in_fifo_do((G_VDWIDTH * 1) - 1 downto (G_VDWIDTH * 0))), p_out_video.adv7123_dr'length));
---p_out_video.adv7123_db <= std_logic_vector(RESIZE(UNSIGNED(p_in_fifo_do((G_VDWIDTH * 1) - 1 downto (G_VDWIDTH * 0))), p_out_video.adv7123_db'length));
---p_out_video.adv7123_dg <= std_logic_vector(RESIZE(UNSIGNED(p_in_fifo_do((G_VDWIDTH * 1) - 1 downto (G_VDWIDTH * 0))), p_out_video.adv7123_dg'length));
-p_out_video.adv7123_db <= p_in_fifo_do((8 * 3) - 1 downto (8 * 2)) & "00";
-p_out_video.adv7123_dg <= p_in_fifo_do((8 * 2) - 1 downto (8 * 1)) & "00";
-p_out_video.adv7123_dr <= p_in_fifo_do((8 * 1) - 1 downto (8 * 0)) & "00";
+--Expand dynamic range: IN (255..0) OUT (2047...0)
+i_mult_tmp(0) <= RESIZE(UNSIGNED(p_in_fifo_do((8 * 1) - 1 downto (8 * 0))), p_out_video.adv7123_dr'length)
+                            * TO_UNSIGNED(pwr(2, p_out_video.adv7123_dg'length) - 1, p_out_video.adv7123_dr'length);
+i_mult_tmp(1) <= RESIZE(UNSIGNED(p_in_fifo_do((8 * 2) - 1 downto (8 * 1))), p_out_video.adv7123_dg'length)
+                            * TO_UNSIGNED(pwr(2, p_out_video.adv7123_dg'length) - 1, p_out_video.adv7123_dg'length);
+i_mult_tmp(2) <= RESIZE(UNSIGNED(p_in_fifo_do((8 * 3) - 1 downto (8 * 2))), p_out_video.adv7123_db'length)
+                            * TO_UNSIGNED(pwr(2, p_out_video.adv7123_dg'length) - 1, p_out_video.adv7123_db'length);
+
+----GRAY
+--p_out_video.adv7123_db <= std_logic_vector(i_mult_tmp(0)((p_out_video.adv7123_dg'length + 8) - 1 downto 8));
+--p_out_video.adv7123_db <= std_logic_vector(i_mult_tmp(0)((p_out_video.adv7123_dg'length + 8) - 1 downto 8));
+--p_out_video.adv7123_dr <= std_logic_vector(i_mult_tmp(0)((p_out_video.adv7123_dg'length + 8) - 1 downto 8));
+--COLOR
+p_out_video.adv7123_db <= std_logic_vector(i_mult_tmp(2)((p_out_video.adv7123_db'length + 8) - 1 downto 8));
+p_out_video.adv7123_dg <= std_logic_vector(i_mult_tmp(1)((p_out_video.adv7123_dg'length + 8) - 1 downto 8));
+p_out_video.adv7123_dr <= std_logic_vector(i_mult_tmp(0)((p_out_video.adv7123_dr'length + 8) - 1 downto 8));
 
 --i_vdin <= p_in_fifo_do;
 

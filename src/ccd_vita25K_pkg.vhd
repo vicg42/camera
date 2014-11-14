@@ -89,10 +89,10 @@ type TCCD_ExpINIT is array (0 to 4 - 1)
   of std_logic_vector(C_CCD_SPI_AWIDTH - 1 + C_CCD_SPI_DWIDTH - 1 downto 0);
 
 constant C_CCD_EXPINIT : TCCD_ExpINIT := (
-std_logic_vector(TO_UNSIGNED(194, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(4    , C_CCD_SPI_DWIDTH)), --fr_mode
-std_logic_vector(TO_UNSIGNED(199, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(32   , C_CCD_SPI_DWIDTH)), --mult_timer
-std_logic_vector(TO_UNSIGNED(200, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(19375, C_CCD_SPI_DWIDTH)), --fr_length
-std_logic_vector(TO_UNSIGNED(201, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(44562, C_CCD_SPI_DWIDTH))  --exposure
+std_logic_vector(TO_UNSIGNED(194, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(4    , C_CCD_SPI_DWIDTH)), --fr_mode = 1
+std_logic_vector(TO_UNSIGNED(199, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(62   , C_CCD_SPI_DWIDTH)), --mult_timer
+std_logic_vector(TO_UNSIGNED(200, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(33300, C_CCD_SPI_DWIDTH)), --fr_length
+std_logic_vector(TO_UNSIGNED(201, C_CCD_SPI_AWIDTH - 1)) & std_logic_vector(TO_UNSIGNED(30000, C_CCD_SPI_DWIDTH))  --exposure
 );
 
 --

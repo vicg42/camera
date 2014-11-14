@@ -548,7 +548,7 @@ i_vctrl_vwrite_prm(0).fr_size.skip.row  <= std_logic_vector(TO_UNSIGNED(10#00#, 
 i_vctrl_vwrite_prm(0).fr_size.activ.pix <= std_logic_vector(TO_UNSIGNED(C_PCFG_CCD_WIN_X, 16));
 i_vctrl_vwrite_prm(0).fr_size.activ.row <= std_logic_vector(TO_UNSIGNED(C_PCFG_CCD_WIN_Y, 16));
 
-i_vctrl_vread_prm(0).debayer_off <= '0';--i_dbg_ctrl_out.debayer_off;
+i_vctrl_vread_prm(0).debayer_off <= i_dbg_ctrl_out.debayer_off;
 i_vctrl_vread_prm(0).debayer_colorfst <= (others => '0');--i_dbg_ctrl_out.debayer_colorfst;
 i_vctrl_vread_prm(0).frw_size <= i_vctrl_vwrite_prm(0).fr_size;
 i_vctrl_vread_prm(0).fr_size.skip.pix  <= std_logic_vector(TO_UNSIGNED(C_PCFG_VOUT_START_X, 16));
@@ -712,8 +712,8 @@ p_in_sys        => i_mem_ctrl_sysin
 --pin_out_led(0) <= OR_reduce(i_video_d) or OR_reduce(i_ccd_tst_out) or i_ccd_init_done;-- or -- or i_video_vs or i_video_hs or i_video_den;-- or sr_tst_ccd_syn;--OR_reduce(i_mem_ctrl_status.rdy);
 pin_out_led(0) <= i_test_led(0);-- or OR_reduce(i_video_d);--OR_reduce(tst_vbufo_do) or
 
-pin_out_TP2(0) <= i_cntdiv_memclkin(8);
-pin_out_TP2(1) <= i_cntdiv_memclkout(8);
+pin_out_TP2(0) <= i_ccd_tst_out(1);--CCD_VS
+pin_out_TP2(1) <= i_ccd_tst_out(2);--CCD_HS
 pin_out_TP2(2) <= OR_reduce(i_ccd_tst_out) or OR_reduce(tst_vout_out) or OR_reduce(tst_vctrl_out) or i_ccd_status(C_CCD_STATUS_ALIGN_OK_BIT) or tst_mem_rdy;
 --tst_xps_osdin_axi_tlast
 --or tst_xps_osdin_axi_tuser
@@ -827,15 +827,15 @@ i_ccd_tst_in(i_ccd_tst_in'length - 1 downto 1) <= (others => '0');
 --end process;
 
 
---m_dbg_ctrl : dbg_ctrl
---port map(
---p_out_usr => i_dbg_ctrl_out,
---p_in_usr  => i_dbg_ctrl_in,
---
---p_in_clk => g_usrclk(6)
---);
---
---i_dbg_ctrl_in.tv_detect <= '0';
+m_dbg_ctrl : dbg_ctrl
+port map(
+p_out_usr => i_dbg_ctrl_out,
+p_in_usr  => i_dbg_ctrl_in,
+
+p_in_clk => g_usrclk(6)
+);
+
+i_dbg_ctrl_in.tv_detect <= '0';
 
 
 --m_d2axistream : data2axistream
