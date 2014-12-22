@@ -283,7 +283,7 @@ if rising_edge(p_in_clk) then
           i_padding <= '1';
         end if;
 
-        if p_in_vfr_nrow = '1' then
+        if p_in_vfr_nrow = '0' then
           if (i_vfr_rowcnt = (i_vfr_row_count - 1) and i_vfr_mirror.y = '0')
             or (i_vfr_rowcnt = (i_vfr_rowcnt'range => '0') and i_vfr_mirror.y = '1')
               or i_padding = '1' then

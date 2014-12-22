@@ -265,6 +265,9 @@ port(
 -------------------------------
 p_in_cfg_mirx       : in    std_logic;
 p_in_cfg_pix_count  : in    std_logic_vector(15 downto 0);
+p_in_cfg_skp_count  : in    std_logic_vector(15 downto 0);
+p_in_cfg_act_count  : in    std_logic_vector(15 downto 0);
+p_out_busy          : out   std_logic;
 
 ----------------------------
 --Upstream Port (IN)
@@ -273,6 +276,7 @@ p_in_upp_data       : in    std_logic_vector(G_DI_WIDTH - 1 downto 0);
 p_in_upp_wr         : in    std_logic;
 p_out_upp_rdy_n     : out   std_logic;
 p_in_upp_eof        : in    std_logic;
+p_in_upp_clk        : in    std_logic;
 
 ----------------------------
 --Downstream Port (OUT)
@@ -282,6 +286,7 @@ p_out_dwnp_wr       : out   std_logic;
 p_in_dwnp_rdy_n     : in    std_logic;
 p_out_dwnp_eof      : out   std_logic;
 p_out_dwnp_eol      : out   std_logic;
+p_in_dwnp_clk       : in    std_logic;
 
 -------------------------------
 --DBG
@@ -292,10 +297,11 @@ p_out_tst           : out   std_logic_vector(31 downto 0);
 -------------------------------
 --System
 -------------------------------
-p_in_clk            : in    std_logic;
 p_in_rst            : in    std_logic
 );
 end component vmirx_main;
+
+for m_mirx : vmirx_main use entity work.vmirx_main(behavioral_2);
 
 component vdebayer_main is
 generic(
@@ -454,6 +460,7 @@ signal i_vreader_active_row              : std_logic_vector(15 downto 0);
 signal i_vreader_vfr_new                 : std_logic;
 signal i_vreader_mirx                    : std_logic;
 signal i_mirx_rdy_n                      : std_logic;
+signal i_mir_busy                        : std_logic;
 signal i_mirx_do                         : std_logic_vector(8 - 1 downto 0);
 signal i_mirx_den                        : std_logic;
 signal i_mirx_eof                        : std_logic;
@@ -651,7 +658,7 @@ p_in_mem_trn_len      => p_in_memtrn_lenrd,
 p_in_prm_vch          => p_in_vread_prm,
 p_in_work_en          => i_vread_en,
 p_in_vfr_buf          => i_vbuf_rd,
-p_in_vfr_nrow         => i_mirx_eol,
+p_in_vfr_nrow         => i_mir_busy,
 p_in_vread_sync       => p_in_vread_sync,
 
 --Статусы
@@ -707,6 +714,9 @@ port map(
 -------------------------------
 p_in_cfg_mirx       => i_vreader_mirx,
 p_in_cfg_pix_count  => i_vreader_active_pix,
+p_in_cfg_skp_count  => std_logic_vector(TO_UNSIGNED(0 ,16)),
+p_in_cfg_act_count  => i_vreader_active_pix,
+p_out_busy          => i_mir_busy,
 
 ----------------------------
 --Upstream Port (IN)
@@ -715,6 +725,7 @@ p_in_upp_data       => i_vreader_do,
 p_in_upp_wr         => i_vreader_den,
 p_out_upp_rdy_n     => i_mirx_rdy_n,
 p_in_upp_eof        => i_vreader_eof,
+p_in_upp_clk        => p_in_clk,
 
 ----------------------------
 --Downstream Port (OUT)
@@ -724,6 +735,7 @@ p_out_dwnp_wr       => i_mirx_den,    --i_mirx_den,   --i_mirx_den,    --
 p_in_dwnp_rdy_n     => i_bayer_rdy_n, --i_vbufo_full, --i_median_rdy_n,--
 p_out_dwnp_eof      => i_mirx_eof,    --i_mirx_eof,   --i_mirx_eof,    --
 p_out_dwnp_eol      => i_mirx_eol,    --i_mirx_eol,   --i_mirx_eol,    --
+p_in_dwnp_clk       => p_in_clk,
 
 -------------------------------
 --DBG
@@ -734,7 +746,6 @@ p_out_tst           => open,
 -------------------------------
 --System
 -------------------------------
-p_in_clk            => p_in_clk,
 p_in_rst            => i_vbufo_rst
 );
 

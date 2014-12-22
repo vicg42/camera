@@ -463,7 +463,7 @@ module mem_ctrl_core_axi #
    parameter C_S_AXI_SUPPORTS_NARROW_BURST = 1,
                                              // Indicates whether to instatiate upsizer
                                              // Range: 0, 1
-   parameter C_RD_WR_ARB_ALGORITHM          = "ROUND_ROBIN",
+   parameter C_RD_WR_ARB_ALGORITHM          = "WRITE_PRIORITY",
                                              // Indicates the Arbitration
                                              // Allowed values - "TDM", "ROUND_ROBIN",
                                              // "RD_PRI_REG", "RD_PRI_REG_STARVE_LIMIT"
