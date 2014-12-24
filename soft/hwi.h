@@ -58,3 +58,4 @@ typedef quint8 u8;
 #define LSD_CFG_DEV_FG          2U
 #define LSD_CFG_DEV_TIMER       3U
 
+#endif // __LSD_HWI_H
