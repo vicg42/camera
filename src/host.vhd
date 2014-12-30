@@ -24,14 +24,14 @@ port(
 -------------------------------
 --
 -------------------------------
-p_in_host   : in     THostIN;
-p_out_host  : out    THostOUT;
+p_in_phy    : in     THostPhyIN;
+p_out_phy   : out    THostPhyOUT;
 
 -------------------------------
 --dev
 -------------------------------
-p_out_dev   : out    TDevIN;
-p_in_dev    : in     TDevOUT;
+p_out_host  : out    THostOUT;
+p_in_host   : in     THostIN;
 
 -------------------------------
 --DBG
@@ -116,8 +116,8 @@ port map(
 -------------------------------
 --UART
 -------------------------------
-p_out_uart_tx    => p_out_host.uart_tx,
-p_in_uart_rx     => p_in_host.uart_rx,
+p_out_uart_tx    => p_out_phy.uart_tx,
+p_in_uart_rx     => p_in_phy.uart_rx,
 
 -------------------------------
 --USR IF
@@ -178,19 +178,19 @@ p_in_hclk            => p_in_sys.uart_refclk,
 -------------------------------
 --CFG
 -------------------------------
-p_out_cfg_dadr       => p_out_dev.dadr      ,
-p_out_cfg_radr       => p_out_dev.radr      ,
-p_out_cfg_radr_ld    => p_out_dev.radr_ld   ,
-p_out_cfg_radr_fifo  => p_out_dev.radr_fifo ,
-p_out_cfg_wr         => p_out_dev.wr        ,
-p_out_cfg_rd         => p_out_dev.rd        ,
-p_out_cfg_txdata     => p_out_dev.txdata    ,
-p_in_cfg_txbuf_full  => p_in_dev.txbuf_full ,
-p_in_cfg_txbuf_empty => p_in_dev.txbuf_empty,
-p_in_cfg_rxdata      => p_in_dev.rxdata     ,
-p_in_cfg_rxbuf_full  => p_in_dev.rxbuf_full ,
-p_in_cfg_rxbuf_empty => p_in_dev.rxbuf_empty,
-p_out_cfg_done       => p_out_dev.done      ,
+p_out_cfg_dadr       => p_out_host.dadr      ,
+p_out_cfg_radr       => p_out_host.radr      ,
+p_out_cfg_radr_ld    => p_out_host.radr_ld   ,
+p_out_cfg_radr_fifo  => p_out_host.radr_fifo ,
+p_out_cfg_wr         => p_out_host.wr        ,
+p_out_cfg_rd         => p_out_host.rd        ,
+p_out_cfg_txdata     => p_out_host.txdata    ,
+p_in_cfg_txbuf_full  => p_in_host.txbuf_full ,
+p_in_cfg_txbuf_empty => p_in_host.txbuf_empty,
+p_in_cfg_rxdata      => p_in_host.rxdata     ,
+p_in_cfg_rxbuf_full  => p_in_host.rxbuf_full ,
+p_in_cfg_rxbuf_empty => p_in_host.rxbuf_empty,
+p_out_cfg_done       => p_out_host.done      ,
 p_in_cfg_clk         => p_in_sys.cfgclk     ,
 
 -------------------------------
