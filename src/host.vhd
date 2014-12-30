@@ -13,49 +13,36 @@ use ieee.numeric_std.all;
 library work;
 use work.vicg_common_pkg.all;
 use work.cfgdev_pkg.all;
+use work.host_pkg.all;
 
 entity host is
 generic(
 G_DBG : string := "OFF";
-G_BAUDCNT_VAL: integer := 64;
-C_CFG_DWIDTH : integer := 32
+G_BAUDCNT_VAL : integer := 64
 );
 port(
 -------------------------------
---UART
+--
 -------------------------------
-p_out_uart_tx        : out    std_logic;
-p_in_uart_rx         : in     std_logic;
-p_in_uart_refclk     : in     std_logic;
+p_in_host   : in     THostIN;
+p_out_host  : out    THostOUT;
 
 -------------------------------
---CFG
+--dev
 -------------------------------
-p_out_cfg_dadr       : out    std_logic_vector(C_CFGPKT_DADR_M_BIT - C_CFGPKT_DADR_L_BIT downto 0); --dev number
-p_out_cfg_radr       : out    std_logic_vector(G_CFG_DWIDTH - 1 downto 0); --adr register
-p_out_cfg_radr_ld    : out    std_logic;
-p_out_cfg_radr_fifo  : out    std_logic;
-p_out_cfg_wr         : out    std_logic;
-p_out_cfg_rd         : out    std_logic;
-p_out_cfg_txdata     : out    std_logic_vector(G_CFG_DWIDTH - 1 downto 0);
-p_in_cfg_txbuf_full  : in     std_logic;
-p_in_cfg_txbuf_empty : in     std_logic;
-p_in_cfg_rxdata      : in     std_logic_vector(G_CFG_DWIDTH - 1 downto 0);
-p_in_cfg_rxbuf_full  : in     std_logic;
-p_in_cfg_rxbuf_empty : in     std_logic;
-p_out_cfg_done       : out    std_logic;
-p_in_cfg_clk         : in     std_logic;
+p_out_dev   : out    TDevIN;
+p_in_dev    : in     TDevOUT;
 
 -------------------------------
 --DBG
 -------------------------------
-p_in_tst             : in     std_logic_vector(31 downto 0);
-p_out_tst            : out    std_logic_vector(31 downto 0);
+p_in_tst    : in     std_logic_vector(31 downto 0);
+p_out_tst   : out    std_logic_vector(31 downto 0);
 
 -------------------------------
 --System
 -------------------------------
-p_in_rst             : in     std_logic
+p_in_sys    : in     TSysIN
 );
 end entity host;
 
@@ -129,8 +116,8 @@ port map(
 -------------------------------
 --UART
 -------------------------------
-p_out_uart_tx    => p_out_uart_tx,
-p_in_uart_rx     => p_in_uart_rx,
+p_out_uart_tx    => p_out_host.uart_tx,
+p_in_uart_rx     => p_in_host.uart_rx,
 
 -------------------------------
 --USR IF
@@ -153,12 +140,12 @@ p_out_tst        => tst_uart_out,
 --System
 -------------------------------
 p_in_clk         => p_in_uart_refclk,
-p_in_rst         => p_in_rst
+p_in_rst         => p_in_sys.rst
 );
 
-process(p_in_uart_refclk)
+process(p_in_sys.uart_refclk)
 begin
-if rising_edge(p_in_uart_refclk) then
+if rising_edge(p_in_sys.uart_refclk) then
   i_uart_wr <= not i_hrxbuf_empty and i_uart_txdrdy;
   i_uart_rd <= not i_htxbuf_full and i_uart_rxdrdy;
 end if;
@@ -186,25 +173,25 @@ p_out_htxbuf_full    => i_htxbuf_full,
 p_out_htxbuf_empty   => open,
 
 p_out_hirq           => open,
-p_in_hclk            => p_in_uart_refclk,
+p_in_hclk            => p_in_sys.uart_refclk,
 
 -------------------------------
 --CFG
 -------------------------------
-p_out_cfg_dadr       => p_out_cfg_dadr      ,
-p_out_cfg_radr       => p_out_cfg_radr      ,
-p_out_cfg_radr_ld    => p_out_cfg_radr_ld   ,
-p_out_cfg_radr_fifo  => p_out_cfg_radr_fifo ,
-p_out_cfg_wr         => p_out_cfg_wr        ,
-p_out_cfg_rd         => p_out_cfg_rd        ,
-p_out_cfg_txdata     => p_out_cfg_txdata    ,
-p_in_cfg_txbuf_full  => p_in_cfg_txbuf_full ,
-p_in_cfg_txbuf_empty => p_in_cfg_txbuf_empty,
-p_in_cfg_rxdata      => p_in_cfg_rxdata     ,
-p_in_cfg_rxbuf_full  => p_in_cfg_rxbuf_full ,
-p_in_cfg_rxbuf_empty => p_in_cfg_rxbuf_empty,
-p_out_cfg_done       => p_out_cfg_done      ,
-p_in_cfg_clk         => p_in_cfg_clk        ,
+p_out_cfg_dadr       => p_out_dev.dadr      ,
+p_out_cfg_radr       => p_out_dev.radr      ,
+p_out_cfg_radr_ld    => p_out_dev.radr_ld   ,
+p_out_cfg_radr_fifo  => p_out_dev.radr_fifo ,
+p_out_cfg_wr         => p_out_dev.wr        ,
+p_out_cfg_rd         => p_out_dev.rd        ,
+p_out_cfg_txdata     => p_out_dev.txdata    ,
+p_in_cfg_txbuf_full  => p_in_dev.txbuf_full ,
+p_in_cfg_txbuf_empty => p_in_dev.txbuf_empty,
+p_in_cfg_rxdata      => p_in_dev.rxdata     ,
+p_in_cfg_rxbuf_full  => p_in_dev.rxbuf_full ,
+p_in_cfg_rxbuf_empty => p_in_dev.rxbuf_empty,
+p_out_cfg_done       => p_out_dev.done      ,
+p_in_cfg_clk         => p_in_sys.cfgclk     ,
 
 -------------------------------
 --DBG
@@ -215,7 +202,7 @@ p_out_tst            => tst_core_out,
 -------------------------------
 --System
 -------------------------------
-p_in_rst             => p_in_rst
+p_in_rst             => p_in_sys.rst
 );
 
 
