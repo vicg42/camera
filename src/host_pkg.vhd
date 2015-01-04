@@ -9,6 +9,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 
+use work.prj_cfg.all;
 use work.cfgdev_pkg.all;
 
 constant C_CFG_DWIDTH : integer := 32
@@ -50,5 +51,6 @@ rxbuf_full  : std_logic;
 rxbuf_empty : std_logic;
 end record;
 
+type THostINs is array (0 to C_PCFG_FDEV_COUNT_MAX - 1) of THostIN;
 
 end package host_pkg;

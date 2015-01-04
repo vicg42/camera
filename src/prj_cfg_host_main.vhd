@@ -43,5 +43,11 @@ constant C_CGF_VBUFO_DWIDTH   : integer := 32;
 constant C_PCFG_VOUT_START_X  : integer := 0;
 constant C_PCFG_VOUT_START_Y  : integer := 0;
 
+constant C_PCFG_TSTREG_COUNT_MAX   : integer := 8;
+
+constant C_PCFG_FDEV_TSTREG0_NUM : integer := 0;
+constant C_PCFG_FDEV_TSTREG1_NUM : integer := 1;
+constant C_PCFG_FDEV_COUNT   : integer := 2;
+
 end package prj_cfg;
 

@@ -19,8 +19,8 @@ use work.host_pkg.all;
 
 entity test_host_main is
 port(
-pin_in_hostphy   : in     THostIN;
-pin_out_hostphy  : out    THostOUT;
+pin_in_hostphy   : in     THostPhyIN;
+pin_out_hostphy  : out    THostPhyOUT;
 
 --------------------------------------------------
 --DBG
@@ -114,11 +114,11 @@ signal i_host_out         : THostOUT;
 signal i_host_in          : THostIN;
 
 signal i_reg0_acnt        : unsigned(i_dev_out.radr'range);
-type TUsrRegs is array (0 to C_TSTREG_COUNT_MAX - 1) of unsigned(i_dev_out.txdata'range);
+type TUsrRegs is array (0 to C_PCFG_TSTREG_COUNT_MAX - 1) of unsigned(i_dev_out.txdata'range);
 signal i_reg0             : TUsrRegs;
 
 signal i_reg1_acnt        : unsigned(i_dev_out.radr'range);
-type TUsrRegs is array (0 to C_TSTREG_COUNT_MAX - 1) of unsigned(i_dev_out.txdata'range);
+type TUsrRegs is array (0 to C_PCFG_TSTREG_COUNT_MAX - 1) of unsigned(i_dev_out.txdata'range);
 signal i_reg1             : TUsrRegs;
 
 attribute keep : string;
@@ -203,26 +203,12 @@ p_out_tst   => open,
 p_in_sys    => i_sys
 );
 
-i_reg0_cs <= '1' when UNSIGNED(i_host_out.dadr) = TO_UNSIGNED(0, i_host_out.dadr'length) else '0';
-i_reg1_cs <= '1' when UNSIGNED(i_host_out.dadr) = TO_UNSIGNED(0, i_host_out.dadr'length) else '0';
 
---read from reg
-process(i_reg, i_cfg_acnt, i_cfg_rxd)
-begin
-if i_reg0_cs = '1' then
-  for i in 0 to i_reg0'length - 1 loop
-    if i_reg0_acnt = i then
-      i_host_in.rxdata <= std_logic_vector(i_reg0(i));
-    end if;
-  end loop;
-elsif i_reg1_cs = '1' then
-  for i in 0 to i_reg1'length - 1 loop
-    if i_reg1_acnt = i then
-      i_host_in.rxdata <= std_logic_vector(i_reg1(i));
-    end if;
-  end loop;
-end if;
-end process;
+--#############################
+--FDEV - TSTREG0
+--#############################
+i_reg0_cs <= '1' when UNSIGNED(i_host_out.dadr)
+                        = TO_UNSIGNED(C_PCFG_FDEV_TSTREG0_NUM, i_host_out.dadr'length) else '0';
 
 --Register adress
 process(i_sys)
@@ -261,6 +247,78 @@ if i_reg0_cs = '1' then
 end if;
 end if;
 end process;
+
+process(i_reg0_acnt, i_reg0, i_host_in)
+begin
+for i in 0 to i_reg0'length - 1 loop
+  if i_reg0_acnt = i then
+    i_host_in(C_PCFG_FDEV_TSTREG0_NUM).rxdata <= std_logic_vector(i_reg0(i));
+    i_host_in(C_PCFG_FDEV_TSTREG0_NUM).rxbuf_full  <= '0';
+    i_host_in(C_PCFG_FDEV_TSTREG0_NUM).rxbuf_empty <= '0';
+    i_host_in(C_PCFG_FDEV_TSTREG0_NUM).txbuf_full  <= '0';
+    i_host_in(C_PCFG_FDEV_TSTREG0_NUM).txbuf_empty <= '0';
+  end if;
+end loop;
+end process;
+
+
+--#############################
+--FDEV - TSTREG1
+--#############################
+i_reg1_cs <= '1' when UNSIGNED(i_host_out.dadr)
+                        = TO_UNSIGNED(C_PCFG_FDEV_TSTREG0_NUM, i_host_out.dadr'length) else '0';
+
+--Register adress
+process(i_sys)
+begin
+if i_sys.rst = '1' then
+  i_reg1_acnt <= (others => '0');
+elsif rising_edge(i_sys.cfg_clk) then
+if i_reg1_cs = '1' then
+  if i_host_out.radr_ld = '1' then
+    i_reg1_acnt <= UNSIGNED(i_host_out.radr);
+  else
+    if i_host_out.fifo = '0' and (i_host_out.wr = '1' or i_host_out.rd = '1') then
+      i_reg1_acnt <= i_reg1_acnt + 1;
+    end if;
+  end if;
+end if;
+end if;
+end process;
+
+--write to reg
+process(i_sys)
+begin
+if i_sys.rst = '1' then
+  for i in 0 to i_reg1'length - 1 loop
+    i_reg1(i) <= (others => '0');
+  end loop;
+elsif rising_edge(i_sys.cfg_clk) then
+if i_reg1_cs = '1' then
+  if i_host_out.wr = '1' and i_host_out.fifo = '0' then
+    for i in 0 to i_reg1'length - 1 loop
+      if i_reg1_acnt = i then
+        i_reg1(i) <= UNSIGNED(i_host_out.txdata(i_reg1(i)'high downto 0));
+      end if;
+    end loop;
+  end if;
+end if;
+end if;
+end process;
+
+process(i_reg1_acnt, i_reg1, i_host_in)
+begin
+for i in 0 to i_reg1'length - 1 loop
+  if i_reg1_acnt = i then
+    i_host_in(C_PCFG_FDEV_TSTREG1_NUM).rxdata <= std_logic_vector(i_reg1(i));
+    i_host_in(C_PCFG_FDEV_TSTREG1_NUM).rxbuf_full  <= '0';
+    i_host_in(C_PCFG_FDEV_TSTREG1_NUM).rxbuf_empty <= '0';
+    i_host_in(C_PCFG_FDEV_TSTREG1_NUM).txbuf_full  <= '0';
+    i_host_in(C_PCFG_FDEV_TSTREG1_NUM).txbuf_empty <= '0';
+  end if;
+end loop;
+end process;
+
 
 
 end architecture struct;
