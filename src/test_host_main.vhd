@@ -174,7 +174,7 @@ p_in_rst       => i_rst
 --***********************************************************
 m_host : host
 generic map(
-G_BAUDCNT_VAL => 64
+G_BAUDCNT_VAL => 34 --for uart_refclk = 62MHz
 )
 port map(
 -------------------------------
