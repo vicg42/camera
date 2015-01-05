@@ -26,9 +26,7 @@ pin_out_hostphy  : out    THostPhyOUT;
 --DBG
 --------------------------------------------------
 pin_out_led         : out   std_logic_vector(1 downto 0);
-pin_in_btn          : in    std_logic;
-
-pin_out_video       : out  TVout_pinout;
+--pin_in_btn          : in    std_logic;
 
 --------------------------------------------------
 --Reference clock
@@ -87,7 +85,7 @@ p_out_phy   : out    THostPhyOUT;
 --dev
 -------------------------------
 p_out_host  : out    THostOUT;
-p_in_host   : in     THostIN;
+p_in_host   : in     THostINs;
 
 -------------------------------
 --DBG
@@ -107,19 +105,19 @@ signal g_usrclk           : std_logic_vector(7 downto 0);
 signal i_test_led         : std_logic_vector(1 downto 0);
 signal i_1ms              : std_logic;
 
-signal i_cntdiv_memclkin  : unsigned(10 downto 0);
-
 signal i_sys              : TSysIN;
 signal i_host_out         : THostOUT;
-signal i_host_in          : THostIN;
+signal i_host_in          : THostINs;
 
-signal i_reg0_acnt        : unsigned(i_dev_out.radr'range);
-type TUsrRegs is array (0 to C_PCFG_TSTREG_COUNT_MAX - 1) of unsigned(i_dev_out.txdata'range);
+type TUsrRegs is array (0 to C_PCFG_TSTREG_COUNT_MAX - 1) of unsigned(i_host_out.txdata'range);
+
+signal i_reg0_acnt        : unsigned(i_host_out.radr'range);
 signal i_reg0             : TUsrRegs;
+signal i_reg0_cs          : std_logic;
 
-signal i_reg1_acnt        : unsigned(i_dev_out.radr'range);
-type TUsrRegs is array (0 to C_PCFG_TSTREG_COUNT_MAX - 1) of unsigned(i_dev_out.txdata'range);
+signal i_reg1_acnt        : unsigned(i_host_out.radr'range);
 signal i_reg1             : TUsrRegs;
+signal i_reg1_cs          : std_logic;
 
 attribute keep : string;
 attribute keep of g_usrclk : signal is "true";
@@ -141,15 +139,15 @@ p_out_gclk => g_usrclk,
 p_in_clk   => pin_in_refclk
 );
 
-i_sys.uart_refclk <=
-i_sys.cfg_clk <=
+i_sys.uart_refclk <= g_usrclk(7);
+i_sys.cfg_clk <= g_usrclk(0);
 i_sys.rst <= i_rst;
 
 --***********************************************************
 --DBG
 --***********************************************************
 pin_out_led(0) <= i_test_led(0);
-pin_out_led(1) <= i_cntdiv_memclkin(8);
+pin_out_led(1) <= '0';
 
 
 m_led1_tst: fpga_test_01
@@ -240,7 +238,7 @@ if i_reg0_cs = '1' then
   if i_host_out.wr = '1' and i_host_out.fifo = '0' then
     for i in 0 to i_reg0'length - 1 loop
       if i_reg0_acnt = i then
-        i_reg0(i) <= UNSIGNED(i_host_out.txdata(i_reg0(i)'high downto 0));
+        i_reg0(i) <= UNSIGNED(i_host_out.txdata);
       end if;
     end loop;
   end if;
@@ -253,20 +251,20 @@ begin
 for i in 0 to i_reg0'length - 1 loop
   if i_reg0_acnt = i then
     i_host_in(C_PCFG_FDEV_TSTREG0_NUM).rxdata <= std_logic_vector(i_reg0(i));
-    i_host_in(C_PCFG_FDEV_TSTREG0_NUM).rxbuf_full  <= '0';
-    i_host_in(C_PCFG_FDEV_TSTREG0_NUM).rxbuf_empty <= '0';
-    i_host_in(C_PCFG_FDEV_TSTREG0_NUM).txbuf_full  <= '0';
-    i_host_in(C_PCFG_FDEV_TSTREG0_NUM).txbuf_empty <= '0';
   end if;
 end loop;
 end process;
+i_host_in(C_PCFG_FDEV_TSTREG0_NUM).rxbuf_full  <= '0';
+i_host_in(C_PCFG_FDEV_TSTREG0_NUM).rxbuf_empty <= '0';
+i_host_in(C_PCFG_FDEV_TSTREG0_NUM).txbuf_full  <= '0';
+i_host_in(C_PCFG_FDEV_TSTREG0_NUM).txbuf_empty <= '0';
 
 
 --#############################
 --FDEV - TSTREG1
 --#############################
 i_reg1_cs <= '1' when UNSIGNED(i_host_out.dadr)
-                        = TO_UNSIGNED(C_PCFG_FDEV_TSTREG0_NUM, i_host_out.dadr'length) else '0';
+                        = TO_UNSIGNED(C_PCFG_FDEV_TSTREG1_NUM, i_host_out.dadr'length) else '0';
 
 --Register adress
 process(i_sys)
@@ -298,7 +296,7 @@ if i_reg1_cs = '1' then
   if i_host_out.wr = '1' and i_host_out.fifo = '0' then
     for i in 0 to i_reg1'length - 1 loop
       if i_reg1_acnt = i then
-        i_reg1(i) <= UNSIGNED(i_host_out.txdata(i_reg1(i)'high downto 0));
+        i_reg1(i) <= UNSIGNED(i_host_out.txdata);
       end if;
     end loop;
   end if;
@@ -311,14 +309,13 @@ begin
 for i in 0 to i_reg1'length - 1 loop
   if i_reg1_acnt = i then
     i_host_in(C_PCFG_FDEV_TSTREG1_NUM).rxdata <= std_logic_vector(i_reg1(i));
-    i_host_in(C_PCFG_FDEV_TSTREG1_NUM).rxbuf_full  <= '0';
-    i_host_in(C_PCFG_FDEV_TSTREG1_NUM).rxbuf_empty <= '0';
-    i_host_in(C_PCFG_FDEV_TSTREG1_NUM).txbuf_full  <= '0';
-    i_host_in(C_PCFG_FDEV_TSTREG1_NUM).txbuf_empty <= '0';
   end if;
 end loop;
 end process;
-
+i_host_in(C_PCFG_FDEV_TSTREG1_NUM).rxbuf_full  <= '0';
+i_host_in(C_PCFG_FDEV_TSTREG1_NUM).rxbuf_empty <= '0';
+i_host_in(C_PCFG_FDEV_TSTREG1_NUM).txbuf_full  <= '0';
+i_host_in(C_PCFG_FDEV_TSTREG1_NUM).txbuf_empty <= '0';
 
 
 end architecture struct;

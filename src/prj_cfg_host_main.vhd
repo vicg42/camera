@@ -18,6 +18,8 @@ package prj_cfg is
 
 constant C_PCFG_SIM : string := "OFF";
 
+constant C_HOST_DWIDTH : integer := 8;
+
 --cfg CCD
 constant C_PCFG_CCD_PIXBIT          : integer := 10;
 constant C_PCFG_CCD_DATA_LINE_COUNT : integer := 32;
@@ -43,7 +45,7 @@ constant C_CGF_VBUFO_DWIDTH   : integer := 32;
 constant C_PCFG_VOUT_START_X  : integer := 0;
 constant C_PCFG_VOUT_START_Y  : integer := 0;
 
-constant C_PCFG_TSTREG_COUNT_MAX   : integer := 8;
+constant C_PCFG_TSTREG_COUNT_MAX : integer := 4;
 
 constant C_PCFG_FDEV_TSTREG0_NUM : integer := 0;
 constant C_PCFG_FDEV_TSTREG1_NUM : integer := 1;

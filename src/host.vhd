@@ -49,7 +49,7 @@ end entity host;
 
 architecture behavioral of host is
 
-component uart_rev01 is
+component uart is
 generic(
 G_BAUDCNT_VAL: integer:=64
 );
@@ -83,17 +83,21 @@ p_out_tst        : out   std_logic_vector(31 downto 0);
 p_in_clk         : in    std_logic;
 p_in_rst         : in    std_logic
 );
-end component;
+end component uart;
 
 signal i_zero           : std_logic_vector(31 downto 0);
 
 signal i_uart_txd       : std_logic_vector(7 downto 0);
+signal i_uart_txdrdy    : std_logic;
 signal i_uart_wr        : std_logic;
 signal i_uart_rxd       : std_logic_vector(7 downto 0);
+signal i_uart_rxdrdy    : std_logic;
 signal i_uart_rd        : std_logic;
 
 signal i_host_out       : THostOUT;
 signal i_host_in        : THostIN;
+signal i_hrxbuf_empty   : std_logic;
+signal i_htxbuf_full    : std_logic;
 
 signal tst_core_out     : std_logic_vector(31 downto 0);
 signal tst_uart_out     : std_logic_vector(31 downto 0);
@@ -112,7 +116,7 @@ p_out_tst(31 downto 0) <= (others=>'0');
 --############################
 --
 --############################
-m_uart: uart_rev01
+m_uart: uart
 generic map(
 G_BAUDCNT_VAL => G_BAUDCNT_VAL
 )
@@ -143,7 +147,7 @@ p_out_tst        => tst_uart_out,
 -------------------------------
 --System
 -------------------------------
-p_in_clk         => p_in_uart_refclk,
+p_in_clk         => p_in_sys.uart_refclk,
 p_in_rst         => p_in_sys.rst
 );
 
@@ -157,20 +161,35 @@ end process;
 
 p_out_host <= i_host_out;
 
-process( i_host_out,  i_host_in)
+process(i_host_out, i_host_in, p_in_host)
 begin
 for i in 0 to C_PCFG_FDEV_COUNT - 1 loop
-  if i_host_out.dadr = i then
+  if UNSIGNED(i_host_out.dadr) = i then
     i_host_in <= p_in_host(i);
   end if;
 end loop;
 end process;
 
+--i_host_in.radata <= p_in_host(C_PCFG_FDEV_TSTREG0_NUM).rxdata when UNSIGNED(i_host_out.dadr) = TO_UNSIGNED(C_PCFG_FDEV_TSTREG1_NUM, i_host_in.radata'length) else
+--                    p_in_host(C_PCFG_FDEV_TSTREG1_NUM).rxdata;
+--
+--i_host_in.txbuf_full <= p_in_host(C_PCFG_FDEV_TSTREG0_NUM).txbuf_full when UNSIGNED(i_host_out.dadr) = TO_UNSIGNED(C_PCFG_FDEV_TSTREG1_NUM, i_host_in.radata'length) else
+--                        p_in_host(C_PCFG_FDEV_TSTREG1_NUM).txbuf_full;
+--
+--i_host_in.txbuf_empty <= p_in_host(C_PCFG_FDEV_TSTREG0_NUM).txbuf_empty when UNSIGNED(i_host_out.dadr) = TO_UNSIGNED(C_PCFG_FDEV_TSTREG1_NUM, i_host_in.radata'length) else
+--                         p_in_host(C_PCFG_FDEV_TSTREG1_NUM).txbuf_empty;
+--
+--i_host_in.rxbuf_full <= p_in_host(C_PCFG_FDEV_TSTREG0_NUM).rxbuf_full when UNSIGNED(i_host_out.dadr) = TO_UNSIGNED(C_PCFG_FDEV_TSTREG1_NUM, i_host_in.radata'length) else
+--                        p_in_host(C_PCFG_FDEV_TSTREG1_NUM).rxbuf_full;
+--
+--i_host_in.rxbuf_empty <= p_in_host(C_PCFG_FDEV_TSTREG0_NUM).rxbuf_empty when UNSIGNED(i_host_out.dadr) = TO_UNSIGNED(C_PCFG_FDEV_TSTREG1_NUM, i_host_in.radata'length) else
+--                         p_in_host(C_PCFG_FDEV_TSTREG1_NUM).rxbuf_empty;
+
 m_devcfg : cfgdev_host
 generic map(
 G_DBG => "OFF",
 G_HOST_DWIDTH => i_uart_txd'length,
-G_CFG_DWIDTH => C_CFG_DWIDTH
+G_CFG_DWIDTH => C_HOST_DWIDTH
 )
 port map (
 -------------------------------
@@ -195,7 +214,7 @@ p_in_hclk            => p_in_sys.uart_refclk,
 p_out_cfg_dadr       => i_host_out.dadr      ,
 p_out_cfg_radr       => i_host_out.radr      ,
 p_out_cfg_radr_ld    => i_host_out.radr_ld   ,
-p_out_cfg_radr_fifo  => i_host_out.radr_fifo ,
+p_out_cfg_radr_fifo  => i_host_out.fifo      ,
 p_out_cfg_wr         => i_host_out.wr        ,
 p_out_cfg_rd         => i_host_out.rd        ,
 p_out_cfg_txdata     => i_host_out.txdata    ,
@@ -205,7 +224,7 @@ p_in_cfg_rxdata      => i_host_in.rxdata     ,
 p_in_cfg_rxbuf_full  => i_host_in.rxbuf_full ,
 p_in_cfg_rxbuf_empty => i_host_in.rxbuf_empty,
 p_out_cfg_done       => i_host_out.done      ,
-p_in_cfg_clk         => p_in_sys.cfgclk     ,
+p_in_cfg_clk         => p_in_sys.cfg_clk     ,
 
 -------------------------------
 --DBG
