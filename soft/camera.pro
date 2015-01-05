@@ -18,10 +18,8 @@ TEMPLATE = app
 
 
 SOURCES += main.cpp \
-    mainwin.cpp \
-    cfg.cpp
+    mainwin.cpp
 
 HEADERS  += \
     mainwin.h \
-    cfg.h \
     hwi.h

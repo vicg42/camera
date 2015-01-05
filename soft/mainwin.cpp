@@ -9,7 +9,12 @@ CMainwin::CMainwin(QWidget *parent)
 
   setWindowTitle(tr("Camera Ctrl"));
 
-  io.protocol = new CCfg;
+  ld.txbuf.data = new char;
+  ld.txbuf.bsize = sizeof(char);
+  ld.rxbuf.data = new char;
+  ld.rxbuf.bsize = sizeof(char);
+  ld.status = IOS_IDLE;
+
   io.uart.dev = new QSerialPort(this);
   io.uart.info = new QSerialPortInfo;
   io.tmr_timeout = new QTimer(this);
@@ -59,61 +64,145 @@ CMainwin::~CMainwin()
 {
   io.uart.dev->close();
   delete io.uart.info;
-  delete io.protocol;
+
+  delete [] ld.txbuf.data;
+  delete [] ld.rxbuf.data;
 }
 
 
-void CMainwin::parseRxDATA(char *data, int count)
+int CMainwin::sendCommand(TCFGTarget target,
+                  char dir,
+                  char fifo,
+                  size_t areg,
+                  char *data,
+                  size_t bcount
+                  )
 {
-//  switch (io.srcrq)
-//  {
-//    case UGUI_CCDRIO :
-//      {
+  // check arguments, translate <target> to H/W code
 
-//        break;
-//      }
+  if (ld.status != IOS_IDLE)
+    return EER_INVAL;
 
-//    default:
-//      break;
-//  }
+  u8 target_code = 0;
+
+  switch (target)
+  {
+  case CFG_DEV_FRR:
+    target_code = C_CFG_DEV_FRR;
+    break;
+  case CFG_DEV_FIBER:
+    target_code = C_CFG_DEV_FIBER;
+    break;
+  case CFG_DEV_FG:
+    target_code = C_CFG_DEV_FG;
+    break;
+  case CFG_DEV_TIMER:
+    target_code = C_CFG_DEV_TIMER;
+    break;
+  default:
+    return EER_INVAL;
+  }
+
+  const TCfg_chunk cfg_chunk_mask = ~0;
+
+  if ((areg & cfg_chunk_mask) != areg)
+    return EER_INVAL;
+
+  if (!data)
+    return EER_INVAL;
+
+  if  (!bcount || ((bcount & cfg_chunk_mask) != bcount))
+    return EER_INVAL;
+
+  if (bcount > (C_CFG_MAX_NCHUNKS - C_CFG_HCHUNK_DATA))
+    return EER_NOBUFS;
+
+  // make packet
+  size_t chunk_count = 0;
+
+  if (bcount % sizeof(TCfg_chunk))
+    chunk_count = ((bcount / sizeof(TCfg_chunk)) + 1);
+  else
+    chunk_count = bcount;
+
+  ld.req_bsize = bcount;
+
+  if (dir == C_CFG_DIR_WR)
+  {
+    ld.txbuf.bsize = (C_CFG_HCHUNK_COUNT * sizeof(TCfg_chunk))
+                      + (chunk_count * sizeof(TCfg_chunk));
+    if (!ld.txbuf.data)
+      ld.txbuf.data = new char[ld.txbuf.bsize];
+    else
+    {
+      delete [] ld.txbuf.data;
+      ld.txbuf.data = new char[ld.txbuf.bsize];
+    }
+
+    //set rxbuf for ACK
+    ld.rxbuf.bsize = (C_CFG_HCHUNK_COUNT * sizeof(TCfg_chunk));
+    if (!ld.rxbuf.data)
+      ld.rxbuf.data = new char[ld.rxbuf.bsize];
+    else
+    {
+      delete [] ld.rxbuf.data;
+      ld.rxbuf.data = new char[ld.rxbuf.bsize];
+    }
+  }
+  else
+  {
+    ld.txbuf.bsize = (C_CFG_HCHUNK_COUNT * sizeof(TCfg_chunk));
+    if (!ld.txbuf.data)
+      ld.txbuf.data = new char[ld.txbuf.bsize];
+    else
+    {
+      delete [] ld.txbuf.data;
+      ld.txbuf.data = new char[ld.txbuf.bsize];
+    }
+
+    ld.rxbuf.bsize = (C_CFG_HCHUNK_COUNT * sizeof(TCfg_chunk))
+                      + (chunk_count * sizeof(TCfg_chunk));
+    if (!ld.rxbuf.data)
+      ld.rxbuf.data = new char[ld.rxbuf.bsize];
+    else
+    {
+      delete [] ld.rxbuf.data;
+      ld.rxbuf.data = new char[ld.rxbuf.bsize];
+    }
+  }
+
+  memset(ld.txbuf.data, 0, ld.txbuf.bsize);
+  memset(ld.rxbuf.data, 0, ld.rxbuf.bsize);
+
+  TCfg_chunk * ptr = (TCfg_chunk *) ld.txbuf.data;
+
+  ptr[C_CFG_HCHUNK_CTRL]
+    = ((fifo << C_CFG_FIFO_BIT) & C_CFG_FIFO_MASK)
+    | ((dir << C_CFG_DIR_BIT) & C_CFG_DIR_MASK)
+    | ((tagcnt << C_CFG_TAG_BIT) & C_CFG_TAG_MASK)
+    | ((target_code << C_CFG_DEV_BIT) & C_CFG_DEV_MASK);
+  ptr[C_CFG_HCHUNK_ADR] = areg;
+  ptr[C_CFG_HCHUNK_DLEN] = chunk_count;
+
+  if (dir == C_CFG_DIR_WR)
+  {
+    memcpy((char *) &ptr[C_CFG_HCHUNK_DATA], data, ld.req_bsize);
+    ld.status = IOS_WR;
+  }
+  else
+    ld.status = IOS_RD;
+
+  ld.tag_tx++;
+  ld.error = 0;
+
+  return 0;
 }
 
-void CMainwin::getCCDRIO()
-{
-  if (!io.uart.dev->isOpen())
-  {
-    edt_Log->append(QString(tr("ERROR: UART port closed")));
-    return;
-  }
 
-  int error = io.protocol->setReq(LSD_CFG_DIR_RD,
-                                  CFG_DEV_FG,
-                                  0,
-                                  0,
-                                  0,
-                                  0);
-
-  if (error)
-  {
-    edt_Log->append(QString(tr("ERROR: io.protocol / make write paket")));
-    return;
-  }
-
-  if (io.uart.dev->write(io.protocol->getTxBuf(), io.protocol->getTxCount())
-      != io.protocol->getTxCount())
-  {
-    edt_Log->append(QString(tr("ERROR: io.dev / Write")));
-    return;
-  }
-  io.srcrq = UGUI_CCDRIO;
-  io.tmr_timeout->start(1000);
-
-}
 
 void CMainwin::DevAckTimeout()
 {
   edt_Log->append(tr("ERROR: ACK Timeout "));
-  io.protocol->AckTimeout();
   io.tmr_timeout->stop();
 }
 
@@ -151,25 +240,33 @@ void CMainwin::getDevData()
 {
   io.tmr_timeout->stop();
 
-  size_t rxcount = io.protocol->getRxCount();
-  int ack = 0;
-
-  if ((io.protocol->getState() == IOS_WR)
-      | (io.protocol->getState() == IOS_RD))
+  if (ld.status == IOS_WR)
   {
-    if (io.uart.dev->bytesAvailable() == rxcount)
+    if (io.uart.dev->bytesAvailable() == ld.rxbuf.bsize)
     {
-      io.uart.dev->read(io.protocol->setRxBuf(rxcount), rxcount);
+      if (io.uart.dev->read(ld.rxbuf.data, ld.rxbuf.bsize) == ld.rxbuf.bsize)
+      {
+        if (memcmp(ld.txbuf.data, ld.rxbuf.data, ld.rxbuf.bsize))
+          edt_Log->append(QString(tr("ERROR: bad TxACK")));
 
-      ack = io.protocol->chkACK();
-      if (ack <= 0)
-        edt_Log->append(QString("ERROR: Bad ACK"));
-    }
-    if (io.protocol->getState() == IOS_RD)
-    {
-      parseRxDATA(io.protocol->getRxPayload(), ack);
+        ld.status = IOS_IDLE;
+      }
     }
   }
+  else
+    if (ld.status == IOS_RD)
+    {
+      if (io.uart.dev->bytesAvailable() == ld.rxbuf.bsize)
+      {
+        if (io.uart.dev->read(ld.rxbuf.data, ld.rxbuf.bsize) == ld.rxbuf.bsize)
+        {
+          if (memcmp(ld.txbuf.data, ld.rxbuf.data, (C_CFG_HCHUNK_COUNT * sizeof(TCfg_chunk))))
+            edt_Log->append(QString(tr("ERROR: PktRD Header")));
+
+          ld.status = IOS_IDLE;
+        }
+      }
+    }
 }
 
 void CMainwin::setCCDRIO()
@@ -196,25 +293,58 @@ void CMainwin::setCCDRIO()
 
   quint16 txd = tab_CCD->edl_x2RIO->text().toUInt();
 
-  int error = io.protocol->setReq(LSD_CFG_DIR_RD,
-                                  CFG_DEV_FG,
-                                  0,
-                                  0,
-                                  (char *) &txd,
-                                  sizeof(quint16));
-
-  if (error)
+  if (sendCommand(CFG_DEV_FG,
+                  C_CFG_DIR_WR,
+                  C_CFG_FIFO_OFF,
+                  0,
+                  (char *) &txd,
+                  sizeof(quint16)))
   {
-    edt_Log->append(QString(tr("ERROR: io.protocol / make write paket")));
+    edt_Log->append(QString(tr("ERROR: sendCommand")));
     return;
   }
 
-  if (io.uart.dev->write(io.protocol->getTxBuf(), io.protocol->getTxCount())
-      != io.protocol->getTxCount())
+  qint64 txcount;
+  txcount = io.uart.dev->write(ld.txbuf.data, ld.txbuf.bsize);
+  if (txcount == -1)
   {
-    edt_Log->append(QString(tr("ERROR: io.dev / Write")));
+    edt_Log->append(QString(tr("ERROR: io.dev / Write ")));
     return;
   }
+//  else
+//    edt_Log->append(QString(tr("OK: io.dev / Write ")) + QString::number(txcount));
+
+  io.tmr_timeout->start(1000);
+
+}
+
+void CMainwin::getCCDRIO()
+{
+  if (!io.uart.dev->isOpen())
+  {
+    edt_Log->append(QString(tr("ERROR: UART port closed")));
+    return;
+  }
+
+  if (sendCommand(CFG_DEV_FG,
+                  C_CFG_DIR_RD,
+                  C_CFG_FIFO_OFF,
+                  0,
+                  0,
+                  sizeof(quint16)))
+  {
+    edt_Log->append(QString(tr("ERROR: sendCommand")));
+    return;
+  }
+
+  qint64 txcount;
+  txcount = io.uart.dev->write(ld.txbuf.data, ld.txbuf.bsize);
+  if (txcount == -1)
+  {
+    edt_Log->append(QString(tr("ERROR: io.dev / Write ")));
+    return;
+  }
+
   io.tmr_timeout->start(1000);
 
 }

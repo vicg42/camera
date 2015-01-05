@@ -8,12 +8,27 @@
 #include <QComboBox>
 #include <QPushButton>
 #include <QTimer>
-#include "cfg.h"
+
+typedef quint8 TCfg_chunk;
+typedef quint8 u8;
+
+#define EER_INVAL    -1
+#define EER_NOBUFS   -2
+#define EER_TIMEOUT  -3
+
+typedef enum { IOS_IDLE, IOS_WR, IOS_RD } TIOStatus;
+
+/** Configurable subsystems (destinations/sources) */
 
 typedef enum
 {
-  UGUI_CCDRIO
-} TSrcRq;
+  CFG_DEV_FRR     // "Fiber Routing Rules" (switcher)
+, CFG_DEV_FIBER
+, CFG_DEV_FG      // "Frame Grabber" (vctrl)
+, CFG_DEV_TIMER
+
+} TCFGTarget;
+
 
 class CDev2PC_tab : public QWidget
 {
@@ -58,16 +73,38 @@ private:
   CDev2PC_tab *tab_Dev2PC;
   CCCD_tab *tab_CCD;
 
-  struct SDev {
-    struct SUART {
+  size_t tagcnt;
+
+  struct SDev
+  {
+    struct SUART
+    {
       QSerialPort *dev;
       QSerialPortInfo *info;
     } uart;
     QTimer *tmr_timeout;
-    CCfg *protocol;
-    TSrcRq srcrq;
   } io;
 
+  struct TLocal_data
+  {
+    struct TTxBuf
+    {
+      char * data;
+      size_t bsize;
+    } txbuf;
+
+    struct TRxBuf
+    {
+      char * data;
+      size_t bsize;
+    } rxbuf;
+
+    size_t req_bsize;
+    size_t tag_tx;
+
+    TIOStatus status;
+    int error;
+  } ld;
 
 public slots:
   void connectUART(bool state);
@@ -75,7 +112,14 @@ public slots:
   void setCCDRIO();
   void DevAckTimeout();
   void getCCDRIO();
-  void parseRxDATA(char *data, int count);
+
+  int sendCommand( TCFGTarget target,
+                    char dir,
+                    char fifo,
+                    size_t areg,
+                    char * data,
+                    size_t bcount
+                    );
 
 };
 
