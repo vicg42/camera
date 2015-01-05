@@ -238,12 +238,11 @@ void CMainwin::connectUART(bool state)
 
 void CMainwin::getDevData()
 {
-  io.tmr_timeout->stop();
-
   if (ld.status == IOS_WR)
   {
     if (io.uart.dev->bytesAvailable() == ld.rxbuf.bsize)
     {
+      io.tmr_timeout->stop();
       if (io.uart.dev->read(ld.rxbuf.data, ld.rxbuf.bsize) == ld.rxbuf.bsize)
       {
         if (memcmp(ld.txbuf.data, ld.rxbuf.data, ld.rxbuf.bsize))
@@ -258,6 +257,7 @@ void CMainwin::getDevData()
     {
       if (io.uart.dev->bytesAvailable() == ld.rxbuf.bsize)
       {
+        io.tmr_timeout->stop();
         if (io.uart.dev->read(ld.rxbuf.data, ld.rxbuf.bsize) == ld.rxbuf.bsize)
         {
           if (memcmp(ld.txbuf.data, ld.rxbuf.data, (C_CFG_HCHUNK_COUNT * sizeof(TCfg_chunk))))
