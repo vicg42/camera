@@ -177,10 +177,10 @@ int CMainwin::sendCommand(TCFGTarget target,
   TCfg_chunk * ptr = (TCfg_chunk *) ld.txbuf.data;
 
   ptr[C_CFG_HCHUNK_CTRL]
-    = ((fifo << C_CFG_FIFO_BIT) & C_CFG_FIFO_MASK)
-    | ((dir << C_CFG_DIR_BIT) & C_CFG_DIR_MASK)
-    | ((tagcnt << C_CFG_TAG_BIT) & C_CFG_TAG_MASK)
-    | ((target_code << C_CFG_DEV_BIT) & C_CFG_DEV_MASK);
+    = ((dir << C_CFG_DIR_BIT) & C_CFG_DIR_MASK)
+    | ((fifo << C_CFG_FIFO_BIT) & C_CFG_FIFO_MASK)
+    | ((target_code << C_CFG_DEV_BIT) & C_CFG_DEV_MASK)
+    | ((tagcnt << C_CFG_TAG_BIT) & C_CFG_TAG_MASK);
   ptr[C_CFG_HCHUNK_ADR] = areg;
   ptr[C_CFG_HCHUNK_DLEN] = chunk_count;
 
