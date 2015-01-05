@@ -248,6 +248,12 @@ void CMainwin::getDevData()
         if (memcmp(ld.txbuf.data, ld.rxbuf.data, ld.rxbuf.bsize))
           edt_Log->append(QString(tr("ERROR: bad TxACK")));
 
+        for(size_t i = 0; i < ld.rxbuf.bsize; i++)
+        edt_Log->append(QString("CFG_ACK: Data[")
+                        + QString::number(i)
+                        + QString("]=")
+                        + QString::number(ld.rxbuf.data[i]));
+
         ld.status = IOS_IDLE;
       }
     }
@@ -262,6 +268,12 @@ void CMainwin::getDevData()
         {
           if (memcmp(ld.txbuf.data, ld.rxbuf.data, (C_CFG_HCHUNK_COUNT * sizeof(TCfg_chunk))))
             edt_Log->append(QString(tr("ERROR: PktRD Header")));
+
+          for(size_t i = 0; i < ld.rxbuf.bsize; i++)
+          edt_Log->append(QString("CFG_ACK: Data[")
+                          + QString::number(i)
+                          + QString("]=")
+                          + QString::number(ld.rxbuf.data[i]));
 
           ld.status = IOS_IDLE;
         }
@@ -314,6 +326,12 @@ void CMainwin::setCCDRIO()
 //  else
 //    edt_Log->append(QString(tr("OK: io.dev / Write ")) + QString::number(txcount));
 
+  for(size_t i = 0; i < ld.txbuf.bsize; i++)
+  edt_Log->append(QString("CFG_Req: Data[")
+                  + QString::number(i)
+                  + QString("]=")
+                  + QString::number(ld.txbuf.data[i]));
+
   io.tmr_timeout->start(1000);
 
 }
@@ -344,6 +362,12 @@ void CMainwin::getCCDRIO()
     edt_Log->append(QString(tr("ERROR: io.dev / Write ")));
     return;
   }
+
+  for(size_t i = 0; i < ld.txbuf.bsize; i++)
+  edt_Log->append(QString("CFG_Req: Data[")
+                  + QString::number(i)
+                  + QString("]=")
+                  + QString::number(ld.txbuf.data[i]));
 
   io.tmr_timeout->start(1000);
 
