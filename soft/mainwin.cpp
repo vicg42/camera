@@ -238,7 +238,7 @@ void CMainwin::UARTconnect(bool state)
       edt_Log->append("UART setting: " + QString::number(io.uart.dev->baudRate()));
       edt_Log->append("UART setting: " + QString::number(io.uart.dev->dataBits()));
       edt_Log->append("UART setting: " + QString::number(io.uart.dev->parity()));
-      edt_Log->append(" ");
+      edt_Log->append("");
     }
     else
     {
