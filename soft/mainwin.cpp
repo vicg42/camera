@@ -235,9 +235,6 @@ void CMainwin::UARTconnect(bool state)
     if (io.uart.dev->open(QIODevice::ReadWrite))
     {
       edt_Log->append(QString(tr("Open: ")) + io.uart.dev->portName());
-      edt_Log->append("UART setting: " + QString::number(io.uart.dev->baudRate()));
-      edt_Log->append("UART setting: " + QString::number(io.uart.dev->dataBits()));
-      edt_Log->append("UART setting: " + QString::number(io.uart.dev->parity()));
       edt_Log->append("");
     }
     else
