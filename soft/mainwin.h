@@ -107,7 +107,8 @@ private:
   } ld;
 
 public slots:
-  void connectUART(bool state);
+  void UARTBaudRate(QString text);
+  void UARTconnect(bool state);
   void getDevData();
   void setCCDRIO();
   void DevAckTimeout();

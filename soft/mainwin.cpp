@@ -44,7 +44,7 @@ CMainwin::CMainwin(QWidget *parent)
 
 
   QObject::connect(tab_Dev2PC->btn_UART_connect, SIGNAL(toggled(bool))
-                   , this, SLOT(connectUART(bool)));
+                   , this, SLOT(UARTconnect(bool)));
 
   QObject::connect(tab_CCD->btn_setRIO, SIGNAL(clicked())
                    , this, SLOT(setCCDRIO()));
@@ -57,6 +57,9 @@ CMainwin::CMainwin(QWidget *parent)
 
   QObject::connect(tab_CCD->btn_getRIO, SIGNAL(clicked())
                    , this, SLOT(getCCDRIO()));
+
+  QObject::connect(tab_Dev2PC->cmb_UART_BaudRate,SIGNAL(currentTextChanged(QString))
+                   , this, SLOT(UARTBaudRate(QString)));
 }
 
 
@@ -140,7 +143,7 @@ int CMainwin::sendCommand(TCFGTarget target,
     }
 
     //set rxbuf for ACK
-    ld.rxbuf.bsize = (C_CFG_HCHUNK_COUNT * sizeof(TCfg_chunk));
+    ld.rxbuf.bsize = ld.txbuf.bsize;//(C_CFG_HCHUNK_COUNT * sizeof(TCfg_chunk));
     if (!ld.rxbuf.data)
       ld.rxbuf.data = new char[ld.rxbuf.bsize];
     else
@@ -203,34 +206,51 @@ int CMainwin::sendCommand(TCFGTarget target,
 void CMainwin::DevAckTimeout()
 {
   edt_Log->append(tr("ERROR: ACK Timeout "));
+  edt_Log->append(" ");
   io.tmr_timeout->stop();
+  ld.status = IOS_IDLE;
 }
 
-
-void CMainwin::connectUART(bool state)
+void CMainwin::UARTBaudRate(QString text)
 {
-  if (state){
+  io.uart.dev->setBaudRate(text.toInt());
+}
+
+void CMainwin::UARTconnect(bool state)
+{
+  if (state)
+  {
     io.uart.dev->setPort(io.uart.info->availablePorts().at(
                            tab_Dev2PC->cmb_UART_Port->currentIndex()));
+    io.uart.dev->setBaudRate(tab_Dev2PC->cmb_UART_BaudRate->currentText().toInt());
 
     if (io.uart.dev->isOpen())
     {
       edt_Log->append(QString(tr("ERROR: port is open "))
                       + io.uart.dev->portName());
+      edt_Log->append(" ");
       return;
     }
 
     if (io.uart.dev->open(QIODevice::ReadWrite))
     {
       edt_Log->append(QString(tr("Open: ")) + io.uart.dev->portName());
+      edt_Log->append("UART setting: " + QString::number(io.uart.dev->baudRate()));
+      edt_Log->append("UART setting: " + QString::number(io.uart.dev->dataBits()));
+      edt_Log->append("UART setting: " + QString::number(io.uart.dev->parity()));
+      edt_Log->append(" ");
     }
     else
+    {
       edt_Log->append(tr("Error"));
+      edt_Log->append(" ");
+    }
   }
   else
   {
     io.uart.dev->close();
     edt_Log->append(QString(tr("Close: ")) + io.uart.dev->portName());
+    edt_Log->append(" ");
   }
 
 }
@@ -253,7 +273,7 @@ void CMainwin::getDevData()
                         + QString::number(i)
                         + QString("]=")
                         + QString::number(ld.rxbuf.data[i]));
-
+        edt_Log->append(" ");
         ld.status = IOS_IDLE;
       }
     }
@@ -274,6 +294,7 @@ void CMainwin::getDevData()
                           + QString::number(i)
                           + QString("]=")
                           + QString::number(ld.rxbuf.data[i]));
+          edt_Log->append(" ");
 
           ld.status = IOS_IDLE;
         }
@@ -305,7 +326,7 @@ void CMainwin::setCCDRIO()
 
   quint16 txd = tab_CCD->edl_x2RIO->text().toUInt();
 
-  if (sendCommand(CFG_DEV_FG,
+  if (sendCommand(CFG_DEV_FRR,
                   C_CFG_DIR_WR,
                   C_CFG_FIFO_OFF,
                   0,
@@ -327,10 +348,11 @@ void CMainwin::setCCDRIO()
 //    edt_Log->append(QString(tr("OK: io.dev / Write ")) + QString::number(txcount));
 
   for(size_t i = 0; i < ld.txbuf.bsize; i++)
-  edt_Log->append(QString("CFG_Req: Data[")
+  edt_Log->append("CFG_Req: Data["
                   + QString::number(i)
-                  + QString("]=")
+                  + "]="
                   + QString::number(ld.txbuf.data[i]));
+  edt_Log->append(" ");
 
   io.tmr_timeout->start(1000);
 
@@ -344,7 +366,7 @@ void CMainwin::getCCDRIO()
     return;
   }
 
-  if (sendCommand(CFG_DEV_FG,
+  if (sendCommand(CFG_DEV_FRR,
                   C_CFG_DIR_RD,
                   C_CFG_FIFO_OFF,
                   0,
