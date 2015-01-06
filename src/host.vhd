@@ -127,7 +127,7 @@ if rising_edge(p_in_sys.uart_refclk) then
 end if;
 end process;
 
-p_out_tst(0) <= tst_uart_rd or OR_reduce(tst_uart_rxd) or tst_uart_rxdrdy or tst_htxbuf_full;
+p_out_tst(0) <= tst_uart_rd or OR_reduce(tst_uart_rxd) or tst_uart_rxdrdy or tst_htxbuf_full or tst_core_out(0);
 
 
 

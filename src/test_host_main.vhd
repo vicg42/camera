@@ -143,7 +143,7 @@ p_in_clk   => pin_in_refclk
 );
 
 i_sys.uart_refclk <= g_usrclk(7);
-i_sys.cfg_clk <= g_usrclk(0);
+i_sys.cfg_clk <= g_usrclk(7);
 i_sys.rst <= i_rst;
 
 --***********************************************************
