@@ -15,6 +15,7 @@ use work.vicg_common_pkg.all;
 use work.cfgdev_pkg.all;
 use work.host_pkg.all;
 use work.prj_cfg.all;
+use work.reduce_pack.all;
 
 entity host is
 generic(
@@ -102,6 +103,11 @@ signal i_htxbuf_full    : std_logic;
 signal tst_core_out     : std_logic_vector(31 downto 0);
 signal tst_uart_out     : std_logic_vector(31 downto 0);
 
+signal tst_uart_rd      : std_logic;
+signal tst_uart_rxd     : std_logic_vector(i_uart_txd'range);
+signal tst_uart_rxdrdy  : std_logic;
+signal tst_htxbuf_full  : std_logic;
+
 
 begin --architecture behavioral
 
@@ -110,7 +116,19 @@ i_zero <= (others => '0');
 --############################
 --DBG
 --############################
-p_out_tst(31 downto 0) <= (others=>'0');
+--p_out_tst(31 downto 0) <= tst_core_out;
+process(p_in_sys.uart_refclk)
+begin
+if rising_edge(p_in_sys.uart_refclk) then
+  tst_uart_rd <= i_uart_rd;
+  tst_uart_rxd <= i_uart_rxd;
+  tst_uart_rxdrdy <= i_uart_rxdrdy;
+  tst_htxbuf_full <= i_htxbuf_full;
+end if;
+end process;
+
+p_out_tst(0) <= tst_uart_rd or OR_reduce(tst_uart_rxd) or tst_uart_rxdrdy or tst_htxbuf_full;
+
 
 
 --############################

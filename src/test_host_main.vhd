@@ -25,6 +25,7 @@ pin_out_hostphy  : out    THostPhyOUT;
 --------------------------------------------------
 --DBG
 --------------------------------------------------
+pin_out_TP2         : out   std_logic_vector(2 downto 2);
 pin_out_led         : out   std_logic_vector(1 downto 0);
 --pin_in_btn          : in    std_logic;
 
@@ -120,7 +121,9 @@ signal i_reg1             : TUsrRegs;
 signal i_reg1_cs          : std_logic;
 
 attribute keep : string;
-attribute keep of g_usrclk : signal is "true";
+attribute keep of i_sys : signal is "true";
+
+signal tst_host_out       : std_logic_vector(31 downto 0);
 
 
 begin --architecture struct
@@ -147,7 +150,9 @@ i_sys.rst <= i_rst;
 --DBG
 --***********************************************************
 pin_out_led(0) <= i_test_led(0);
-pin_out_led(1) <= '0';
+pin_out_led(1) <= tst_host_out(0);
+
+pin_out_TP2(2) <= pin_in_hostphy.uart_rx;
 
 
 m_led1_tst: fpga_test_01
@@ -164,7 +169,7 @@ p_out_1ms      => i_1ms,
 -------------------------------
 --System
 -------------------------------
-p_in_clk       => g_usrclk(5),
+p_in_clk       => i_sys.uart_refclk,
 p_in_rst       => i_rst
 );
 
@@ -174,7 +179,8 @@ p_in_rst       => i_rst
 --***********************************************************
 m_host : host
 generic map(
-G_BAUDCNT_VAL => 34 --for uart_refclk = 62MHz
+G_BAUDCNT_VAL => 34 --for baudrate 115200; uart_refclk = 62MHz
+--G_BAUDCNT_VAL => 650 --for baudrate 19200; uart_refclk = 200MHz
 )
 port map(
 -------------------------------
@@ -193,7 +199,7 @@ p_in_host    => i_host_in , -- from(<-) fpga dev
 --DBG
 -------------------------------
 p_in_tst    => (others => '0'),
-p_out_tst   => open,
+p_out_tst   => tst_host_out,
 
 -------------------------------
 --System

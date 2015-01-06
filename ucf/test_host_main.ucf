@@ -1,0 +1,43 @@
+###############################################################################
+# Define Device, Package And Speed Grade
+###############################################################################
+CONFIG PART = XC7K410T-FBG676-2;
+
+################################################################################
+##
+################################################################################
+NET "pin_in_refclk_clk<0>"  LOC = "F22" | IOSTANDARD = LVCMOS25; #20MHz
+NET "pin_in_refclk_clk<1>"  LOC = "E23" | IOSTANDARD = LVCMOS25; #54MHz
+NET "pin_in_refclk_clk<2>"  LOC = "G22" | IOSTANDARD = LVCMOS25; #62MHz
+
+NET "pin_in_refclk_clk<0>" CLOCK_DEDICATED_ROUTE = BACKBONE;
+#PIN "m_clocks/m_mmcm_ref_clk0.CLKIN1" CLOCK_DEDICATED_ROUTE = BACKBONE;
+NET "pin_in_refclk_clk<1>" CLOCK_DEDICATED_ROUTE = BACKBONE;
+#PIN "m_clocks/m_mmcm_ref_clk1.CLKIN1" CLOCK_DEDICATED_ROUTE = BACKBONE;
+
+#NET "g_usrclk<0>" TNM_NET = TNM_CCD_REFCLK;
+#NET "g_usrclk<1>" TNM_NET = TNM_CCD_CLK;
+#
+###NET "g_usrclk<2>" TNM_NET = TNM_VGA_PIXCLK ;
+##NET "g_usrclk<2>" TNM_NET = TNM_TV_PIXCLK;
+##
+#TIMESPEC TS_CCD_REFCLK  = PERIOD TNM_CCD_REFCLK   5.0    ns;#  HIGH 50%; # 200MHz
+#TIMESPEC TS_CCD_CLK     = PERIOD TNM_CCD_CLK      3.225  ns;#  HIGH 50%; # 310MHz
+###TIMESPEC TS_VGA_CLK     = PERIOD TNM_VGA_CLK      7.407  ns;#  HIGH 50%; # 135MHz
+##TIMESPEC TS_TV_PIXCLK   = PERIOD TNM_TV_PIXCLK    56.387 ns;#  HIGH 50%; # 17,734472MHz
+
+
+
+################################################################################
+##
+################################################################################
+NET "pin_in_hostphy_uart_rx"  LOC = "K25" | IOSTANDARD = LVCMOS25;#׀אחתול X2 pin(2) MOSI
+NET "pin_out_hostphy_uart_tx" LOC = "N16" | IOSTANDARD = LVCMOS25;#׀אחתול X2 pin(1) MISO
+
+NET "pin_out_led<0>"     LOC = "P24"  | IOSTANDARD = LVCMOS25;#׀אחתול X2 pin(8)
+NET "pin_out_led<1>"     LOC = "L25"  | IOSTANDARD = LVCMOS25;#׀אחתול X2 pin(7)  SSN
+
+#NET "pin_out_TP2<0>"      LOC = "N16"  | IOSTANDARD = LVCMOS25;#׀אחתול X2 pin(1) MISO
+#NET "pin_out_TP2<1>"      LOC = "K25"  | IOSTANDARD = LVCMOS25;#׀אחתול X2 pin(2) MOSI
+NET "pin_out_TP2<2>"      LOC = "K26"  | IOSTANDARD = LVCMOS25;#׀אחתול X2 pin(3) SCLK
+

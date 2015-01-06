@@ -76,7 +76,7 @@ component uart_tx6 is
   end component;
 
 signal i_en_16_x_baud         : std_logic;
-signal i_baud_cnt             : integer range 0 to (G_BAUDCNT_VAL - 1) := 0;
+signal i_baud_cnt             : integer range 0 to (G_BAUDCNT_VAL) := 0;
 signal i_txbuf_hfull          : std_logic;
 
 
@@ -86,7 +86,7 @@ begin --architecture behavioral
 process(p_in_clk)
 begin
 if rising_edge(p_in_clk) then
-  if i_baud_cnt = (G_BAUDCNT_VAL - 1) then
+  if i_baud_cnt = (G_BAUDCNT_VAL) then
     i_en_16_x_baud <= '1';
     i_baud_cnt <= 0;
   else
@@ -100,30 +100,28 @@ end process;
 m_rx : uart_rx6
 port map(
 serial_in           => p_in_uart_rx,
-
+en_16_x_baud        => i_en_16_x_baud,
 data_out            => p_out_usr_rxd,
 buffer_read         => p_in_usr_rd,
 buffer_data_present => p_out_usr_rxrdy,
-buffer_full         => open,
 buffer_half_full    => open,
-
-en_16_x_baud        => i_en_16_x_baud,
-clk                 => p_in_clk,
-buffer_reset        => p_in_rst
+buffer_full         => open,
+buffer_reset        => p_in_rst,
+clk                 => p_in_clk
 );
+
 
 m_tx : uart_tx6
 port map(
-serial_out       => p_out_uart_tx,
-
-data_in          => p_in_usr_txd,
-buffer_write     => p_in_usr_wr,
-buffer_full      => open,
-buffer_half_full => i_txbuf_hfull,
-
-en_16_x_baud     => i_en_16_x_baud,
-clk              => p_in_clk,
-buffer_reset     => p_in_rst
+data_in             => p_in_usr_txd,
+en_16_x_baud        => i_en_16_x_baud,
+serial_out          => p_out_uart_tx,
+buffer_write        => p_in_usr_wr,
+buffer_data_present => open,
+buffer_half_full    => i_txbuf_hfull,
+buffer_full         => open,
+buffer_reset        => p_in_rst,
+clk                 => p_in_clk
 );
 
 p_out_usr_txrdy <= not i_txbuf_hfull;
