@@ -109,6 +109,7 @@ signal i_1ms              : std_logic;
 signal i_sys              : TSysIN;
 signal i_host_out         : THostOUT;
 signal i_host_in          : THostINs;
+signal i_out_hostphy      : THostPhyOUT;
 
 type TUsrRegs is array (0 to C_PCFG_TSTREG_COUNT_MAX - 1) of unsigned(i_host_out.txdata'range);
 
@@ -124,6 +125,7 @@ attribute keep : string;
 attribute keep of i_sys : signal is "true";
 
 signal tst_host_out       : std_logic_vector(31 downto 0);
+signal tst_uart_rx, tst_uart_tx : std_logic;
 
 
 begin --architecture struct
@@ -152,8 +154,17 @@ i_sys.rst <= i_rst;
 pin_out_led(0) <= i_test_led(0);
 pin_out_led(1) <= tst_host_out(0);
 
-pin_out_TP2(2) <= pin_in_hostphy.uart_rx;
+pin_out_TP2(2) <= tst_uart_rx and tst_uart_tx;
 
+process(i_sys.uart_refclk)
+begin
+if rising_edge(i_sys.uart_refclk) then
+  tst_uart_rx <= pin_in_hostphy.uart_rx;
+  tst_uart_tx <= i_out_hostphy.uart_tx;
+end if;
+end process;
+
+pin_out_hostphy <= i_out_hostphy;
 
 m_led1_tst: fpga_test_01
 generic map(
@@ -187,7 +198,7 @@ port map(
 --
 -------------------------------
 p_in_phy   => pin_in_hostphy ,
-p_out_phy  => pin_out_hostphy,
+p_out_phy  => i_out_hostphy,--pin_out_hostphy,
 
 -------------------------------
 --host <-> dev
@@ -266,62 +277,62 @@ i_host_in(C_PCFG_FDEV_TSTREG0_NUM).txbuf_full  <= '0';
 i_host_in(C_PCFG_FDEV_TSTREG0_NUM).txbuf_empty <= '0';
 
 
---#############################
---FDEV - TSTREG1
---#############################
-i_reg1_cs <= '1' when UNSIGNED(i_host_out.dadr)
-                        = TO_UNSIGNED(C_PCFG_FDEV_TSTREG1_NUM, i_host_out.dadr'length) else '0';
-
---Register adress
-process(i_sys)
-begin
-if i_sys.rst = '1' then
-  i_reg1_acnt <= (others => '0');
-elsif rising_edge(i_sys.cfg_clk) then
-if i_reg1_cs = '1' then
-  if i_host_out.radr_ld = '1' then
-    i_reg1_acnt <= UNSIGNED(i_host_out.radr);
-  else
-    if i_host_out.fifo = '0' and (i_host_out.wr = '1' or i_host_out.rd = '1') then
-      i_reg1_acnt <= i_reg1_acnt + 1;
-    end if;
-  end if;
-end if;
-end if;
-end process;
-
---write to reg
-process(i_sys)
-begin
-if i_sys.rst = '1' then
-  for i in 0 to i_reg1'length - 1 loop
-    i_reg1(i) <= (others => '0');
-  end loop;
-elsif rising_edge(i_sys.cfg_clk) then
-if i_reg1_cs = '1' then
-  if i_host_out.wr = '1' and i_host_out.fifo = '0' then
-    for i in 0 to i_reg1'length - 1 loop
-      if i_reg1_acnt = i then
-        i_reg1(i) <= UNSIGNED(i_host_out.txdata);
-      end if;
-    end loop;
-  end if;
-end if;
-end if;
-end process;
-
-process(i_reg1_acnt, i_reg1, i_host_in)
-begin
-for i in 0 to i_reg1'length - 1 loop
-  if i_reg1_acnt = i then
-    i_host_in(C_PCFG_FDEV_TSTREG1_NUM).rxdata <= std_logic_vector(i_reg1(i));
-  end if;
-end loop;
-end process;
-i_host_in(C_PCFG_FDEV_TSTREG1_NUM).rxbuf_full  <= '0';
-i_host_in(C_PCFG_FDEV_TSTREG1_NUM).rxbuf_empty <= '0';
-i_host_in(C_PCFG_FDEV_TSTREG1_NUM).txbuf_full  <= '0';
-i_host_in(C_PCFG_FDEV_TSTREG1_NUM).txbuf_empty <= '0';
+----#############################
+----FDEV - TSTREG1
+----#############################
+--i_reg1_cs <= '1' when UNSIGNED(i_host_out.dadr)
+--                        = TO_UNSIGNED(C_PCFG_FDEV_TSTREG1_NUM, i_host_out.dadr'length) else '0';
+--
+----Register adress
+--process(i_sys)
+--begin
+--if i_sys.rst = '1' then
+--  i_reg1_acnt <= (others => '0');
+--elsif rising_edge(i_sys.cfg_clk) then
+--if i_reg1_cs = '1' then
+--  if i_host_out.radr_ld = '1' then
+--    i_reg1_acnt <= UNSIGNED(i_host_out.radr);
+--  else
+--    if i_host_out.fifo = '0' and (i_host_out.wr = '1' or i_host_out.rd = '1') then
+--      i_reg1_acnt <= i_reg1_acnt + 1;
+--    end if;
+--  end if;
+--end if;
+--end if;
+--end process;
+--
+----write to reg
+--process(i_sys)
+--begin
+--if i_sys.rst = '1' then
+--  for i in 0 to i_reg1'length - 1 loop
+--    i_reg1(i) <= (others => '0');
+--  end loop;
+--elsif rising_edge(i_sys.cfg_clk) then
+--if i_reg1_cs = '1' then
+--  if i_host_out.wr = '1' and i_host_out.fifo = '0' then
+--    for i in 0 to i_reg1'length - 1 loop
+--      if i_reg1_acnt = i then
+--        i_reg1(i) <= UNSIGNED(i_host_out.txdata);
+--      end if;
+--    end loop;
+--  end if;
+--end if;
+--end if;
+--end process;
+--
+--process(i_reg1_acnt, i_reg1, i_host_in)
+--begin
+--for i in 0 to i_reg1'length - 1 loop
+--  if i_reg1_acnt = i then
+--    i_host_in(C_PCFG_FDEV_TSTREG1_NUM).rxdata <= std_logic_vector(i_reg1(i));
+--  end if;
+--end loop;
+--end process;
+--i_host_in(C_PCFG_FDEV_TSTREG1_NUM).rxbuf_full  <= '0';
+--i_host_in(C_PCFG_FDEV_TSTREG1_NUM).rxbuf_empty <= '0';
+--i_host_in(C_PCFG_FDEV_TSTREG1_NUM).txbuf_full  <= '0';
+--i_host_in(C_PCFG_FDEV_TSTREG1_NUM).txbuf_empty <= '0';
 
 
 end architecture struct;

@@ -88,24 +88,27 @@ end component uart;
 
 signal i_zero           : std_logic_vector(31 downto 0);
 
-signal i_uart_txd       : std_logic_vector(7 downto 0);
-signal i_uart_txdrdy    : std_logic;
-signal i_uart_wr        : std_logic;
-signal i_uart_rxd       : std_logic_vector(7 downto 0);
-signal i_uart_rxdrdy    : std_logic;
-signal i_uart_rd        : std_logic;
+signal i_hostbuf_di       : std_logic_vector(7 downto 0);
+signal i_uart_txrdy    : std_logic;
+signal i_hostbuf_rd        : std_logic;
+signal i_hostbuf_do       : std_logic_vector(7 downto 0);
+signal i_uart_rxrdy    : std_logic;
+signal i_hostbuf_wr        : std_logic;
 
 signal i_host_out       : THostOUT;
 signal i_host_in        : THostIN;
-signal i_hrxbuf_empty   : std_logic;
-signal i_htxbuf_full    : std_logic;
+signal i_hostbuf_empty   : std_logic;
+signal i_hostbuf_full    : std_logic;
+signal sr_uart_rxdrdy   : std_logic_vector(0 to 1);
 
 signal tst_core_out     : std_logic_vector(31 downto 0);
 signal tst_uart_out     : std_logic_vector(31 downto 0);
 
-signal tst_uart_rd      : std_logic;
-signal tst_uart_rxd     : std_logic_vector(i_uart_txd'range);
+signal tst_hostbuf_rd      : std_logic;
+signal tst_hostbuf_wr      : std_logic;
+signal tst_hostbuf_do     : std_logic_vector(i_hostbuf_di'range);
 signal tst_uart_rxdrdy  : std_logic;
+signal tst_uart_txdrdy  : std_logic;
 signal tst_htxbuf_full  : std_logic;
 
 
@@ -120,14 +123,17 @@ i_zero <= (others => '0');
 process(p_in_sys.uart_refclk)
 begin
 if rising_edge(p_in_sys.uart_refclk) then
-  tst_uart_rd <= i_uart_rd;
-  tst_uart_rxd <= i_uart_rxd;
-  tst_uart_rxdrdy <= i_uart_rxdrdy;
-  tst_htxbuf_full <= i_htxbuf_full;
+  tst_hostbuf_rd <= i_hostbuf_rd;
+  tst_hostbuf_wr <= i_hostbuf_wr;
+  tst_hostbuf_do <= i_hostbuf_do;
+  tst_uart_rxdrdy <= i_uart_rxrdy;
+  tst_uart_txdrdy <= i_uart_txrdy;
+  tst_htxbuf_full <= i_hostbuf_full;
 end if;
 end process;
 
-p_out_tst(0) <= tst_uart_rd or OR_reduce(tst_uart_rxd) or tst_uart_rxdrdy or tst_htxbuf_full or tst_core_out(0);
+p_out_tst(0) <= tst_hostbuf_wr or OR_reduce(tst_hostbuf_do) or tst_uart_rxdrdy or tst_hostbuf_rd
+or tst_htxbuf_full or tst_core_out(0) or tst_uart_txdrdy or tst_uart_out(0);
 
 
 
@@ -148,13 +154,13 @@ p_in_uart_rx     => p_in_phy.uart_rx,
 -------------------------------
 --USR IF
 -------------------------------
-p_out_usr_rxd    => i_uart_rxd,
-p_out_usr_rxrdy  => i_uart_rxdrdy,
-p_in_usr_rd      => i_uart_rd,
+p_out_usr_rxd    => i_hostbuf_di,
+p_out_usr_rxrdy  => i_uart_rxrdy,
+p_in_usr_rd      => i_hostbuf_wr,
 
-p_in_usr_txd     => i_uart_txd,
-p_out_usr_txrdy  => i_uart_txdrdy,
-p_in_usr_wr      => i_uart_wr,
+p_in_usr_txd     => i_hostbuf_do,
+p_out_usr_txrdy  => i_uart_txrdy,
+p_in_usr_wr      => i_hostbuf_rd,
 
 -------------------------------
 --DBG
@@ -169,58 +175,37 @@ p_in_clk         => p_in_sys.uart_refclk,
 p_in_rst         => p_in_sys.rst
 );
 
-process(p_in_sys.uart_refclk)
-begin
-if rising_edge(p_in_sys.uart_refclk) then
-  i_uart_wr <= not i_hrxbuf_empty and i_uart_txdrdy;
-  i_uart_rd <= not i_htxbuf_full and i_uart_rxdrdy;
-end if;
-end process;
-
+i_hostbuf_rd <= not i_uart_txrdy and not i_hostbuf_empty;
+i_hostbuf_wr <= i_uart_rxrdy and not i_hostbuf_full;
 p_out_host <= i_host_out;
 
-process(i_host_out, i_host_in, p_in_host)
-begin
-for i in 0 to C_PCFG_FDEV_COUNT - 1 loop
-  if UNSIGNED(i_host_out.dadr) = i then
-    i_host_in <= p_in_host(i);
-  end if;
-end loop;
-end process;
-
---i_host_in.radata <= p_in_host(C_PCFG_FDEV_TSTREG0_NUM).rxdata when UNSIGNED(i_host_out.dadr) = TO_UNSIGNED(C_PCFG_FDEV_TSTREG1_NUM, i_host_in.radata'length) else
---                    p_in_host(C_PCFG_FDEV_TSTREG1_NUM).rxdata;
---
---i_host_in.txbuf_full <= p_in_host(C_PCFG_FDEV_TSTREG0_NUM).txbuf_full when UNSIGNED(i_host_out.dadr) = TO_UNSIGNED(C_PCFG_FDEV_TSTREG1_NUM, i_host_in.radata'length) else
---                        p_in_host(C_PCFG_FDEV_TSTREG1_NUM).txbuf_full;
---
---i_host_in.txbuf_empty <= p_in_host(C_PCFG_FDEV_TSTREG0_NUM).txbuf_empty when UNSIGNED(i_host_out.dadr) = TO_UNSIGNED(C_PCFG_FDEV_TSTREG1_NUM, i_host_in.radata'length) else
---                         p_in_host(C_PCFG_FDEV_TSTREG1_NUM).txbuf_empty;
---
---i_host_in.rxbuf_full <= p_in_host(C_PCFG_FDEV_TSTREG0_NUM).rxbuf_full when UNSIGNED(i_host_out.dadr) = TO_UNSIGNED(C_PCFG_FDEV_TSTREG1_NUM, i_host_in.radata'length) else
---                        p_in_host(C_PCFG_FDEV_TSTREG1_NUM).rxbuf_full;
---
---i_host_in.rxbuf_empty <= p_in_host(C_PCFG_FDEV_TSTREG0_NUM).rxbuf_empty when UNSIGNED(i_host_out.dadr) = TO_UNSIGNED(C_PCFG_FDEV_TSTREG1_NUM, i_host_in.radata'length) else
---                         p_in_host(C_PCFG_FDEV_TSTREG1_NUM).rxbuf_empty;
+--process(i_host_out, i_host_in, p_in_host)
+--begin
+--for i in 0 to C_PCFG_FDEV_COUNT - 1 loop
+--  if UNSIGNED(i_host_out.dadr) = i then
+    i_host_in <= p_in_host(C_PCFG_FDEV_TSTREG0_NUM);
+--  end if;
+--end loop;
+--end process;
 
 m_devcfg : cfgdev_host
 generic map(
 G_DBG => "OFF",
-G_HOST_DWIDTH => i_uart_txd'length,
+G_HOST_DWIDTH => i_hostbuf_di'length,
 G_CFG_DWIDTH => C_HOST_DWIDTH
 )
 port map (
 -------------------------------
 --HOST
 -------------------------------
-p_out_hrxbuf_do      => i_uart_txd,
-p_in_hrxbuf_rd       => i_uart_wr,
+p_out_hrxbuf_do      => i_hostbuf_do,
+p_in_hrxbuf_rd       => i_hostbuf_rd,
 p_out_hrxbuf_full    => open,
-p_out_hrxbuf_empty   => i_hrxbuf_empty,
+p_out_hrxbuf_empty   => i_hostbuf_empty,
 
-p_in_htxbuf_di       => i_uart_rxd,
-p_in_htxbuf_wr       => i_uart_rd,
-p_out_htxbuf_full    => i_htxbuf_full,
+p_in_htxbuf_di       => i_hostbuf_di,
+p_in_htxbuf_wr       => i_hostbuf_wr,
+p_out_htxbuf_full    => i_hostbuf_full,
 p_out_htxbuf_empty   => open,
 
 p_out_hirq           => open,

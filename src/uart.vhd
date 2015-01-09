@@ -78,7 +78,19 @@ component uart_tx6 is
 signal i_en_16_x_baud         : std_logic;
 signal i_baud_cnt             : integer range 0 to (G_BAUDCNT_VAL) := 0;
 signal i_txbuf_hfull          : std_logic;
+signal i_usr_rxrdy            : std_logic;
+signal sr_usr_rxrdy           : std_logic_vector(0 to 1) := (others => '0');
+signal i_buffer_data_present  : std_logic;
+signal i_uart_txd             : std_logic_vector(p_in_usr_txd'range);
+signal i_uart_txd_wr          : std_logic;
 
+type fsm_state is (
+S_TX_IDLE,
+S_TX_SOF_WAIT,
+S_TX_EOF_WAIT
+);
+signal fsm_state_cs           : fsm_state;
+signal tst_buffer_data_present: std_logic;
 
 begin --architecture behavioral
 
@@ -103,33 +115,84 @@ serial_in           => p_in_uart_rx,
 en_16_x_baud        => i_en_16_x_baud,
 data_out            => p_out_usr_rxd,
 buffer_read         => p_in_usr_rd,
-buffer_data_present => p_out_usr_rxrdy,
+buffer_data_present => i_usr_rxrdy,
 buffer_half_full    => open,
 buffer_full         => open,
 buffer_reset        => p_in_rst,
 clk                 => p_in_clk
 );
 
+process(p_in_clk)
+begin
+if rising_edge(p_in_clk) then
+  sr_usr_rxrdy <= i_usr_rxrdy & sr_usr_rxrdy(0 to 0);
+  p_out_usr_rxrdy <= sr_usr_rxrdy(0) and not sr_usr_rxrdy(1);
+end if;
+end process;
+
+process(p_in_rst, p_in_clk)
+begin
+if rising_edge(p_in_clk) then
+  if p_in_rst = '1' then
+    fsm_state_cs <= S_TX_IDLE;
+    i_txbuf_hfull <= '0';
+    i_uart_txd <= (others => '0');
+    i_uart_txd_wr <= '0';
+  else
+    case fsm_state_cs is
+      when S_TX_IDLE   =>
+        if p_in_usr_wr = '1' then
+          i_uart_txd <= p_in_usr_txd;
+          i_uart_txd_wr <= '1';
+          i_txbuf_hfull <= '1';
+          fsm_state_cs <= S_TX_SOF_WAIT;
+        end if;
+
+      when S_TX_SOF_WAIT =>
+        i_uart_txd_wr <= '0';
+
+        if i_buffer_data_present = '1' then
+          fsm_state_cs <= S_TX_EOF_WAIT;
+        end if;
+
+      when S_TX_EOF_WAIT =>
+        if i_buffer_data_present = '0' then
+          i_txbuf_hfull <= '0';
+          fsm_state_cs <= S_TX_IDLE;
+        end if;
+    end case;
+  end if;
+end if;
+end process;
+
 
 m_tx : uart_tx6
 port map(
-data_in             => p_in_usr_txd,
+data_in             => i_uart_txd,
 en_16_x_baud        => i_en_16_x_baud,
 serial_out          => p_out_uart_tx,
-buffer_write        => p_in_usr_wr,
-buffer_data_present => open,
-buffer_half_full    => i_txbuf_hfull,
+buffer_write        => i_uart_txd_wr,
+buffer_data_present => i_buffer_data_present,
+buffer_half_full    => open,
 buffer_full         => open,
 buffer_reset        => p_in_rst,
 clk                 => p_in_clk
 );
 
-p_out_usr_txrdy <= not i_txbuf_hfull;
+p_out_usr_txrdy <= i_txbuf_hfull;
 
 
 ------------------------------------
 --DBG
 ------------------------------------
-p_out_tst(31 downto 0) <= (others => '0');
+p_out_tst(31 downto 1) <= (others => '0');
+p_out_tst(0) <= tst_buffer_data_present;
+
+process(p_in_clk)
+begin
+if rising_edge(p_in_clk) then
+  tst_buffer_data_present <= i_buffer_data_present;
+end if;
+end process;
 
 end architecture behavioral;
