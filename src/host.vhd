@@ -88,25 +88,25 @@ end component uart;
 
 signal i_zero           : std_logic_vector(31 downto 0);
 
-signal i_hostbuf_di       : std_logic_vector(7 downto 0);
-signal i_uart_txrdy    : std_logic;
-signal i_hostbuf_rd        : std_logic;
-signal i_hostbuf_do       : std_logic_vector(7 downto 0);
-signal i_uart_rxrdy    : std_logic;
-signal i_hostbuf_wr        : std_logic;
+signal i_hostbuf_di     : std_logic_vector(7 downto 0);
+signal i_uart_txrdy     : std_logic;
+signal i_hostbuf_rd     : std_logic;
+signal i_hostbuf_do     : std_logic_vector(7 downto 0);
+signal i_uart_rxrdy     : std_logic;
+signal i_hostbuf_wr     : std_logic;
 
 signal i_host_out       : THostOUT;
 signal i_host_in        : THostIN;
-signal i_hostbuf_empty   : std_logic;
-signal i_hostbuf_full    : std_logic;
+signal i_hostbuf_empty  : std_logic;
+signal i_hostbuf_full   : std_logic;
 signal sr_uart_rxdrdy   : std_logic_vector(0 to 1);
 
 signal tst_core_out     : std_logic_vector(31 downto 0);
 signal tst_uart_out     : std_logic_vector(31 downto 0);
 
-signal tst_hostbuf_rd      : std_logic;
-signal tst_hostbuf_wr      : std_logic;
-signal tst_hostbuf_do     : std_logic_vector(i_hostbuf_di'range);
+signal tst_hostbuf_rd   : std_logic;
+signal tst_hostbuf_wr   : std_logic;
+signal tst_hostbuf_do   : std_logic_vector(i_hostbuf_di'range);
 signal tst_uart_rxdrdy  : std_logic;
 signal tst_uart_txdrdy  : std_logic;
 signal tst_htxbuf_full  : std_logic;
