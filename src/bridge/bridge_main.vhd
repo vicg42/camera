@@ -153,7 +153,7 @@ S_RS232_WR
 );
 signal i_fsm_RS485_rxcs   : TFsm_RS485_rx;
 
-signal i_timeout_en       : std_logic;
+signal i_rs485_dir       : std_logic;
 signal i_timeout_cnt      : unsigned(15 downto 0);
 
 signal i_1us              : std_logic;
@@ -231,6 +231,10 @@ if rising_edge(i_sys.clk) then
     i_rs232_rxd_rd <= '0';
     i_rx485_txd <= (others => '0');
     i_rs485_txd_wr <= '0';
+
+    i_rs485_dir <= '0';
+    i_timeout_cnt <= ( others => '0');
+
   else
     case i_fsm_RS232_rxcs is
 
@@ -252,6 +256,21 @@ if rising_edge(i_sys.clk) then
         end if;
 
     end case;
+
+
+    if i_rs485_txd_wr = '1'  then
+      i_rs485_dir <= '1';--1/0 - Send/Receive
+      i_timeout_cnt <= ( others => '0');
+
+    elsif i_timeout_cnt > TO_UNSIGNED(600, i_timeout_cnt'length) then
+      i_rs485_dir <= '0';
+      i_timeout_cnt <= ( others => '0');
+
+    elsif i_rs485_dir = '1' and i_1us = '1' then
+      i_timeout_cnt <= i_timeout_cnt + 1;
+
+    end if;
+
   end if;
 end if;
 end process;
@@ -276,21 +295,9 @@ process(i_sys)
 begin
 if rising_edge(i_sys.clk) then
   if i_sys.rst = '1' then
-    i_timeout_en <= '0';
-    i_timeout_cnt <= ( others => '0');
+
   else
-    if i_rs485_txd_wr = '1'  then
-      i_timeout_en <= '1';
-      i_timeout_cnt <= ( others => '0');
 
-    elsif i_timeout_cnt > TO_UNSIGNED(600, i_timeout_cnt'length) then
-      i_timeout_en <= '0';
-      i_timeout_cnt <= ( others => '0');
-
-    elsif i_timeout_en = '1' and i_1us = '1' then
-      i_timeout_cnt <= i_timeout_cnt + 1;
-
-    end if;
 
   end if;
 end if;
@@ -299,12 +306,12 @@ end process;
 ----------------------------------------
 --RS232 <- RS485
 ----------------------------------------
-pin_out_rs485_dir <= i_timeout_en;--i_rs485_txd_busy;
+pin_out_rs485_dir <= i_rs485_dir;--i_rs485_txd_busy;
 
 --i_rs485_rxen <= not i_rs485_txd_busy;
 --i_rs485_rx <= i_rs485_rxen and pin_in_rs485_rx;
 
-i_rs485_rx <= pin_in_rs485_rx and not i_timeout_en;
+i_rs485_rx <= pin_in_rs485_rx and not i_rs485_dir;
 
 m_rs485_rx : uart_rx6
 port map(
@@ -391,7 +398,7 @@ p_in_clk       => i_sys.clk,
 p_in_rst       => i_sys.rst
 );
 
-pin_out_TP2(2) <= i_timeout_en;
+pin_out_TP2(2) <= i_rs485_dir;
 pin_out_TP3 <= i_rs485_tx;
 
 pin_out_TP <= tst_rs232_txd_busy or tst_rs485_txd_busy
@@ -411,8 +418,8 @@ if rising_edge(i_sys.clk) then
   tst_rs232_tx <= i_rs232_tx;
   tst_rs485_rx <= i_rs485_rx;
   tst_rs485_tx <= i_rs485_tx;
-  tst_timeout_en <= i_timeout_en;
-  tst_timeout_en2 <= not i_timeout_en and tst_timeout_en;
+  tst_timeout_en <= i_rs485_dir;
+  tst_timeout_en2 <= not i_rs485_dir and tst_timeout_en;
 end if;
 end process;
 
