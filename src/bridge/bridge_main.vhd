@@ -32,6 +32,8 @@ pin_out_rs485_dir   : out   std_logic;
 --------------------------------------------------
 pin_out_TP2         : out   std_logic_vector(2 downto 2);
 pin_out_led         : out   std_logic_vector(0 downto 0);
+pin_out_TP          : out   std_logic;
+pin_out_TP3         : out   std_logic;
 
 --------------------------------------------------
 --Reference clock
@@ -108,7 +110,7 @@ end component uart_tx6;
 --G_BAUDCNT_VAL => 34 --for baudrate 115200; uart_refclk = 62MHz
 --G_BAUDCNT_VAL => 201 --for baudrate 19200; uart_refclk = 62MHz
 --G_BAUDCNT_VAL => 650 --for baudrate 19200; uart_refclk = 200MHz
-constant CI_BAUD_COUNT : integer := 34;
+constant CI_BAUD_COUNT : integer := 201;
 
 type TSys is record
 clk : std_logic;
@@ -151,6 +153,10 @@ S_RS232_WR
 );
 signal i_fsm_RS485_rxcs   : TFsm_RS485_rx;
 
+signal i_timeout_en       : std_logic;
+signal i_timeout_cnt      : unsigned(15 downto 0);
+
+signal i_1us              : std_logic;
 signal i_tst              : std_logic_vector(1 downto 0);
 
 attribute keep : string;
@@ -162,8 +168,12 @@ signal tst_rs232_rx       : std_logic;
 signal tst_rs232_tx       : std_logic;
 signal i_rs232_rx         : std_logic;
 signal i_rs232_tx         : std_logic;
+signal i_rs485_tx         : std_logic;
+signal tst_rs485_rx       : std_logic;
+signal tst_rs485_tx       : std_logic;
 signal tst_rs232_rxrdy, tst_rs485_rxrdy : std_logic;
-
+signal tst_timeout_en     : std_logic;
+signal tst_timeout_en2    : std_logic;
 
 begin --architecture behavioral
 
@@ -251,7 +261,7 @@ m_rs485_tx : uart_tx6
 port map(
 data_in             => i_rx485_txd,
 en_16_x_baud        => i_en_16_x_baud,
-serial_out          => pin_out_rs485_tx,
+serial_out          => i_rs485_tx,--pin_out_rs485_tx,
 buffer_write        => i_rs485_txd_wr,
 buffer_data_present => i_rs485_txd_busy,
 buffer_half_full    => open,
@@ -259,15 +269,42 @@ buffer_full         => open,
 buffer_reset        => i_sys.rst,
 clk                 => i_sys.clk
 );
+pin_out_rs485_tx <= i_rs485_tx;
 
+
+process(i_sys)
+begin
+if rising_edge(i_sys.clk) then
+  if i_sys.rst = '1' then
+    i_timeout_en <= '0';
+    i_timeout_cnt <= ( others => '0');
+  else
+    if i_rs485_txd_wr = '1'  then
+      i_timeout_en <= '1';
+      i_timeout_cnt <= ( others => '0');
+
+    elsif i_timeout_cnt > TO_UNSIGNED(600, i_timeout_cnt'length) then
+      i_timeout_en <= '0';
+      i_timeout_cnt <= ( others => '0');
+
+    elsif i_timeout_en = '1' and i_1us = '1' then
+      i_timeout_cnt <= i_timeout_cnt + 1;
+
+    end if;
+
+  end if;
+end if;
+end process;
 
 ----------------------------------------
 --RS232 <- RS485
 ----------------------------------------
-pin_out_rs485_dir <= i_rs485_txd_busy;
+pin_out_rs485_dir <= i_timeout_en;--i_rs485_txd_busy;
 
-i_rs485_rxen <= not i_rs485_txd_busy;
-i_rs485_rx <= i_rs485_rxen and pin_in_rs485_rx;
+--i_rs485_rxen <= not i_rs485_txd_busy;
+--i_rs485_rx <= i_rs485_rxen and pin_in_rs485_rx;
+
+i_rs485_rx <= pin_in_rs485_rx and not i_timeout_en;
 
 m_rs485_rx : uart_rx6
 port map(
@@ -339,13 +376,13 @@ pin_out_led(0) <= i_test_led(0);
 m_led1_tst: fpga_test_01
 generic map(
 G_BLINK_T05   =>10#250#,
-G_CLK_T05us   =>10#100#
+G_CLK_T05us   =>10#31#
 )
 port map(
 p_out_test_led => i_test_led(0),
 p_out_test_done=> open,
 
-p_out_1us      => open,
+p_out_1us      => i_1us,
 p_out_1ms      => open,
 -------------------------------
 --System
@@ -354,10 +391,14 @@ p_in_clk       => i_sys.clk,
 p_in_rst       => i_sys.rst
 );
 
+pin_out_TP2(2) <= i_timeout_en;
+pin_out_TP3 <= i_rs485_tx;
 
-pin_out_TP2(2) <= tst_rs232_txd_busy or tst_rs485_txd_busy
+pin_out_TP <= tst_rs232_txd_busy or tst_rs485_txd_busy
                   or tst_rs232_rx or tst_rs232_tx
-                  or tst_rs232_rxrdy or tst_rs485_rxrdy;
+                  or tst_rs232_rxrdy or tst_rs485_rxrdy
+                  or tst_rs485_rx or tst_rs485_tx
+                  or tst_timeout_en2;
 
 process(i_sys)
 begin
@@ -368,6 +409,10 @@ if rising_edge(i_sys.clk) then
   tst_rs485_rxrdy <= i_rs485_rxrdy;
   tst_rs232_rx <= i_rs232_rx;
   tst_rs232_tx <= i_rs232_tx;
+  tst_rs485_rx <= i_rs485_rx;
+  tst_rs485_tx <= i_rs485_tx;
+  tst_timeout_en <= i_timeout_en;
+  tst_timeout_en2 <= not i_timeout_en and tst_timeout_en;
 end if;
 end process;
 
