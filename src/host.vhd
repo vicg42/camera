@@ -179,14 +179,14 @@ i_hostbuf_rd <= not i_uart_txrdy and not i_hostbuf_empty;
 i_hostbuf_wr <= i_uart_rxrdy and not i_hostbuf_full;
 p_out_host <= i_host_out;
 
---process(i_host_out, i_host_in, p_in_host)
---begin
---for i in 0 to C_PCFG_FDEV_COUNT - 1 loop
---  if UNSIGNED(i_host_out.dadr) = i then
-    i_host_in <= p_in_host(C_PCFG_FDEV_TSTREG0_NUM);
---  end if;
---end loop;
---end process;
+process(i_host_out, i_host_in, p_in_host)
+begin
+for i in 0 to C_PCFG_FDEV_COUNT - 1 loop
+  if UNSIGNED(i_host_out.dadr) = i then
+    i_host_in <= p_in_host(i);
+  end if;
+end loop;
+end process;
 
 m_devcfg : cfgdev_host
 generic map(

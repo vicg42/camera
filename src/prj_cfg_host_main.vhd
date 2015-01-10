@@ -49,7 +49,7 @@ constant C_PCFG_TSTREG_COUNT_MAX : integer := 4;
 
 constant C_PCFG_FDEV_TSTREG0_NUM : integer := 0;
 constant C_PCFG_FDEV_TSTREG1_NUM : integer := 1;
-constant C_PCFG_FDEV_COUNT   : integer := 1;
+constant C_PCFG_FDEV_COUNT   : integer := 2;
 
 end package prj_cfg;
 

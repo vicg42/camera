@@ -90,7 +90,7 @@ S_TX_SOF_WAIT,
 S_TX_EOF_WAIT
 );
 signal fsm_state_cs           : fsm_state;
-signal tst_buffer_data_present: std_logic;
+
 
 begin --architecture behavioral
 
@@ -165,7 +165,6 @@ if rising_edge(p_in_clk) then
 end if;
 end process;
 
-
 m_tx : uart_tx6
 port map(
 data_in             => i_uart_txd,
@@ -185,14 +184,7 @@ p_out_usr_txrdy <= i_txbuf_hfull;
 ------------------------------------
 --DBG
 ------------------------------------
-p_out_tst(31 downto 1) <= (others => '0');
-p_out_tst(0) <= tst_buffer_data_present;
+p_out_tst(31 downto 0) <= (others => '0');
 
-process(p_in_clk)
-begin
-if rising_edge(p_in_clk) then
-  tst_buffer_data_present <= i_buffer_data_present;
-end if;
-end process;
 
 end architecture behavioral;
