@@ -10,9 +10,9 @@ CMainwin::CMainwin(QWidget *parent)
   setWindowTitle(tr("Camera Ctrl"));
 
   ld.txbuf.data = new char;
-  ld.txbuf.bsize = sizeof(char);
+  ld.txbuf.size.byte = sizeof(char);
   ld.rxbuf.data = new char;
-  ld.rxbuf.bsize = sizeof(char);
+  ld.rxbuf.size.byte = sizeof(char);
   ld.status = IOS_IDLE;
 
   io.uart.dev = new QSerialPort(this);
@@ -134,66 +134,62 @@ int CMainwin::sendCommand(TCFGTarget target,
 
   if (dir == C_CFG_DIR_WR)
   {
-    ld.txbuf.bsize = (C_CFG_HCHUNK_COUNT * sizeof(TCfg_chunk))
+    ld.txbuf.size.byte = (C_CFG_HCHUNK_COUNT * sizeof(TCfg_chunk))
                       + (chunk_count * sizeof(TCfg_chunk));
+    ld.txbuf.size.chunk = C_CFG_HCHUNK_COUNT + chunk_count;
     if (!ld.txbuf.data)
-      ld.txbuf.data = new char[ld.txbuf.bsize];
+      ld.txbuf.data = new char[ld.txbuf.size.byte];
     else
     {
       delete [] ld.txbuf.data;
-      ld.txbuf.data = new char[ld.txbuf.bsize];
+      ld.txbuf.data = new char[ld.txbuf.size.byte];
     }
 
     //set rxbuf for ACK
-    ld.rxbuf.bsize = (C_CFG_HCHUNK_COUNT * sizeof(TCfg_chunk));
+    ld.rxbuf.size.byte = (C_CFG_HCHUNK_COUNT * sizeof(TCfg_chunk));
+    ld.rxbuf.size.chunk = C_CFG_HCHUNK_COUNT;
     if (!ld.rxbuf.data)
-      ld.rxbuf.data = new char[ld.rxbuf.bsize * 2];
+      ld.rxbuf.data = new char[ld.rxbuf.size.byte];
     else
     {
       delete [] ld.rxbuf.data;
-      ld.rxbuf.data = new char[ld.rxbuf.bsize * 2];
+      ld.rxbuf.data = new char[ld.rxbuf.size.byte];
     }
   }
   else
   {
-    ld.txbuf.bsize = (C_CFG_HCHUNK_COUNT * sizeof(TCfg_chunk));
+    ld.txbuf.size.byte = (C_CFG_HCHUNK_COUNT * sizeof(TCfg_chunk));
+    ld.txbuf.size.chunk = C_CFG_HCHUNK_COUNT;
     if (!ld.txbuf.data)
-      ld.txbuf.data = new char[ld.txbuf.bsize];
+      ld.txbuf.data = new char[ld.txbuf.size.byte];
     else
     {
       delete [] ld.txbuf.data;
-      ld.txbuf.data = new char[ld.txbuf.bsize];
+      ld.txbuf.data = new char[ld.txbuf.size.byte];
     }
 
-    ld.rxbuf.bsize = (C_CFG_HCHUNK_COUNT * sizeof(TCfg_chunk))
+    ld.rxbuf.size.byte = (C_CFG_HCHUNK_COUNT * sizeof(TCfg_chunk))
                       + (chunk_count * sizeof(TCfg_chunk));
+    ld.txbuf.size.chunk = C_CFG_HCHUNK_COUNT + chunk_count;
     if (!ld.rxbuf.data)
-      ld.rxbuf.data = new char[ld.rxbuf.bsize];
+      ld.rxbuf.data = new char[ld.rxbuf.size.byte];
     else
     {
       delete [] ld.rxbuf.data;
-      ld.rxbuf.data = new char[ld.rxbuf.bsize];
+      ld.rxbuf.data = new char[ld.rxbuf.size.byte];
     }
   }
 
-  memset(ld.txbuf.data, 0, ld.txbuf.bsize);
-  memset(ld.rxbuf.data, 0, ld.rxbuf.bsize);
+  memset(ld.txbuf.data, 0, ld.txbuf.size.byte);
+  memset(ld.rxbuf.data, 0, ld.rxbuf.size.byte);
 
   TCfg_chunk * ptr = (TCfg_chunk *) ld.txbuf.data;
-
-//  ptr[C_CFG_HCHUNK_CTRL]
-//    = ((dir << C_CFG_DIR_BIT) & C_CFG_DIR_MASK)
-//    | ((fifo << C_CFG_FIFO_BIT) & C_CFG_FIFO_MASK)
-//    | ((target_code << C_CFG_DEV_BIT) & C_CFG_DEV_MASK)
-//    | ((tagcnt << C_CFG_TAG_BIT) & C_CFG_TAG_MASK);
-//  ptr[C_CFG_HCHUNK_ADR] = areg;
-//  ptr[C_CFG_HCHUNK_DLEN] = chunk_count;
 
   ptr[C_CFG_HCHUNK_CTRL]
     = ((dir << C_CFG_DIR_BIT) & C_CFG_DIR_MASK)
     | ((fifo << C_CFG_FIFO_BIT) & C_CFG_FIFO_MASK)
     | ((target_code << C_CFG_DEV_BIT) & C_CFG_DEV_MASK)
-    | (1 << 7);
+    | (1 << 7); //| ((tagcnt << C_CFG_TAG_BIT) & C_CFG_TAG_MASK);
   ptr[C_CFG_HCHUNK_ADR] = areg;
   ptr[C_CFG_HCHUNK_DLEN] = chunk_count;
 
@@ -219,6 +215,7 @@ void CMainwin::DevAckTimeout()
   edt_Log->append(" ");
   io.tmr_timeout->stop();
   ld.status = IOS_IDLE;
+
   io.uart.dev->clear();
 }
 
@@ -271,18 +268,13 @@ void CMainwin::getDevData()
   qint64 rxcount = io.uart.dev->bytesAvailable();
   if (ld.status == IOS_WR)
   {
-    edt_Log->append(QString("getDevData: dev->bytesAvailable = ")
-                    + QString::number(rxcount));
-    edt_Log->append(QString("getDevData: ld.rxbuf.bsize = ")
-                    + QString::number(ld.rxbuf.bsize));
-
-    if (rxcount >= ld.rxbuf.bsize)
+    if (rxcount == ld.rxbuf.size.byte)
     {
       io.tmr_timeout->stop();
-      io.uart.dev->read(ld.rxbuf.data, rxcount);
-//      if (io.uart.dev->read(ld.rxbuf.data, ld.rxbuf.bsize) == ld.rxbuf.bsize)
-//      {
-        if (memcmp(ld.txbuf.data, ld.rxbuf.data, ld.rxbuf.bsize))
+
+      if (io.uart.dev->read(ld.rxbuf.data, ld.rxbuf.size.byte) == ld.rxbuf.size.byte)
+      {
+        if (memcmp(ld.txbuf.data, ld.rxbuf.data, ld.rxbuf.size.byte))
           edt_Log->append(QString(tr("ERROR: bad TxACK")));
 
         for(size_t i = 0; i < rxcount; i++)
@@ -294,26 +286,41 @@ void CMainwin::getDevData()
         edt_Log->append(" ");
         ld.status = IOS_IDLE;
         io.uart.dev->clear();
-//      }
+      }
     }
   }
   else
     if (ld.status == IOS_RD)
     {
-      if (io.uart.dev->bytesAvailable() == ld.rxbuf.bsize)
+      if (rxcount == ld.rxbuf.size.byte)
       {
         io.tmr_timeout->stop();
-        if (io.uart.dev->read(ld.rxbuf.data, ld.rxbuf.bsize) == ld.rxbuf.bsize)
+        if (io.uart.dev->read(ld.rxbuf.data, ld.rxbuf.size.byte) == ld.rxbuf.size.byte)
         {
           if (memcmp(ld.txbuf.data, ld.rxbuf.data, (C_CFG_HCHUNK_COUNT * sizeof(TCfg_chunk))))
             edt_Log->append(QString(tr("ERROR: PktRD Header")));
 
-          for(size_t i = 0; i < ld.rxbuf.bsize; i++)
+          for(size_t i = 0; i < rxcount; i++)
           edt_Log->append(QString("CFG_ACK: Data[")
                           + QString::number(i)
                           + QString("]=")
-                          + QString::number(ld.rxbuf.data[i]));
+                          + QString::number((ld.rxbuf.data[i] & 0xFF), 16).toUpper());
           edt_Log->append(" ");
+
+          TCfg_chunk * ptr = (TCfg_chunk *) ld.rxbuf.data;
+          TCfg_chunk devnum = (ptr[C_CFG_HCHUNK_CTRL] >> C_CFG_DEV_BIT) & 0xf;
+
+          if (devnum == CFG_DEV_FRR)
+          {
+            quint16 *x1RIO = (quint16 *) &ptr[C_CFG_HCHUNK_DATA];
+            tab_CCD->edl_x1RIO->setText(QString::number((*x1RIO & 0xffff)));
+          }
+          else
+            if (devnum == C_CFG_DEV_FIBER)
+            {
+              quint16 *y1RIO = (quint16 *) &ptr[C_CFG_HCHUNK_DATA];
+              tab_CCD->edl_y1RIO->setText(QString::number((*y1RIO & 0xffff)));
+            }
 
           ld.status = IOS_IDLE;
         }
@@ -343,12 +350,14 @@ void CMainwin::setCCDRIO()
     return;
   }
 
-  quint16 txd = 0x1122;//tab_CCD->edl_x2RIO->text().toUInt();
+  quint16 txd = !tab_CCD->chkb_SelDev->checkState()
+                ? tab_CCD->edl_x2RIO->text().toUInt()
+                : tab_CCD->edl_y2RIO->text().toUInt();
 
-  if (sendCommand(CFG_DEV_FRR,
+  if (sendCommand((!tab_CCD->chkb_SelDev->checkState() ? CFG_DEV_FRR : CFG_DEV_FIBER),
                   C_CFG_DIR_WR,
                   C_CFG_FIFO_OFF,
-                  1,
+                  0, //Start Register Number
                   (char *) &txd,
                   sizeof(quint16)))
   {
@@ -357,7 +366,7 @@ void CMainwin::setCCDRIO()
   }
 
   qint64 txcount;
-  txcount = io.uart.dev->write(ld.txbuf.data, ld.txbuf.bsize);
+  txcount = io.uart.dev->write(ld.txbuf.data, ld.txbuf.size.byte);
   if (txcount == -1)
   {
     edt_Log->append(QString(tr("ERROR: io.dev / Write ")));
@@ -366,7 +375,7 @@ void CMainwin::setCCDRIO()
 //  else
 //    edt_Log->append(QString(tr("OK: io.dev / Write ")) + QString::number(txcount));
 
-  for(size_t i = 0; i < ld.txbuf.bsize; i++)
+  for(size_t i = 0; i < ld.txbuf.size.byte; i++)
   edt_Log->append("CFG_Req: Data[" + QString::number(i) + "]="
                   + QString::number((ld.txbuf.data[i] & 0xFF), 16).toUpper());
 
@@ -384,11 +393,11 @@ void CMainwin::getCCDRIO()
     return;
   }
 
-  if (sendCommand(CFG_DEV_FRR,
+  if (sendCommand((!tab_CCD->chkb_SelDev->checkState() ? CFG_DEV_FRR : CFG_DEV_FIBER),
                   C_CFG_DIR_RD,
                   C_CFG_FIFO_OFF,
-                  0,
-                  0,
+                  0, //Start Register Number
+                  (char *) &tmp,
                   sizeof(quint16)))
   {
     edt_Log->append(QString(tr("ERROR: sendCommand")));
@@ -396,18 +405,16 @@ void CMainwin::getCCDRIO()
   }
 
   qint64 txcount;
-  txcount = io.uart.dev->write(ld.txbuf.data, ld.txbuf.bsize);
+  txcount = io.uart.dev->write(ld.txbuf.data, ld.txbuf.size.byte);
   if (txcount == -1)
   {
     edt_Log->append(QString(tr("ERROR: io.dev / Write ")));
     return;
   }
 
-  for(size_t i = 0; i < ld.txbuf.bsize; i++)
-  edt_Log->append(QString("CFG_Req: Data[")
-                  + QString::number(i)
-                  + QString("]=")
-                  + QString::number(ld.txbuf.data[i]));
+  for(size_t i = 0; i < ld.txbuf.size.byte; i++)
+  edt_Log->append(QString("CFG_Req: Data[") + QString::number(i) + QString("]=")
+                  + QString::number((ld.txbuf.data[i] & 0xFF), 16).toUpper());
 
   io.tmr_timeout->start(1000);
 
@@ -461,6 +468,7 @@ CCCD_tab::CCCD_tab(QWidget *parent)
 
   btn_setRIO = new QPushButton(tr("SET"));
   btn_getRIO = new QPushButton(tr("GET"));
+  chkb_SelDev = new QCheckBox;
 
   QGridLayout *RIO_GLayout = new QGridLayout;
 
@@ -474,6 +482,7 @@ CCCD_tab::CCCD_tab(QWidget *parent)
   RIO_GLayout->addWidget(edl_y2RIO, 3, 1);
   RIO_GLayout->addWidget(btn_setRIO, 4, 0, 1, 2);
   RIO_GLayout->addWidget(btn_getRIO, 5, 0, 1, 2);
+  RIO_GLayout->addWidget(chkb_SelDev, 6, 0, 1, 2);
 
   QGroupBox *grp_RIO = new QGroupBox(tr("RIO"));
   grp_RIO->setLayout(RIO_GLayout);

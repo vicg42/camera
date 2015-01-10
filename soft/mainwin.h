@@ -8,6 +8,7 @@
 #include <QComboBox>
 #include <QPushButton>
 #include <QTimer>
+#include <QCheckBox>
 
 typedef quint8 TCfg_chunk;
 typedef quint8 u8;
@@ -56,6 +57,7 @@ public:
   QLineEdit *edl_y2RIO;
   QPushButton *btn_setRIO;
   QPushButton *btn_getRIO;
+  QCheckBox *chkb_SelDev;
 };
 
 
@@ -90,13 +92,21 @@ private:
     struct TTxBuf
     {
       char * data;
-      size_t bsize;
+      struct TSize
+      {
+        size_t byte;
+        size_t chunk;
+      } size;
     } txbuf;
 
     struct TRxBuf
     {
       char * data;
-      size_t bsize;
+      struct TSize
+      {
+        size_t byte;
+        size_t chunk;
+      } size;
     } rxbuf;
 
     size_t req_bsize;
@@ -105,6 +115,9 @@ private:
     TIOStatus status;
     int error;
   } ld;
+
+
+  quint16 tmp;
 
 public slots:
   void UARTBaudRate(QString text);
