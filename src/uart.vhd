@@ -184,7 +184,9 @@ p_out_usr_txrdy <= i_txbuf_hfull;
 ------------------------------------
 --DBG
 ------------------------------------
-p_out_tst(31 downto 0) <= (others => '0');
+p_out_tst(0) <= i_en_16_x_baud;
+p_out_tst(1) <= i_buffer_data_present;
+p_out_tst(31 downto 2) <= (others => '0');
 
 
 end architecture behavioral;
